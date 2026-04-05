@@ -1,6 +1,7 @@
 package br.com.recifego.api.modules.shopkeeper.model;
 
 import br.com.recifego.api.modules.user.model.UserModel;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,8 +12,9 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class ShopkeeperModel extends UserModel {
-
+    @Column(nullable = false)
     private String documentId; // cpf ou cnpj
-    private String companyName;
 
+    @Column(nullable = false)
+    private String companyName;
 }

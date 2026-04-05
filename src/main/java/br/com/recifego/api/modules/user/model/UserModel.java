@@ -29,8 +29,13 @@ public abstract class UserModel {
     @GeneratedValue
     private Integer id;
 
-    private String email, password, name;
+    @Column(nullable = false, unique = true)
+    private String email;
 
+    @Column(nullable = false)
+    private String password, name;
+
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private UserRole role;
 
