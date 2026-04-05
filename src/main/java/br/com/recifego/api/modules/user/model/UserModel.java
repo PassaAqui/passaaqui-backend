@@ -29,7 +29,7 @@ public abstract class UserModel {
     @GeneratedValue
     private Integer id;
 
-    private String email, password;
+    private String email, password, name;
 
     @Enumerated(EnumType.STRING)
     private UserRole role;
