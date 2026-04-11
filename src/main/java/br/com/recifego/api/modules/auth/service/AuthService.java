@@ -1,12 +1,16 @@
 package br.com.recifego.api.modules.auth.service;
 
+import io.jsonwebtoken.security.Keys;
+import javax.crypto.SecretKey;
 import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.security.autoconfigure.SecurityProperties.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -40,7 +44,42 @@ public class AuthService {
     private final AuthRepository authRepository;
 
     @Value("${jwt.secret}")
-    private final String jwtSecret;
+    private String jwtSecret;
+
+    
+    private JWTObject generateTokens(UserModel user, String deviceId) {
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+
+        return new JWTObject() {{
+            setAccess_token(Jwts.builder()
+                    .setSubject(user.getId().toString())
+                    .claim("role", user.getRole())
+                    .claim("deviceId", deviceId)
+                    .setIssuedAt(new Date())
+                    .setExpiration(new Date(System.currentTimeMillis() + 15 * 60 * 1000))
+                    .signWith(key) 
+                    .compact());
+            
+            setRefresh_token(Jwts.builder()
+                    .setSubject(user.getId().toString())
+                    .claim("role", user.getRole())
+                    .claim("deviceId", deviceId)
+                    .setIssuedAt(new Date())
+                    .setExpiration(new Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000))
+                    .signWith(key) 
+                    .compact());
+        }};
+    }
+
+    private String hashToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (Exception e) {
+            throw new RuntimeException("Error hashing token", e);
+        }
+    }
 
     public TouristModel registerAccountTourist(RegisterTouristDTO dto) {
         if (!dto.password().equalsIgnoreCase(dto.confirm_password())) 
@@ -76,7 +115,7 @@ public class AuthService {
         
         AuthModel newAuth = new AuthModel();
         newAuth.setUser(user);
-        newAuth.setRefreshTokenHash(passwordEncoder.encode(tokens.getRefresh_token()));
+        newAuth.setRefreshTokenHash(hashToken(tokens.getRefresh_token()));
         newAuth.setDeviceId(deviceId);
         newAuth.setUserAgent(userAgent);
         newAuth.setIpAddress(ipAddress);
@@ -87,27 +126,6 @@ public class AuthService {
 
         return tokens;
 
-    }
-
-    private JWTObject generateTokens(UserModel user, String deviceId) {
-        return new JWTObject() {{
-            setAccess_token(Jwts.builder()
-                    .setSubject(user.getId().toString())
-                    .claim("role", user.getRole())
-                    .claim("deviceId", deviceId)
-                    .setIssuedAt(new Date())
-                    .setExpiration(new Date(System.currentTimeMillis() + 15 * 60 * 1000))
-                    .signWith(SignatureAlgorithm.HS256, jwtSecret)
-                    .compact());
-            setRefresh_token(Jwts.builder()
-                    .setSubject(user.getId().toString())
-                    .claim("role", user.getRole())
-                    .claim("deviceId", deviceId)
-                    .setIssuedAt(new Date())
-                    .setExpiration(new Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000))
-                    .signWith(SignatureAlgorithm.HS256, jwtSecret)
-                    .compact());
-        }};
     }
 
     public JWTObject refreshToken(String refreshToken, String userAgent, String ipAddress) {
@@ -130,8 +148,7 @@ public class AuthService {
             throw new InvalidRequestException("Session revoked. Please login again.");
         }
 
-        // Se mandarem um token antigo já sobrescrito, assumimos vazamento de segurança e revogamos a sessão
-        if (!passwordEncoder.matches(refreshToken, authModel.getRefreshTokenHash())) {
+        if (!hashToken(refreshToken).equals(authModel.getRefreshTokenHash())) {
             authModel.setRevoked(true);
             authRepository.save(authModel);
             throw new InvalidRequestException("Invalid refresh token. Session revoked for security.");
@@ -140,8 +157,7 @@ public class AuthService {
         UserModel user = authModel.getUser();
         JWTObject tokens = generateTokens(user, deviceId);
 
-        // Sobrescreve invalidando instantaneamente os tokens antigos
-        authModel.setRefreshTokenHash(passwordEncoder.encode(tokens.getRefresh_token()));
+        authModel.setRefreshTokenHash(hashToken(tokens.getRefresh_token()));
         authModel.setUserAgent(userAgent);
         authModel.setIpAddress(ipAddress);
         authModel.setExpiresAt(LocalDateTime.now().plusDays(7)); 
