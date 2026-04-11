@@ -14,7 +14,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class TouristModel extends UserModel {
 
-    private String deviceId;
+    private String deviceId, documentId;
     private Point lastKnownLocation;
     private Integer currentXP, level;
     
