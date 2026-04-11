@@ -17,6 +17,7 @@ import jakarta.persistence.JoinColumn;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import jakarta.persistence.ManyToOne;
 
 @Entity
 @Getter
@@ -29,6 +30,7 @@ public class AuthModel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private UserModel user;
 
