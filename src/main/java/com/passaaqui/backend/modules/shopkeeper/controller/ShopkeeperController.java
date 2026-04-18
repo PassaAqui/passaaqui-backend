@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/shopkeepers")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ROLE_ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN_USER', 'ADMIN_ROOT')")
 public class ShopkeeperController {
 
     private final ShopkeeperService service;

@@ -2,6 +2,7 @@ package com.passaaqui.backend.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.passaaqui.backend.modules.user.model.enums.UserRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -21,10 +22,7 @@ import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class SecurityFilter extends OncePerRequestFilter {
@@ -41,6 +39,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         if (token != null) {
             try {
                 SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+
                 Claims claims = Jwts.parser()
                         .verifyWith(key)
                         .build()
@@ -49,12 +48,31 @@ public class SecurityFilter extends OncePerRequestFilter {
 
                 String userId = claims.getSubject();
                 String role = claims.get("role", String.class);
+                String adminType = claims.get("adminType", String.class);
 
-                if (userId != null) {
-                    var authority = new SimpleGrantedAuthority("ROLE_" + role);
-                    var authentication = new UsernamePasswordAuthenticationToken(userId, null, Collections.singletonList(authority));
+                if (userId != null && role != null) {
+
+                    SimpleGrantedAuthority authority;
+
+                    if (UserRole.ADMIN.name().equals(role) && adminType != null) {
+                        authority = new SimpleGrantedAuthority(
+                                "ROLE_ADMIN_" + adminType
+                        );
+                    } else {
+                        authority = new SimpleGrantedAuthority(
+                                "ROLE_" + role
+                        );
+                    }
+
+                    var authentication = new UsernamePasswordAuthenticationToken(
+                            userId,
+                            null,
+                            Collections.singletonList(authority)
+                    );
+
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
+
             } catch (Exception e) {
                 SecurityContextHolder.clearContext();
                 sendErrorResponse(request, response);
@@ -83,7 +101,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         body.put("timestamp", LocalDateTime.now().toString());
         body.put("status", HttpServletResponse.SC_UNAUTHORIZED);
         body.put("error", "Unauthorized");
-        body.put("message", "Token inválido ou expirado.");
+        body.put("message", "Invalid or expired token.");
         body.put("path", request.getRequestURI());
 
         ObjectMapper mapper = new ObjectMapper();
