@@ -4,6 +4,7 @@ import com.passaaqui.backend.modules.admin.model.enums.AdminType;
 import com.passaaqui.backend.shared.validation.password.Password;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 public record RegisterAdminDTO(
         @Email
@@ -17,6 +18,6 @@ public record RegisterAdminDTO(
 
         @Password
         String confirm_password,
-        @NotBlank
+        @NotNull
         AdminType adminType
 ) {}

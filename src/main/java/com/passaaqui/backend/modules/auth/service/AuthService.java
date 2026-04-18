@@ -93,7 +93,7 @@ public class AuthService {
 
         String password_hash = passwordEncoder.encode(dto.password());
 
-        return adminService.createAdmin(dto.email(), dto.name(), password_hash);
+        return adminService.createAdmin(dto.email(), dto.name(), password_hash, dto.adminType());
     }
 
     public TouristModel registerAccountTourist(RegisterTouristDTO dto) {

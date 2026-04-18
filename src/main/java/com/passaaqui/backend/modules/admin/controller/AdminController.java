@@ -5,6 +5,7 @@ import com.passaaqui.backend.modules.admin.model.AdminModel;
 import com.passaaqui.backend.modules.admin.service.AdminService;
 import com.passaaqui.backend.modules.auth.dto.RegisterAdminDTO;
 import com.passaaqui.backend.modules.auth.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,7 +23,7 @@ public class AdminController {
     private final AuthService authService;
 
     @PostMapping
-    public ResponseEntity<AdminModel> create(@RequestBody RegisterAdminDTO dto) {
+    public ResponseEntity<AdminModel> create(@RequestBody @Valid RegisterAdminDTO dto) {
         return ResponseEntity.ok(authService.registerAccountAdmin(dto));
     }
 
@@ -43,15 +44,14 @@ public class AdminController {
 
     @PutMapping("/{id}")
     public ResponseEntity<AdminModel> update(@PathVariable Integer id,
-                                             @RequestBody UpdateAdminDTO dto) {
+                                             @RequestBody @Valid UpdateAdminDTO dto) {
         return ResponseEntity.ok(
                 adminService.updateAdmin(
                         id,
                         dto.email(),
                         dto.name(),
                         dto.password(),
-                        dto.adminType(),
-                        dto.role()
+                        dto.adminType()
                 )
         );
     }

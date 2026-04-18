@@ -6,6 +6,7 @@ import com.passaaqui.backend.modules.admin.model.enums.AdminType;
 import com.passaaqui.backend.modules.admin.model.AdminModel;
 import com.passaaqui.backend.modules.admin.repository.AdminRepository;
 import com.passaaqui.backend.modules.user.model.enums.UserRole;
+import com.passaaqui.backend.modules.user.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,14 +17,15 @@ import java.util.List;
 public class AdminService {
 
     private AdminRepository adminRepository;
+    private UserRepository userRepository;
 
-    public AdminModel createAdmin(String email, String name, String password) {
-        if (adminRepository.existsByEmail(email))
+    public AdminModel createAdmin(String email, String name, String password, AdminType adminType) {
+        if (userRepository.findByEmail(email).isPresent())
             throw new ConflictException("The administrator email is already in use.");
 
         AdminModel newAdmin = new AdminModel();
         newAdmin.setRole(UserRole.ADMIN);
-        newAdmin.setAdminType(AdminType.USER);
+        newAdmin.setAdminType(adminType);
         newAdmin.setEmail(email);
         newAdmin.setName(name);
         newAdmin.setPassword(password);
@@ -47,7 +49,7 @@ public class AdminService {
                 .orElseThrow(() -> new ResourceNotFoundException("Admin not found with email: " + email));
     }
 
-    public AdminModel updateAdmin(Integer id, String email, String name, String password, AdminType adminType, UserRole role) {
+    public AdminModel updateAdmin(Integer id, String email, String name, String password, AdminType adminType) {
         AdminModel admin = adminRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Admin not found with id: " + id));
 
@@ -55,7 +57,6 @@ public class AdminService {
         admin.setName(name);
         admin.setPassword(password);
         admin.setAdminType(adminType);
-        admin.setRole(role);
 
         return adminRepository.save(admin);
     }
