@@ -37,6 +37,14 @@ public class CityModel {
 
     private String mesoRegion;
 
+    private Double minLatitude;
+
+    private Double maxLatitude;
+
+    private Double minLongitude;
+
+    private Double maxLongitude;
+
     @Column(name = "state_name")
     private String stateName;
 

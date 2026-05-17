@@ -19,7 +19,7 @@ public class CityService {
     private final IbgeClient ibgeClient;
 
     @Transactional
-    public Mono<CityModel> createCity(String ibgeCode, String description) {
+    public Mono<CityModel> createCity(String ibgeCode, String description, Double minLatitude, Double maxLatitude, Double minLongitude, Double maxLongitude) {
         return ibgeClient.getCityByIbgeCode(ibgeCode).map(response -> {
             CityModel city = new CityModel();
 
@@ -55,6 +55,10 @@ public class CityService {
                     .getNome());
 
             city.setDescription(description);
+            city.setMinLatitude(minLatitude);
+            city.setMaxLatitude(maxLatitude);
+            city.setMinLongitude(minLongitude);
+            city.setMaxLongitude(maxLongitude);
 
             cityRepository.save(city);
 
@@ -76,6 +80,10 @@ public class CityService {
         city.setMesoRegion(dto.mesoRegion());
         city.setStateName(dto.stateName());
         city.setRegionCode(dto.regionCode());
+        city.setMinLatitude(dto.minLatitude());
+        city.setMaxLatitude(dto.maxLatitude());
+        city.setMinLongitude(dto.minLongitude());
+        city.setMaxLongitude(dto.maxLongitude());
 
         return cityRepository.save(city);
     }

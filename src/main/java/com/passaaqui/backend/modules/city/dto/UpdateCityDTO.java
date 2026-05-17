@@ -29,5 +29,13 @@ public record UpdateCityDTO(
         String stateName,
 
         @NotNull
-        Long regionCode
+        Long regionCode,
+
+        Double minLatitude,
+
+        Double maxLatitude,
+
+        Double minLongitude,
+
+        Double maxLongitude
 ) {}

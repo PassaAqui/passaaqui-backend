@@ -23,7 +23,7 @@ public class CityController {
 
     @PostMapping("/create")
     public Mono<ResponseEntity<CityModel>> createCity(@RequestBody @Valid CreateCityDTO dto) {
-        return cityService.createCity(dto.ibgeCode(), dto.description()).map(ResponseEntity::ok);
+        return cityService.createCity(dto.ibgeCode(), dto.description(), dto.minLatitude(), dto.maxLatitude(), dto.minLongitude(), dto.maxLongitude()).map(ResponseEntity::ok);
     }
 
     @PutMapping("/{id}")

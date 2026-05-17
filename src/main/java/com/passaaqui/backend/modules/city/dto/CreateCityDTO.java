@@ -7,5 +7,13 @@ public record CreateCityDTO (
         String ibgeCode,
 
         @NotBlank
-        String description
+        String description,
+
+        Double minLatitude,
+
+        Double maxLatitude,
+
+        Double minLongitude,
+
+        Double maxLongitude
 ) {}
