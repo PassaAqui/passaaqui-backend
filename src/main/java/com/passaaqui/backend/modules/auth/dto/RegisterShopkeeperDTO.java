@@ -28,7 +28,12 @@ public record RegisterShopkeeperDTO(
     String documentId,
 
     @NotNull
-    String companyName
+    String companyName,
+
+    String description,
+
+    @NotNull
+    Integer categoryId
 ) {
     
 }
