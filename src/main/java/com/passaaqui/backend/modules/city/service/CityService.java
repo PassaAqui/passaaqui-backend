@@ -7,7 +7,6 @@ import com.passaaqui.backend.modules.city.repository.CityRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -19,51 +18,51 @@ public class CityService {
     private final IbgeClient ibgeClient;
 
     @Transactional
-    public Mono<CityModel> createCity(String ibgeCode, String description, Double minLatitude, Double maxLatitude, Double minLongitude, Double maxLongitude) {
-        return ibgeClient.getCityByIbgeCode(ibgeCode).map(response -> {
-            CityModel city = new CityModel();
+    public CityModel createCity(String ibgeCode, String description, Double minLatitude, Double maxLatitude, Double minLongitude, Double maxLongitude) {
+        var response = ibgeClient.getCityByIbgeCode(ibgeCode);
 
-            city.setIbgeCode(response.getId().toString());
-            city.setName(response.getNome());
+        CityModel city = new CityModel();
 
-            city.setState(response.getMicrorregiao()
-                    .getMesorregiao()
-                    .getUF()
-                    .getSigla());
+        city.setIbgeCode(response.getId().toString());
+        city.setName(response.getNome());
 
-            city.setStateName(response.getMicrorregiao()
-                    .getMesorregiao()
-                    .getUF()
-                    .getNome());
+        city.setState(response.getMicrorregiao()
+                .getMesorregiao()
+                .getUF()
+                .getSigla());
 
-            city.setRegion(response.getMicrorregiao()
-                    .getMesorregiao()
-                    .getUF()
-                    .getRegiao()
-                    .getNome());
+        city.setStateName(response.getMicrorregiao()
+                .getMesorregiao()
+                .getUF()
+                .getNome());
 
-            city.setRegionCode(response.getMicrorregiao()
-                    .getMesorregiao()
-                    .getUF()
-                    .getRegiao()
-                    .getId());
+        city.setRegion(response.getMicrorregiao()
+                .getMesorregiao()
+                .getUF()
+                .getRegiao()
+                .getNome());
 
-            city.setMicroRegion(response.getMicrorregiao().getNome());
+        city.setRegionCode(response.getMicrorregiao()
+                .getMesorregiao()
+                .getUF()
+                .getRegiao()
+                .getId());
 
-            city.setMesoRegion(response.getMicrorregiao()
-                    .getMesorregiao()
-                    .getNome());
+        city.setMicroRegion(response.getMicrorregiao().getNome());
 
-            city.setDescription(description);
-            city.setMinLatitude(minLatitude);
-            city.setMaxLatitude(maxLatitude);
-            city.setMinLongitude(minLongitude);
-            city.setMaxLongitude(maxLongitude);
+        city.setMesoRegion(response.getMicrorregiao()
+                .getMesorregiao()
+                .getNome());
 
-            cityRepository.save(city);
+        city.setDescription(description);
+        city.setMinLatitude(minLatitude);
+        city.setMaxLatitude(maxLatitude);
+        city.setMinLongitude(minLongitude);
+        city.setMaxLongitude(maxLongitude);
 
-            return city;
-        });
+        cityRepository.save(city);
+
+        return city;
     }
 
     @Transactional
