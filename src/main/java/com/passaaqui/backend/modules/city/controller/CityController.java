@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -22,8 +21,8 @@ public class CityController {
     private final CityService cityService;
 
     @PostMapping("/create")
-    public Mono<ResponseEntity<CityModel>> createCity(@RequestBody @Valid CreateCityDTO dto) {
-        return cityService.createCity(dto.ibgeCode(), dto.description(), dto.minLatitude(), dto.maxLatitude(), dto.minLongitude(), dto.maxLongitude()).map(ResponseEntity::ok);
+    public ResponseEntity<CityModel> createCity(@RequestBody @Valid CreateCityDTO dto) {
+        return ResponseEntity.ok(cityService.createCity(dto.ibgeCode(), dto.description(), dto.minLatitude(), dto.maxLatitude(), dto.minLongitude(), dto.maxLongitude()));
     }
 
     @PutMapping("/{id}")
