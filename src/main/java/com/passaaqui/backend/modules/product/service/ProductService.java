@@ -78,6 +78,10 @@ public class ProductService {
         repository.delete(product);
     }
 
+    public List<ProductModel> findAll() {
+        return repository.findAll();
+    }
+
     public List<ProductModel> getRecentProducts() {
         return repository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 50)).getContent();
     }

@@ -11,6 +11,9 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 
 @Service
@@ -40,8 +43,8 @@ public class PoiService {
         return repository.save(poi);
     }
 
-    public List<PoiModel> findAll() {
-        return repository.findAll();
+    public Page<PoiModel> findAll(Pageable pageable) {
+        return repository.findAll(pageable);
     }
 
     public PoiModel findById(Integer id) {

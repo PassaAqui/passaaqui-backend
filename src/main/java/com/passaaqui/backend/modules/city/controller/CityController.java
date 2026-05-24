@@ -36,6 +36,11 @@ public class CityController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<CityModel> getById(@PathVariable Integer id) {
+        return ResponseEntity.ok(cityService.getCityById(id));
+    }
+
     @GetMapping()
     public ResponseEntity<List<CityModel>> getAll() {
         return ResponseEntity.ok(cityService.getAllCities());

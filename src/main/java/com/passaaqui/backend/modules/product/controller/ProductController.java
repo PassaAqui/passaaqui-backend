@@ -38,6 +38,11 @@ public class ProductController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping
+    public ResponseEntity<List<ProductModel>> findAll() {
+        return ResponseEntity.ok(service.findAll());
+    }
+
     @GetMapping("/recent")
     public ResponseEntity<List<ProductModel>> getRecentProducts() {
         return ResponseEntity.ok(service.getRecentProducts());

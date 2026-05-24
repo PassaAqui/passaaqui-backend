@@ -105,6 +105,7 @@ http://localhost:8080/api
 ### 🏙️ Cidades
 - [`POST /api/city/create`](#post-apicitycreate)
 - [`GET /api/city`](#get-apicity)
+- [`GET /api/city/{id}`](#get-apicityid)
 - [`PUT /api/city/{id}`](#put-apicityid)
 - [`DELETE /api/city/{id}`](#delete-apicityid)
 
@@ -126,6 +127,7 @@ http://localhost:8080/api
 
 ### 🛒 Produtos
 - [`POST /api/products`](#post-apiproducts)
+- [`GET /api/products`](#get-apiproducts)
 - [`GET /api/products/recent`](#get-apiproductsrecent)
 - [`GET /api/products/{id}`](#get-apiproductsid)
 - [`PUT /api/products/{id}`](#put-apiproductsid)
@@ -1339,6 +1341,61 @@ Lista **todas as cidades** cadastradas.
 
 ---
 
+### GET /api/city/{id}
+
+#### Descrição
+
+Retorna uma cidade específica por ID.
+
+#### Controller
+
+`CityController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID da cidade |
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "name": "São Paulo",
+  "description": "Capital do estado de São Paulo",
+  "state": "SP",
+  "ibgeCode": "3550308",
+  "region": "Sudeste",
+  "microRegion": "São Paulo",
+  "mesoRegion": "Metropolitana de São Paulo",
+  "stateName": "São Paulo",
+  "regionCode": 3,
+  "minLatitude": -23.6821,
+  "maxLatitude": -23.3620,
+  "minLongitude": -46.8259,
+  "maxLongitude": -46.3656,
+  "createdAt": "2026-05-24T12:00:00",
+  "updatedAt": "2026-05-24T12:00:00"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 404 | Cidade não encontrada |
+
+---
+
 ### PUT /api/city/{id}
 
 #### Descrição
@@ -1700,7 +1757,7 @@ Cria um novo **Ponto de Interesse**.
 
 #### Descrição
 
-Lista **todos os POIs** cadastrados, incluindo avaliação média.
+Lista **todos os POIs** cadastrados com **paginação**, incluindo avaliação média.
 
 #### Controller
 
@@ -1714,32 +1771,38 @@ Lista **todos os POIs** cadastrados, incluindo avaliação média.
 
 `TOURIST`, `SHOPKEEPER`, `ADMIN_USER` ou `ADMIN_ROOT`
 
+#### Query Params (paginação)
+
+| Parâmetro | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `page` | Integer | `0` | Número da página |
+| `size` | Integer | `20` | Tamanho da página |
+| `sort` | String | — | Campo para ordenação (ex: `name,asc`) |
+
 #### Response 200 (OK)
 
 ```json
-[
-  {
-    "id": 1,
-    "name": "Parque Ibirapuera",
-    "description": "Principal parque da cidade",
-    "xpReward": 50,
-    "latitude": -23.5874,
-    "longitude": -46.6576,
-    "minLatitude": null,
-    "maxLatitude": null,
-    "minLongitude": null,
-    "maxLongitude": null,
-    "city": {
+{
+  "content": [
+    {
       "id": 1,
-      "name": "São Paulo",
-      "state": "SP"
-    },
-    "averageRating": 4.5,
-    "ratingsCount": 10,
-    "createdAt": "2026-05-24T13:00:00",
-    "updatedAt": "2026-05-24T13:00:00"
-  }
-]
+      "name": "Parque Ibirapuera",
+      "description": "Principal parque da cidade",
+      "xpReward": 50,
+      "latitude": -23.5874,
+      "longitude": -46.6576,
+      "city": { "id": 1, "name": "São Paulo", "state": "SP" },
+      "averageRating": 4.5,
+      "ratingsCount": 10,
+      "createdAt": "2026-05-24T13:00:00",
+      "updatedAt": "2026-05-24T13:00:00"
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
 ```
 
 ---
@@ -1876,7 +1939,7 @@ Envia ou atualiza a **avaliação em estrelas** de um turista para um POI. Se o 
 
 #### Controller
 
-`PoiController`
+`PoiRatingController`
 
 #### Autenticação
 
@@ -1937,7 +2000,7 @@ Lista **todas as avaliações** de um POI específico.
 
 #### Controller
 
-`PoiController`
+`PoiRatingController`
 
 #### Autenticação
 
@@ -2044,6 +2107,44 @@ Cria um novo produto associado a um lojista e uma categoria.
   "createdAt": "2026-05-24T15:00:00",
   "updatedAt": "2026-05-24T15:00:00"
 }
+```
+
+---
+
+### GET /api/products
+
+#### Descrição
+
+Lista **todos os produtos** cadastrados.
+
+#### Controller
+
+`ProductController`
+
+#### Autenticação
+
+✅ Obrigatória (qualquer role)
+
+#### Permissões
+
+`TOURIST`, `SHOPKEEPER`, `ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Artesanato Local",
+    "description": "Peça feita à mão",
+    "price": 49.90,
+    "xpCost": 10,
+    "shopkeeper": { "id": 2, "name": "Maria Lojista" },
+    "category": { "id": 1, "name": "Alimentação" },
+    "createdAt": "2026-05-24T15:00:00",
+    "updatedAt": "2026-05-24T15:00:00"
+  }
+]
 ```
 
 ---
@@ -2204,91 +2305,18 @@ Remove um produto.
 
 ---
 
-## 📌 Observações Técnicas
-
-### 🔴 Inconsistências e Problemas Encontrados
-
-#### 1. `@PreAuthorize` incorreto em `UserController`
-
-**Arquivo:** `modules/user/controller/UserController.java:16`
-
-```java
-@PreAuthorize("hasRole('ROLE_ADMIN')")
-```
-
-O método `hasRole()` do Spring Security adiciona automaticamente o prefixo `ROLE_`, resultando na busca pela authority `ROLE_ROLE_ADMIN`. O `SecurityFilter` cria apenas as authorities `ROLE_ADMIN_USER` e `ROLE_ADMIN_ROOT`.
-
-**Impacto:** Os endpoints `GET /api/users` e `GET /api/users/{identifier}` são **inacessíveis** — nenhum usuário autenticado conseguirá acessá-los.
-
-**Correção sugerida:** Substituir por `hasAnyRole('ADMIN_USER', 'ADMIN_ROOT')` para alinhar com os demais controllers.
-
----
-
-#### 2. Campo `password` retornado em `UserModel`
-
-**Arquivo:** `modules/user/model/UserModel.java`
-
-O campo `password` não possui anotação `@JsonIgnore`. Embora a intenção seja que ele não seja serializado (herdado de `TouristModel`, `ShopkeeperModel` etc.), não há garantia explícita. Dependendo da configuração do Jackson/Hibernate, a senha **pode vazar** nas respostas.
-
-**Correção sugerida:** Adicionar `@JsonIgnore` no campo `password` da classe `UserModel`.
-
----
-
-#### 3. Rota `GET /api/products` inexistente
-
-Não há um endpoint para **listar todos os produtos** (apenas os 50 mais recentes em `/api/products/recent`). Para um controle administrativo, seria esperado um `GET /api/products` com paginação.
-
----
-
-#### 4. Rota `GET /api/pois` sem paginação
-
-O endpoint que lista todos os POIs retorna a lista completa sem suporte a paginação, o que pode se tornar problemático com muitos registros.
-
----
-
-#### 5. `PoiController` não possui `@RequestMapping` separado para ratings
-
-As rotas de rating (`/api/pois/{poiId}/ratings`) estão no mesmo controller dos POIs, o que é aceitável, mas poderia ser extraído para um `PoiRatingController` específico para melhor organização.
-
----
-
-#### 6. Ausência de `GET /api/city/{id}`
-
-O módulo de cidades possui CRUD (POST, PUT, DELETE, GET list), mas **não possui** um endpoint para buscar uma cidade por ID específico (`GET /api/city/{id}`).
-
----
-
-#### 7. Validação `@Password` permite string vazia
-
-No `PasswordValidator`, se a senha tiver comprimento 0, o método retorna `true` (válido). Isso permite que senhas vazias passem na validação em contextos onde o campo não é obrigatório (como em `UpdateTouristDTO` e `UpdateShopkeeperDTO`).
-
----
-
-### ✅ Pontos Positivos
-
-- Consistência na estrutura dos módulos (model → dto → repository → service → controller)
-- Uso de records para DTOs com validações Bean Validation
-- Tratamento global de exceções padronizado
-- Autenticação via cookies HttpOnly (seguro contra XSS)
-- Refresh token com rotação e hash armazenado
-- Unique constraint em `PoiRatingModel` para evitar avaliações duplicadas
-- Separação clara de responsabilidades com herança JOINED no modelo de usuários
-
----
-
 ### 📊 Resumo de Endpoints
 
 | Módulo | Endpoints | Públicos | Autenticados | Admin | Role Específica |
 |---|---|---|---|---|---|
 | Auth | 5 | 5 | — | — | — |
-| Users | 2 | — | — | 2* | — |
+| Users | 2 | — | — | 2 | ADMIN_USER/ROOT |
 | Admin | 6 | — | — | 6 | ADMIN_ROOT |
 | Tourists | 4 | — | — | 4 | ADMIN_USER/ROOT |
 | Shopkeepers | 4 | — | — | 4 | ADMIN_USER/ROOT |
-| Cities | 4 | — | — | 4 | ADMIN_USER/ROOT |
+| Cities | 5 | — | — | 5 | ADMIN_USER/ROOT |
 | Categories | 5 | — | — | 5 | ADMIN_USER/ROOT |
-| POIs | 7 | — | 3 | 3 | TOURIST (ratings) |
-| Products | 5 | — | 2 | — | SHOPKEEPER |
-| **Total** | **42** | **5** | **5** | **28** | **4** |
-
-> * Endpoints de usuários estão com `@PreAuthorize` incorreto, tornando-os inacessíveis.
+| POIs | 5 | — | 2 | 3 | — |
+| POI Ratings | 2 | — | 1 | — | TOURIST |
+| Products | 6 | — | 3 | — | SHOPKEEPER |
+| **Total** | **44** | **5** | **6** | **29** | **4** |
