@@ -1,8 +1,9 @@
+version: '3.9'
+
 services:
   postgres:
-    image: postgres
+    image: postgres:16
     container_name: passaaqui_postgres
-
     restart: always
 
     environment:
@@ -12,4 +13,33 @@ services:
 
     ports:
       - "5432:5432"
-  # jdbc:postgresql://localhost:5432/passaaqui?user=postgres&password=postgres
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: .
+    container_name: passaaqui_backend
+    restart: always
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/passaaqui
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_SECRET: WIT7xsOCEKXtRi3mQA1ZMsOc5wMODgTXimEvVbbNBNm
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
