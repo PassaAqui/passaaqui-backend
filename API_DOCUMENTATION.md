@@ -1,0 +1,2294 @@
+# Passa Aqui — API Documentation
+
+## 📋 Introdução
+
+### Objetivo
+
+API REST do **Passa Aqui**, plataforma que conecta turistas a pontos de interesse (POIs) e comércios locais. Permite que turistas naveguem por POIs, avaliem locais, acumulem XP e resgatem produtos; lojistas cadastrem seus produtos; e administradores gerenciem toda a plataforma.
+
+### Tecnologias
+
+| Tecnologia | Versão |
+|---|---|
+| Java | 21 |
+| Spring Boot | 4.0.5 |
+| Spring Security | 6.x |
+| Spring Data JPA / Hibernate | — |
+| PostgreSQL | — |
+| JWT (jjwt 0.13.0) | — |
+| Maven | — |
+
+### Autenticação
+
+- **JWT** armazenado em cookies **HttpOnly** (`access_token` e `refresh_token`)
+- `access_token`: expira em **15 minutos**
+- `refresh_token`: expira em **7 dias**
+- O token JWT contém as claims: `sub` (user ID), `role`, `deviceId` e `adminType` (apenas para admins)
+- Para acessar endpoints protegidos, o cookie `access_token` é enviado automaticamente pelo navegador
+- Para refresh, o cookie `refresh_token` é lido no endpoint `/api/auth/refresh`
+
+### URL Base
+
+```
+http://localhost:8080/api
+```
+
+> A URL base completa depende do ambiente. Todos os endpoints abaixo assumem o prefixo `/api`.
+
+### Formato das Respostas
+
+**Sucesso:** O corpo da resposta contém diretamente o objeto/lista JSON da entidade.
+
+**Erro (tratado globalmente):**
+```json
+{
+  "timestamp": "2026-05-24T10:30:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Descrição do erro",
+  "path": "/api/exemplo"
+}
+```
+
+### Códigos de Erro Padrão
+
+| Status | Significado |
+|---|---|
+| 400 | Bad Request — validação de campos ou requisição inválida |
+| 401 | Unauthorized — token ausente, inválido ou expirado |
+| 403 | Forbidden — role sem permissão para o recurso |
+| 404 | Not Found — recurso não encontrado |
+| 409 | Conflict — conflito (e.g., e-mail duplicado) |
+
+### Convenções
+
+- **Identificador de usuário:** endpoints que aceitam `{identifier}` permitem ID (Integer) ou e-mail (String com `@`)
+- **Roles:** `TOURIST`, `SHOPKEEPER`, `ADMIN` (com subtipos `ADMIN_USER` e `ADMIN_ROOT`)
+- **Datas:** formato ISO 8601 (`yyyy-MM-dd'T'HH:mm:ss`)
+- **IDs:** gerados automaticamente pelo banco (Integer)
+
+---
+
+## 📑 Sumário
+
+### 🔐 Autenticação
+- [`POST /api/auth/register/tourist`](#post-apiauthregistertourist)
+- [`POST /api/auth/register/shopkeeper`](#post-apiauthregistershopkeeper)
+- [`POST /api/auth/login`](#post-apiauthlogin)
+- [`GET /api/auth/refresh`](#get-apiauthrefresh)
+- [`GET /api/auth/logout`](#get-apiauthlogout)
+
+### 👤 Usuários
+- [`GET /api/users`](#get-apiusers)
+- [`GET /api/users/{identifier}`](#get-apiusersidentifier)
+
+### 🛡️ Administradores
+- [`POST /api/admin`](#post-apiadmin)
+- [`GET /api/admin`](#get-apiadmin)
+- [`GET /api/admin/{id}`](#get-apiadminid)
+- [`GET /api/admin/email`](#get-apiadminemail)
+- [`PUT /api/admin/{id}`](#put-apiadminid)
+- [`DELETE /api/admin/{id}`](#delete-apiadminid)
+
+### 🏖️ Turistas
+- [`GET /api/tourists`](#get-apitourists)
+- [`GET /api/tourists/{identifier}`](#get-apitouristsidentifier)
+- [`PUT /api/tourists/{identifier}`](#put-apitouristsidentifier)
+- [`DELETE /api/tourists/{identifier}`](#delete-apitouristsidentifier)
+
+### 🏪 Lojistas
+- [`GET /api/shopkeepers`](#get-apishopkeepers)
+- [`GET /api/shopkeepers/{identifier}`](#get-apishopkeepersidentifier)
+- [`PUT /api/shopkeepers/{identifier}`](#put-apishopkeepersidentifier)
+- [`DELETE /api/shopkeepers/{identifier}`](#delete-apishopkeepersidentifier)
+
+### 🏙️ Cidades
+- [`POST /api/city/create`](#post-apicitycreate)
+- [`GET /api/city`](#get-apicity)
+- [`PUT /api/city/{id}`](#put-apicityid)
+- [`DELETE /api/city/{id}`](#delete-apicityid)
+
+### 📂 Categorias
+- [`POST /api/categories`](#post-apicategories)
+- [`GET /api/categories`](#get-apicategories)
+- [`GET /api/categories/{id}`](#get-apicategoriesid)
+- [`PUT /api/categories/{id}`](#put-apicategoriesid)
+- [`DELETE /api/categories/{id}`](#delete-apicategoriesid)
+
+### 📍 Pontos de Interesse (POIs)
+- [`POST /api/pois`](#post-appois)
+- [`GET /api/pois`](#get-appois)
+- [`GET /api/pois/{id}`](#get-appoisid)
+- [`PUT /api/pois/{id}`](#put-appoisid)
+- [`DELETE /api/pois/{id}`](#delete-appoisid)
+- [`POST /api/pois/{poiId}/ratings`](#post-appoispoidratings)
+- [`GET /api/pois/{poiId}/ratings`](#get-appoispoidratings)
+
+### 🛒 Produtos
+- [`POST /api/products`](#post-apiproducts)
+- [`GET /api/products/recent`](#get-apiproductsrecent)
+- [`GET /api/products/{id}`](#get-apiproductsid)
+- [`PUT /api/products/{id}`](#put-apiproductsid)
+- [`DELETE /api/products/{id}`](#delete-apiproductsid)
+
+---
+
+## 🔐 Autenticação
+
+### POST /api/auth/register/tourist
+
+#### Descrição
+
+Registra uma nova conta de **turista** na plataforma.
+
+#### Controller
+
+`AuthController`
+
+#### Autenticação
+
+❌ **Pública** — não exige token
+
+#### Permissões
+
+Nenhuma (público)
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Content-Type | Sim | `application/json` |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| email | String | Sim | E-mail válido |
+| name | String | Sim | Não vazio |
+| password | String | Sim | 8-16 caracteres, ao menos 1 letra, 1 número, 1 caractere especial |
+| confirm_password | String | Sim | Deve ser igual a `password` |
+| documentId | String | Sim | 11-14 caracteres, deve ser CPF ou CNPJ válido |
+
+**Exemplo:**
+
+```json
+{
+  "email": "turista@email.com",
+  "name": "João Turista",
+  "password": "Senha@123",
+  "confirm_password": "Senha@123",
+  "documentId": "12345678909"
+}
+```
+
+#### Response 201 (Created)
+
+Retorna o objeto `TouristModel` criado.
+
+```json
+{
+  "id": 1,
+  "email": "turista@email.com",
+  "name": "João Turista",
+  "role": "TOURIST",
+  "createdAt": "2026-05-24T10:00:00",
+  "updatedAt": "2026-05-24T10:00:00",
+  "deviceId": null,
+  "documentId": "12345678909",
+  "lastKnownLocation": null,
+  "currentXP": 0,
+  "level": 0
+}
+```
+
+> ⚠️ O campo `password` nunca é retornado nas respostas (é ignorado pelo serializador).
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Dados inválidos (e-mail, senha, documento) |
+| 400 | `password` e `confirm_password` não conferem |
+| 409 | E-mail já cadastrado |
+
+---
+
+### POST /api/auth/register/shopkeeper
+
+#### Descrição
+
+Registra uma nova conta de **lojista** na plataforma.
+
+#### Controller
+
+`AuthController`
+
+#### Autenticação
+
+❌ **Pública**
+
+#### Permissões
+
+Nenhuma (público)
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Content-Type | Sim | `application/json` |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| email | String | Sim | E-mail válido |
+| name | String | Sim | Não vazio |
+| password | String | Sim | 8-16 caracteres, ao menos 1 letra, 1 número, 1 caractere especial |
+| confirm_password | String | Sim | Deve ser igual a `password` |
+| documentId | String | Sim | 14-18 caracteres, CPF ou CNPJ válido |
+| companyName | String | Sim | Não vazio |
+| description | String | Não | — |
+| categoryId | Integer | Sim | ID de categoria existente |
+
+**Exemplo:**
+
+```json
+{
+  "email": "lojista@email.com",
+  "name": "Maria Lojista",
+  "password": "Senha@123",
+  "confirm_password": "Senha@123",
+  "documentId": "11222333000181",
+  "companyName": "Maria's Comércio",
+  "description": "Loja de artesanato local",
+  "categoryId": 1
+}
+```
+
+#### Response 201 (Created)
+
+Retorna o objeto `ShopkeeperModel` criado.
+
+```json
+{
+  "id": 2,
+  "email": "lojista@email.com",
+  "name": "Maria Lojista",
+  "role": "SHOPKEEPER",
+  "createdAt": "2026-05-24T10:01:00",
+  "updatedAt": "2026-05-24T10:01:00",
+  "documentId": "11222333000181",
+  "companyName": "Maria's Comércio",
+  "description": "Loja de artesanato local",
+  "category": {
+    "id": 1,
+    "name": "Alimentação",
+    "description": "Restaurantes, lanchonetes e food trucks"
+  }
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Dados inválidos |
+| 400 | `password` e `confirm_password` não conferem |
+| 404 | `categoryId` não encontrado |
+| 409 | E-mail já cadastrado |
+
+---
+
+### POST /api/auth/login
+
+#### Descrição
+
+Realiza o login e retorna tokens JWT nos cookies `access_token` e `refresh_token`.
+
+#### Controller
+
+`AuthController`
+
+#### Autenticação
+
+❌ **Pública**
+
+#### Permissões
+
+Nenhuma (público)
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Content-Type | Sim | `application/json` |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| email | String | Sim | E-mail válido |
+| password | String | Sim | Não vazio |
+
+**Exemplo:**
+
+```json
+{
+  "email": "turista@email.com",
+  "password": "Senha@123"
+}
+```
+
+#### Response 200 (OK)
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiJ9..."
+}
+```
+
+**Cookies definidos:**
+
+| Cookie | Valor | HttpOnly | Path | MaxAge |
+|---|---|---|---|---|
+| `access_token` | JWT | Sim | `/` | 900s (15 min) |
+| `refresh_token` | JWT | Sim | `/` | 604800s (7 dias) |
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Credenciais inválidas (e-mail ou senha incorretos) |
+
+---
+
+### GET /api/auth/refresh
+
+#### Descrição
+
+Renova o `access_token` usando o `refresh_token` armazenado no cookie.
+
+#### Controller
+
+`AuthController`
+
+#### Autenticação
+
+❌ **Pública** (usa o cookie `refresh_token`)
+
+#### Permissões
+
+Nenhuma (baseada no token de refresh)
+
+#### Cookies Necessários
+
+| Cookie | Obrigatório | Descrição |
+|---|---|---|
+| `refresh_token` | Sim | Token de refresh JWT |
+
+#### Response 200 (OK)
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiJ9..."
+}
+```
+
+**Cookies redefinidos:** mesmos nomes e parâmetros do login.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Cookie `refresh_token` ausente, inválido ou expirado |
+| 400 | Sessão revogada |
+
+---
+
+### GET /api/auth/logout
+
+#### Descrição
+
+Revoga a sessão atual e limpa os cookies de autenticação.
+
+#### Controller
+
+`AuthController`
+
+#### Autenticação
+
+❌ **Pública** (usa o cookie `refresh_token`)
+
+#### Cookies Necessários
+
+| Cookie | Obrigatório | Descrição |
+|---|---|---|
+| `refresh_token` | Sim | Token de refresh da sessão a ser revogada |
+
+#### Response 200 (OK)
+
+Corpo vazio. Cookies `access_token` e `refresh_token` são limpos (MaxAge = 0).
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Token com formato inválido |
+
+---
+
+## 👤 Usuários
+
+### GET /api/users
+
+#### Descrição
+
+Retorna a lista de **todos os usuários** cadastrados (tourists, shopkeepers e admins).
+
+#### Controller
+
+`UserController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+A classe `UserController` possui `@PreAuthorize("hasRole('ROLE_ADMIN')")` — entretanto, o `SecurityFilter` nunca cria uma authority com o nome `ROLE_ROLE_ADMIN` (apenas `ROLE_ADMIN_USER` ou `ROLE_ADMIN_ROOT`). Isso torna este endpoint **inacessível** na prática (veja [Observações Técnicas](#-observações-técnicas)).
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Cookie | Sim | `access_token=<JWT>` |
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": 1,
+    "email": "turista@email.com",
+    "name": "João Turista",
+    "role": "TOURIST",
+    "createdAt": "2026-05-24T10:00:00",
+    "updatedAt": "2026-05-24T10:00:00"
+  },
+  {
+    "id": 2,
+    "email": "lojista@email.com",
+    "name": "Maria Lojista",
+    "role": "SHOPKEEPER",
+    "createdAt": "2026-05-24T10:01:00",
+    "updatedAt": "2026-05-24T10:01:00"
+  }
+]
+```
+
+> ⚠️ O campo `password` é ignorado na serialização. O campo `authSessions` (lista de sessões) possui `@JsonIgnore`.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+
+---
+
+### GET /api/users/{identifier}
+
+#### Descrição
+
+Retorna um usuário específico por **ID** ou **e-mail**.
+
+#### Controller
+
+`UserController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Mesmo problema do endpoint anterior — `@PreAuthorize("hasRole('ROLE_ADMIN')")` nunca corresponde a uma authority real.
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `identifier` | String | ID (Integer) ou e-mail do usuário |
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "email": "turista@email.com",
+  "name": "João Turista",
+  "role": "TOURIST",
+  "createdAt": "2026-05-24T10:00:00",
+  "updatedAt": "2026-05-24T10:00:00"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Formato do `identifier` inválido |
+| 401 | Token ausente ou inválido |
+| 404 | Usuário não encontrado |
+
+---
+
+## 🛡️ Administradores
+
+### POST /api/admin
+
+#### Descrição
+
+Cria um novo **administrador** na plataforma.
+
+#### Controller
+
+`AdminController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_ROOT`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Cookie | Sim | `access_token=<JWT>` |
+| Content-Type | Sim | `application/json` |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| email | String | Sim | E-mail válido |
+| name | String | Sim | Não vazio |
+| password | String | Sim | Deve seguir regra de senha (8-16 chars, letra+número+especial) |
+| confirm_password | String | Sim | Deve ser igual a `password` |
+| adminType | String (enum) | Sim | `USER` ou `ROOT` |
+
+**Exemplo:**
+
+```json
+{
+  "email": "admin@email.com",
+  "name": "Admin Root",
+  "password": "Admin@123",
+  "confirm_password": "Admin@123",
+  "adminType": "ROOT"
+}
+```
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 3,
+  "email": "admin@email.com",
+  "name": "Admin Root",
+  "role": "ADMIN",
+  "adminType": "ROOT",
+  "createdAt": "2026-05-24T11:00:00",
+  "updatedAt": "2026-05-24T11:00:00"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Dados inválidos ou senhas não conferem |
+| 409 | E-mail já em uso |
+
+---
+
+### GET /api/admin
+
+#### Descrição
+
+Lista **todos os administradores** cadastrados.
+
+#### Controller
+
+`AdminController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_ROOT`
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": 3,
+    "email": "admin@email.com",
+    "name": "Admin Root",
+    "role": "ADMIN",
+    "adminType": "ROOT",
+    "createdAt": "2026-05-24T11:00:00",
+    "updatedAt": "2026-05-24T11:00:00"
+  }
+]
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Usuário não é ADMIN_ROOT |
+
+---
+
+### GET /api/admin/{id}
+
+#### Descrição
+
+Retorna um administrador específico por **ID**.
+
+#### Controller
+
+`AdminController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do administrador |
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 3,
+  "email": "admin@email.com",
+  "name": "Admin Root",
+  "role": "ADMIN",
+  "adminType": "ROOT",
+  "createdAt": "2026-05-24T11:00:00",
+  "updatedAt": "2026-05-24T11:00:00"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Usuário não é ADMIN_ROOT |
+| 404 | Admin não encontrado |
+
+---
+
+### GET /api/admin/email
+
+#### Descrição
+
+Retorna um administrador por **e-mail**.
+
+#### Controller
+
+`AdminController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_ROOT`
+
+#### Query Params
+
+| Parâmetro | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `email` | String | Sim | E-mail do administrador |
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 3,
+  "email": "admin@email.com",
+  "name": "Admin Root",
+  "role": "ADMIN",
+  "adminType": "ROOT",
+  "createdAt": "2026-05-24T11:00:00",
+  "updatedAt": "2026-05-24T11:00:00"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Parâmetro `email` ausente |
+| 401 | Token ausente ou inválido |
+| 403 | Usuário não é ADMIN_ROOT |
+| 404 | Admin não encontrado |
+
+---
+
+### PUT /api/admin/{id}
+
+#### Descrição
+
+Atualiza os dados de um administrador.
+
+#### Controller
+
+`AdminController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do administrador |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| email | String | Sim | E-mail válido |
+| name | String | Sim | Não vazio |
+| password | String | Sim | Deve seguir regra de senha |
+| adminType | String (enum) | Sim | `USER` ou `ROOT` |
+
+**Exemplo:**
+
+```json
+{
+  "email": "admin.novo@email.com",
+  "name": "Admin Atualizado",
+  "password": "Nova@Senha1",
+  "adminType": "USER"
+}
+```
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 3,
+  "email": "admin.novo@email.com",
+  "name": "Admin Atualizado",
+  "role": "ADMIN",
+  "adminType": "USER",
+  "createdAt": "2026-05-24T11:00:00",
+  "updatedAt": "2026-05-24T11:05:00"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Dados inválidos |
+| 401 | Token ausente ou inválido |
+| 403 | Usuário não é ADMIN_ROOT |
+| 404 | Admin não encontrado |
+
+---
+
+### DELETE /api/admin/{id}
+
+#### Descrição
+
+Remove um administrador da plataforma.
+
+#### Controller
+
+`AdminController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do administrador |
+
+#### Response 204 (No Content)
+
+Corpo vazio.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Usuário não é ADMIN_ROOT |
+| 404 | Admin não encontrado |
+
+---
+
+## 🏖️ Turistas
+
+### GET /api/tourists
+
+#### Descrição
+
+Lista **todos os turistas** cadastrados.
+
+#### Controller
+
+`TouristController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Cookie | Sim | `access_token=<JWT>` |
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": 1,
+    "email": "turista@email.com",
+    "name": "João Turista",
+    "role": "TOURIST",
+    "createdAt": "2026-05-24T10:00:00",
+    "updatedAt": "2026-05-24T10:00:00",
+    "deviceId": null,
+    "documentId": "12345678909",
+    "lastKnownLocation": null,
+    "currentXP": 0,
+    "level": 0
+  }
+]
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é ADMIN_USER ou ADMIN_ROOT |
+
+---
+
+### GET /api/tourists/{identifier}
+
+#### Descrição
+
+Retorna um turista por **ID** ou **e-mail**.
+
+#### Controller
+
+`TouristController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `identifier` | String | ID ou e-mail |
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "email": "turista@email.com",
+  "name": "João Turista",
+  "role": "TOURIST",
+  "createdAt": "2026-05-24T10:00:00",
+  "updatedAt": "2026-05-24T10:00:00",
+  "deviceId": null,
+  "documentId": "12345678909",
+  "lastKnownLocation": null,
+  "currentXP": 0,
+  "level": 0
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Formato do `identifier` inválido |
+| 401 | Token ausente ou inválido |
+| 403 | Role não autorizada |
+| 404 | Turista não encontrado |
+
+---
+
+### PUT /api/tourists/{identifier}
+
+#### Descrição
+
+Atualiza dados de um turista.
+
+#### Controller
+
+`TouristController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `identifier` | String | ID ou e-mail |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| name | String | Sim | Não vazio |
+| password | String | Não | Se preenchido, deve seguir a regra de senha |
+| documentId | String | Sim | Não vazio |
+
+**Exemplo:**
+
+```json
+{
+  "name": "João Atualizado",
+  "password": "Nova@Senha1",
+  "documentId": "98765432100"
+}
+```
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "email": "turista@email.com",
+  "name": "João Atualizado",
+  "role": "TOURIST",
+  "createdAt": "2026-05-24T10:00:00",
+  "updatedAt": "2026-05-24T12:00:00",
+  "documentId": "98765432100",
+  "currentXP": 0,
+  "level": 0
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Dados inválidos |
+| 401 | Token ausente ou inválido |
+| 403 | Role não autorizada |
+| 404 | Turista não encontrado |
+
+---
+
+### DELETE /api/tourists/{identifier}
+
+#### Descrição
+
+Remove um turista da plataforma.
+
+#### Controller
+
+`TouristController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `identifier` | String | ID ou e-mail |
+
+#### Response 204 (No Content)
+
+Corpo vazio.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não autorizada |
+| 404 | Turista não encontrado |
+
+---
+
+## 🏪 Lojistas
+
+### GET /api/shopkeepers
+
+#### Descrição
+
+Lista **todos os lojistas** cadastrados.
+
+#### Controller
+
+`ShopkeeperController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": 2,
+    "email": "lojista@email.com",
+    "name": "Maria Lojista",
+    "role": "SHOPKEEPER",
+    "createdAt": "2026-05-24T10:01:00",
+    "updatedAt": "2026-05-24T10:01:00",
+    "documentId": "11222333000181",
+    "companyName": "Maria's Comércio",
+    "description": "Loja de artesanato local",
+    "category": {
+      "id": 1,
+      "name": "Alimentação",
+      "description": "Restaurantes, lanchonetes e food trucks"
+    }
+  }
+]
+```
+
+---
+
+### GET /api/shopkeepers/{identifier}
+
+#### Descrição
+
+Retorna um lojista por **ID** ou **e-mail**.
+
+#### Controller
+
+`ShopkeeperController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `identifier` | String | ID ou e-mail |
+
+---
+
+### PUT /api/shopkeepers/{identifier}
+
+#### Descrição
+
+Atualiza dados de um lojista.
+
+#### Controller
+
+`ShopkeeperController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `identifier` | String | ID ou e-mail |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| name | String | Não | — |
+| password | String | Não | Se preenchido, deve seguir a regra de senha |
+| documentId | String | Não | — |
+| companyName | String | Não | — |
+| description | String | Não | — |
+| categoryId | Integer | Não | Deve ser um ID de categoria existente |
+
+**Exemplo:**
+
+```json
+{
+  "name": "Maria Atualizada",
+  "companyName": "Novo Comércio",
+  "categoryId": 2
+}
+```
+
+---
+
+### DELETE /api/shopkeepers/{identifier}
+
+#### Descrição
+
+Remove um lojista da plataforma.
+
+#### Controller
+
+`ShopkeeperController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `identifier` | String | ID ou e-mail |
+
+#### Response 204 (No Content)
+
+---
+
+## 🏙️ Cidades
+
+### POST /api/city/create
+
+#### Descrição
+
+Cria uma nova cidade. Os dados geográficos (nome, estado, região) são enriquecidos automaticamente via **API externa do IBGE** usando o `ibgeCode`.
+
+#### Controller
+
+`CityController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| ibgeCode | String | Sim | Código IBGE da cidade |
+| description | String | Sim | Não vazio |
+| minLatitude | Double | Não | — |
+| maxLatitude | Double | Não | — |
+| minLongitude | Double | Não | — |
+| maxLongitude | Double | Não | — |
+
+**Exemplo:**
+
+```json
+{
+  "ibgeCode": "3550308",
+  "description": "Capital do estado de São Paulo",
+  "minLatitude": -23.6821,
+  "maxLatitude": -23.3620,
+  "minLongitude": -46.8259,
+  "maxLongitude": -46.3656
+}
+```
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "name": "São Paulo",
+  "description": "Capital do estado de São Paulo",
+  "state": "SP",
+  "ibgeCode": "3550308",
+  "region": "Sudeste",
+  "microRegion": "São Paulo",
+  "mesoRegion": "Metropolitana de São Paulo",
+  "stateName": "São Paulo",
+  "regionCode": 3,
+  "minLatitude": -23.6821,
+  "maxLatitude": -23.3620,
+  "minLongitude": -46.8259,
+  "maxLongitude": -46.3656,
+  "createdAt": "2026-05-24T12:00:00",
+  "updatedAt": "2026-05-24T12:00:00"
+}
+```
+
+---
+
+### GET /api/city
+
+#### Descrição
+
+Lista **todas as cidades** cadastradas.
+
+#### Controller
+
+`CityController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": 1,
+    "name": "São Paulo",
+    "description": "Capital do estado de São Paulo",
+    "state": "SP",
+    "ibgeCode": "3550308",
+    "region": "Sudeste",
+    "microRegion": "São Paulo",
+    "mesoRegion": "Metropolitana de São Paulo",
+    "stateName": "São Paulo",
+    "regionCode": 3,
+    "minLatitude": -23.6821,
+    "maxLatitude": -23.3620,
+    "minLongitude": -46.8259,
+    "maxLongitude": -46.3656,
+    "createdAt": "2026-05-24T12:00:00",
+    "updatedAt": "2026-05-24T12:00:00"
+  }
+]
+```
+
+---
+
+### PUT /api/city/{id}
+
+#### Descrição
+
+Atualiza os dados de uma cidade.
+
+#### Controller
+
+`CityController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID da cidade |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| name | String | Sim | Não vazio |
+| description | String | Sim | Não vazio |
+| state | String | Sim | Não vazio |
+| ibgeCode | String | Sim | Não vazio |
+| region | String | Sim | Não vazio |
+| microRegion | String | Sim | Não vazio |
+| mesoRegion | String | Sim | Não vazio |
+| stateName | String | Sim | Não vazio |
+| regionCode | Long | Sim | Não nulo |
+| minLatitude | Double | Não | — |
+| maxLatitude | Double | Não | — |
+| minLongitude | Double | Não | — |
+| maxLongitude | Double | Não | — |
+
+**Exemplo:**
+
+```json
+{
+  "name": "São Paulo",
+  "description": "Atualização da descrição",
+  "state": "SP",
+  "ibgeCode": "3550308",
+  "region": "Sudeste",
+  "microRegion": "São Paulo",
+  "mesoRegion": "Metropolitana de São Paulo",
+  "stateName": "São Paulo",
+  "regionCode": 3,
+  "maxLatitude": -23.3000
+}
+```
+
+---
+
+### DELETE /api/city/{id}
+
+#### Descrição
+
+Remove uma cidade cadastrada.
+
+#### Controller
+
+`CityController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID da cidade |
+
+#### Response 204 (No Content)
+
+---
+
+## 📂 Categorias
+
+### POST /api/categories
+
+#### Descrição
+
+Cria uma nova categoria.
+
+#### Controller
+
+`CategoryController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| name | String | Sim | Não vazio |
+| description | String | Não | — |
+
+**Exemplo:**
+
+```json
+{
+  "name": "Padaria",
+  "description": "Padarias e confeitarias"
+}
+```
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 4,
+  "name": "Padaria",
+  "description": "Padarias e confeitarias"
+}
+```
+
+> ⚠️ As categorias comuns já são **semeadas automaticamente** na inicialização da aplicação via `@PostConstruct`: Alimentação, Mercado, Farmácia, Padaria, Pet Shop, Academia, Beleza, Oficina.
+
+---
+
+### GET /api/categories
+
+#### Descrição
+
+Lista **todas as categorias** cadastradas.
+
+#### Controller
+
+`CategoryController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Alimentação",
+    "description": "Restaurantes, lanchonetes e food trucks"
+  },
+  {
+    "id": 2,
+    "name": "Mercado",
+    "description": "Supermercados, hortifrútis e açougues"
+  }
+]
+```
+
+---
+
+### GET /api/categories/{id}
+
+#### Descrição
+
+Retorna uma categoria por ID.
+
+#### Controller
+
+`CategoryController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID da categoria |
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "name": "Alimentação",
+  "description": "Restaurantes, lanchonetes e food trucks"
+}
+```
+
+---
+
+### PUT /api/categories/{id}
+
+#### Descrição
+
+Atualiza uma categoria.
+
+#### Controller
+
+`CategoryController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID da categoria |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| name | String | Não | — |
+| description | String | Não | — |
+
+**Exemplo:**
+
+```json
+{
+  "name": "Padaria & Confeitaria"
+}
+```
+
+---
+
+### DELETE /api/categories/{id}
+
+#### Descrição
+
+Remove uma categoria.
+
+#### Controller
+
+`CategoryController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID da categoria |
+
+#### Response 204 (No Content)
+
+---
+
+## 📍 Pontos de Interesse (POIs)
+
+### POST /api/pois
+
+#### Descrição
+
+Cria um novo **Ponto de Interesse**.
+
+#### Controller
+
+`PoiController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| name | String | Sim | Não vazio |
+| description | String | Não | — |
+| xpReward | Integer | Não | `>= 0` |
+| latitude | Double | Não | — |
+| longitude | Double | Não | — |
+| minLatitude | Double | Não | — |
+| maxLatitude | Double | Não | — |
+| minLongitude | Double | Não | — |
+| maxLongitude | Double | Não | — |
+| cityId | Integer | Sim | ID de cidade existente |
+
+**Exemplo:**
+
+```json
+{
+  "name": "Parque Ibirapuera",
+  "description": "Principal parque da cidade",
+  "xpReward": 50,
+  "latitude": -23.5874,
+  "longitude": -46.6576,
+  "cityId": 1
+}
+```
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "name": "Parque Ibirapuera",
+  "description": "Principal parque da cidade",
+  "xpReward": 50,
+  "latitude": -23.5874,
+  "longitude": -46.6576,
+  "minLatitude": null,
+  "maxLatitude": null,
+  "minLongitude": null,
+  "maxLongitude": null,
+  "city": {
+    "id": 1,
+    "name": "São Paulo",
+    "state": "SP"
+  },
+  "averageRating": null,
+  "ratingsCount": null,
+  "createdAt": "2026-05-24T13:00:00",
+  "updatedAt": "2026-05-24T13:00:00"
+}
+```
+
+---
+
+### GET /api/pois
+
+#### Descrição
+
+Lista **todos os POIs** cadastrados, incluindo avaliação média.
+
+#### Controller
+
+`PoiController`
+
+#### Autenticação
+
+✅ Obrigatória (qualquer role autenticada)
+
+#### Permissões
+
+`TOURIST`, `SHOPKEEPER`, `ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Parque Ibirapuera",
+    "description": "Principal parque da cidade",
+    "xpReward": 50,
+    "latitude": -23.5874,
+    "longitude": -46.6576,
+    "minLatitude": null,
+    "maxLatitude": null,
+    "minLongitude": null,
+    "maxLongitude": null,
+    "city": {
+      "id": 1,
+      "name": "São Paulo",
+      "state": "SP"
+    },
+    "averageRating": 4.5,
+    "ratingsCount": 10,
+    "createdAt": "2026-05-24T13:00:00",
+    "updatedAt": "2026-05-24T13:00:00"
+  }
+]
+```
+
+---
+
+### GET /api/pois/{id}
+
+#### Descrição
+
+Retorna um POI específico por ID, incluindo avaliação média.
+
+#### Controller
+
+`PoiController`
+
+#### Autenticação
+
+✅ Obrigatória (qualquer role)
+
+#### Permissões
+
+`TOURIST`, `SHOPKEEPER`, `ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do POI |
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "name": "Parque Ibirapuera",
+  "description": "Principal parque da cidade",
+  "xpReward": 50,
+  "latitude": -23.5874,
+  "longitude": -46.6576,
+  "city": { "id": 1, "name": "São Paulo", "state": "SP" },
+  "averageRating": 4.5,
+  "ratingsCount": 10,
+  "createdAt": "2026-05-24T13:00:00",
+  "updatedAt": "2026-05-24T13:00:00"
+}
+```
+
+---
+
+### PUT /api/pois/{id}
+
+#### Descrição
+
+Atualiza um POI.
+
+#### Controller
+
+`PoiController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do POI |
+
+#### Request Body
+
+Todos os campos opcionais.
+
+| Campo | Tipo | Validação |
+|---|---|---|
+| name | String | Se preenchido, não vazio |
+| description | String | — |
+| xpReward | Integer | — |
+| latitude | Double | — |
+| longitude | Double | — |
+| minLatitude | Double | — |
+| maxLatitude | Double | — |
+| minLongitude | Double | — |
+| maxLongitude | Double | — |
+| cityId | Integer | Deve existir |
+
+**Exemplo:**
+
+```json
+{
+  "name": "Parque Ibirapuera - Atualizado",
+  "xpReward": 75
+}
+```
+
+---
+
+### DELETE /api/pois/{id}
+
+#### Descrição
+
+Remove um POI.
+
+#### Controller
+
+`PoiController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do POI |
+
+#### Response 204 (No Content)
+
+---
+
+### POST /api/pois/{poiId}/ratings
+
+#### Descrição
+
+Envia ou atualiza a **avaliação em estrelas** de um turista para um POI. Se o turista já avaliou aquele POI anteriormente, a nota é atualizada (upsert).
+
+#### Controller
+
+`PoiController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `poiId` | Integer | ID do POI |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| rating | Integer | Sim | `0` a `5` |
+
+**Exemplo:**
+
+```json
+{
+  "rating": 4
+}
+```
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "rating": 4,
+  "createdAt": "2026-05-24T14:00:00"
+}
+```
+
+> ⚠️ Os campos `poi` e `user` não são retornados na resposta (`@JsonIgnore`).
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | `rating` fora do intervalo 0-5 |
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+| 404 | POI ou usuário não encontrado |
+
+---
+
+### GET /api/pois/{poiId}/ratings
+
+#### Descrição
+
+Lista **todas as avaliações** de um POI específico.
+
+#### Controller
+
+`PoiController`
+
+#### Autenticação
+
+✅ Obrigatória (qualquer role)
+
+#### Permissões
+
+`TOURIST`, `SHOPKEEPER`, `ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `poiId` | Integer | ID do POI |
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": 1,
+    "rating": 4,
+    "createdAt": "2026-05-24T14:00:00"
+  },
+  {
+    "id": 2,
+    "rating": 5,
+    "createdAt": "2026-05-24T14:30:00"
+  }
+]
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 404 | POI não encontrado |
+
+---
+
+## 🛒 Produtos
+
+### POST /api/products
+
+#### Descrição
+
+Cria um novo produto associado a um lojista e uma categoria.
+
+#### Controller
+
+`ProductController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`SHOPKEEPER`, `ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| name | String | Sim | Não vazio |
+| description | String | Não | — |
+| price | Double | Não | `>= 0` |
+| xpCost | Integer | Não | `>= 0` |
+| shopkeeperId | Integer | Sim | ID de lojista existente |
+| categoryId | Integer | Sim | ID de categoria existente |
+
+**Exemplo:**
+
+```json
+{
+  "name": "Artesanato Local",
+  "description": "Peça feita à mão",
+  "price": 49.90,
+  "xpCost": 10,
+  "shopkeeperId": 2,
+  "categoryId": 1
+}
+```
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "name": "Artesanato Local",
+  "description": "Peça feita à mão",
+  "price": 49.90,
+  "xpCost": 10,
+  "shopkeeper": {
+    "id": 2,
+    "name": "Maria Lojista",
+    "companyName": "Maria's Comércio"
+  },
+  "category": {
+    "id": 1,
+    "name": "Alimentação"
+  },
+  "createdAt": "2026-05-24T15:00:00",
+  "updatedAt": "2026-05-24T15:00:00"
+}
+```
+
+---
+
+### GET /api/products/recent
+
+#### Descrição
+
+Lista os **50 produtos mais recentes** cadastrados (ordenados por `createdAt` decrescente).
+
+#### Controller
+
+`ProductController`
+
+#### Autenticação
+
+✅ Obrigatória (qualquer role)
+
+#### Permissões
+
+`TOURIST`, `SHOPKEEPER`, `ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Artesanato Local",
+    "description": "Peça feita à mão",
+    "price": 49.90,
+    "xpCost": 10,
+    "shopkeeper": { "id": 2, "name": "Maria Lojista" },
+    "category": { "id": 1, "name": "Alimentação" },
+    "createdAt": "2026-05-24T15:00:00",
+    "updatedAt": "2026-05-24T15:00:00"
+  }
+]
+```
+
+---
+
+### GET /api/products/{id}
+
+#### Descrição
+
+Retorna um produto por ID.
+
+#### Controller
+
+`ProductController`
+
+#### Autenticação
+
+✅ Obrigatória (qualquer role)
+
+#### Permissões
+
+`TOURIST`, `SHOPKEEPER`, `ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do produto |
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "name": "Artesanato Local",
+  "description": "Peça feita à mão",
+  "price": 49.90,
+  "xpCost": 10,
+  "shopkeeper": { "id": 2, "name": "Maria Lojista" },
+  "category": { "id": 1, "name": "Alimentação" },
+  "createdAt": "2026-05-24T15:00:00",
+  "updatedAt": "2026-05-24T15:00:00"
+}
+```
+
+---
+
+### PUT /api/products/{id}
+
+#### Descrição
+
+Atualiza um produto.
+
+#### Controller
+
+`ProductController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`SHOPKEEPER`, `ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do produto |
+
+#### Request Body
+
+Todos os campos opcionais.
+
+| Campo | Tipo | Validação |
+|---|---|---|
+| name | String | — |
+| description | String | — |
+| price | Double | — |
+| xpCost | Integer | — |
+| shopkeeperId | Integer | Deve existir |
+| categoryId | Integer | Deve existir |
+
+**Exemplo:**
+
+```json
+{
+  "price": 39.90,
+  "xpCost": 5
+}
+```
+
+---
+
+### DELETE /api/products/{id}
+
+#### Descrição
+
+Remove um produto.
+
+#### Controller
+
+`ProductController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`SHOPKEEPER`, `ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do produto |
+
+#### Response 204 (No Content)
+
+---
+
+## 📌 Observações Técnicas
+
+### 🔴 Inconsistências e Problemas Encontrados
+
+#### 1. `@PreAuthorize` incorreto em `UserController`
+
+**Arquivo:** `modules/user/controller/UserController.java:16`
+
+```java
+@PreAuthorize("hasRole('ROLE_ADMIN')")
+```
+
+O método `hasRole()` do Spring Security adiciona automaticamente o prefixo `ROLE_`, resultando na busca pela authority `ROLE_ROLE_ADMIN`. O `SecurityFilter` cria apenas as authorities `ROLE_ADMIN_USER` e `ROLE_ADMIN_ROOT`.
+
+**Impacto:** Os endpoints `GET /api/users` e `GET /api/users/{identifier}` são **inacessíveis** — nenhum usuário autenticado conseguirá acessá-los.
+
+**Correção sugerida:** Substituir por `hasAnyRole('ADMIN_USER', 'ADMIN_ROOT')` para alinhar com os demais controllers.
+
+---
+
+#### 2. Campo `password` retornado em `UserModel`
+
+**Arquivo:** `modules/user/model/UserModel.java`
+
+O campo `password` não possui anotação `@JsonIgnore`. Embora a intenção seja que ele não seja serializado (herdado de `TouristModel`, `ShopkeeperModel` etc.), não há garantia explícita. Dependendo da configuração do Jackson/Hibernate, a senha **pode vazar** nas respostas.
+
+**Correção sugerida:** Adicionar `@JsonIgnore` no campo `password` da classe `UserModel`.
+
+---
+
+#### 3. Rota `GET /api/products` inexistente
+
+Não há um endpoint para **listar todos os produtos** (apenas os 50 mais recentes em `/api/products/recent`). Para um controle administrativo, seria esperado um `GET /api/products` com paginação.
+
+---
+
+#### 4. Rota `GET /api/pois` sem paginação
+
+O endpoint que lista todos os POIs retorna a lista completa sem suporte a paginação, o que pode se tornar problemático com muitos registros.
+
+---
+
+#### 5. `PoiController` não possui `@RequestMapping` separado para ratings
+
+As rotas de rating (`/api/pois/{poiId}/ratings`) estão no mesmo controller dos POIs, o que é aceitável, mas poderia ser extraído para um `PoiRatingController` específico para melhor organização.
+
+---
+
+#### 6. Ausência de `GET /api/city/{id}`
+
+O módulo de cidades possui CRUD (POST, PUT, DELETE, GET list), mas **não possui** um endpoint para buscar uma cidade por ID específico (`GET /api/city/{id}`).
+
+---
+
+#### 7. Validação `@Password` permite string vazia
+
+No `PasswordValidator`, se a senha tiver comprimento 0, o método retorna `true` (válido). Isso permite que senhas vazias passem na validação em contextos onde o campo não é obrigatório (como em `UpdateTouristDTO` e `UpdateShopkeeperDTO`).
+
+---
+
+### ✅ Pontos Positivos
+
+- Consistência na estrutura dos módulos (model → dto → repository → service → controller)
+- Uso de records para DTOs com validações Bean Validation
+- Tratamento global de exceções padronizado
+- Autenticação via cookies HttpOnly (seguro contra XSS)
+- Refresh token com rotação e hash armazenado
+- Unique constraint em `PoiRatingModel` para evitar avaliações duplicadas
+- Separação clara de responsabilidades com herança JOINED no modelo de usuários
+
+---
+
+### 📊 Resumo de Endpoints
+
+| Módulo | Endpoints | Públicos | Autenticados | Admin | Role Específica |
+|---|---|---|---|---|---|
+| Auth | 5 | 5 | — | — | — |
+| Users | 2 | — | — | 2* | — |
+| Admin | 6 | — | — | 6 | ADMIN_ROOT |
+| Tourists | 4 | — | — | 4 | ADMIN_USER/ROOT |
+| Shopkeepers | 4 | — | — | 4 | ADMIN_USER/ROOT |
+| Cities | 4 | — | — | 4 | ADMIN_USER/ROOT |
+| Categories | 5 | — | — | 5 | ADMIN_USER/ROOT |
+| POIs | 7 | — | 3 | 3 | TOURIST (ratings) |
+| Products | 5 | — | 2 | — | SHOPKEEPER |
+| **Total** | **42** | **5** | **5** | **28** | **4** |
+
+> * Endpoints de usuários estão com `@PreAuthorize` incorreto, tornando-os inacessíveis.
