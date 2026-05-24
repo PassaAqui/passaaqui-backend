@@ -30,8 +30,12 @@ public abstract class UserModel {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @JsonIgnore
     @Column(nullable = false)
-    private String password, name;
+    private String password;
+
+    @Column(nullable = false)
+    private String name;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
