@@ -43,6 +43,10 @@ public class PoiModel {
 
     private Double maxLongitude;
 
+    private Double averageRating;
+
+    private Integer ratingsCount;
+
     @ManyToOne
     @JoinColumn(nullable = false)
     private CityModel city;

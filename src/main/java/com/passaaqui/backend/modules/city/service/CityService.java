@@ -103,6 +103,11 @@ public class CityService {
         cityRepository.delete(city);
     }
 
+    public CityModel getCityById(Integer id) {
+        return cityRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("City not found"));
+    }
+
     public List<CityModel> getAllCities() {
         return cityRepository.findAll();
     }
