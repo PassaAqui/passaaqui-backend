@@ -1,14 +1,17 @@
 package com.passaaqui.backend.modules.city.controller;
 
+import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.city.dto.CreateCityDTO;
 import com.passaaqui.backend.modules.city.dto.UpdateCityDTO;
 import com.passaaqui.backend.modules.city.model.CityModel;
 import com.passaaqui.backend.modules.city.service.CityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -19,15 +22,26 @@ import java.util.List;
 public class CityController {
 
     private final CityService cityService;
+    private final StorageService storageService;
 
-    @PostMapping("/create")
-    public ResponseEntity<CityModel> createCity(@RequestBody @Valid CreateCityDTO dto) {
-        return ResponseEntity.ok(cityService.createCity(dto.ibgeCode(), dto.description(), dto.minLatitude(), dto.maxLatitude(), dto.minLongitude(), dto.maxLongitude()));
+    @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CityModel> createCity(
+            @RequestPart("data") @Valid CreateCityDTO dto,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        CityModel city = cityService.createCity(dto.ibgeCode(), dto.description(), dto.minLatitude(), dto.maxLatitude(), dto.minLongitude(), dto.maxLongitude(), image);
+        if (city.getImage() != null) {
+            city.setImageUrl(storageService.getFileUrl(city.getImage()));
+        }
+        return ResponseEntity.ok(city);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<CityModel> updateCity(@PathVariable Integer id, @RequestBody @Valid UpdateCityDTO dto) {
-        return ResponseEntity.ok(cityService.updateCity(id, dto));
+        CityModel city = cityService.updateCity(id, dto);
+        if (city.getImage() != null) {
+            city.setImageUrl(storageService.getFileUrl(city.getImage()));
+        }
+        return ResponseEntity.ok(city);
     }
 
     @DeleteMapping("/{id}")
@@ -38,11 +52,21 @@ public class CityController {
 
     @GetMapping("/{id}")
     public ResponseEntity<CityModel> getById(@PathVariable Integer id) {
-        return ResponseEntity.ok(cityService.getCityById(id));
+        CityModel city = cityService.getCityById(id);
+        if (city.getImage() != null) {
+            city.setImageUrl(storageService.getFileUrl(city.getImage()));
+        }
+        return ResponseEntity.ok(city);
     }
 
     @GetMapping()
     public ResponseEntity<List<CityModel>> getAll() {
-        return ResponseEntity.ok(cityService.getAllCities());
+        List<CityModel> cities = cityService.getAllCities();
+        for (CityModel city : cities) {
+            if (city.getImage() != null) {
+                city.setImageUrl(storageService.getFileUrl(city.getImage()));
+            }
+        }
+        return ResponseEntity.ok(cities);
     }
 }

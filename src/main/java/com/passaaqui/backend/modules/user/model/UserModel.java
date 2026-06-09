@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.passaaqui.backend.modules.auth.model.AuthModel;
 import com.passaaqui.backend.modules.user.model.enums.UserRole;
 import jakarta.persistence.*;
@@ -51,4 +52,15 @@ public abstract class UserModel {
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<AuthModel> authSessions;
+
+    private String image;
+
+    @Transient
+    @JsonProperty("image")
+    private String imageUrl;
+
+    @JsonIgnore
+    public String getImage() {
+        return image;
+    }
 }

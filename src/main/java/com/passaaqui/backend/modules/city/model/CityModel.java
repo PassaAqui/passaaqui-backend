@@ -1,5 +1,7 @@
 package com.passaaqui.backend.modules.city.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +52,17 @@ public class CityModel {
 
     @Column(name = "region_code")
     private Long regionCode;
+
+    private String image;
+
+    @Transient
+    @JsonProperty("image")
+    private String imageUrl;
+
+    @JsonIgnore
+    public String getImage() {
+        return image;
+    }
 
     @CreatedDate
     @Column(updatable = false)

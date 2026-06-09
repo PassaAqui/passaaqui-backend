@@ -1,6 +1,7 @@
 package com.passaaqui.backend.modules.poi.service;
 
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
+import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.city.model.CityModel;
 import com.passaaqui.backend.modules.city.repository.CityRepository;
 import com.passaaqui.backend.modules.poi.dto.CreatePoiDTO;
@@ -10,11 +11,10 @@ import com.passaaqui.backend.modules.poi.repository.PoiRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -22,9 +22,10 @@ public class PoiService {
 
     private final PoiRepository repository;
     private final CityRepository cityRepository;
+    private final StorageService storageService;
 
     @Transactional
-    public PoiModel create(CreatePoiDTO dto) {
+    public PoiModel create(CreatePoiDTO dto, MultipartFile image) {
         CityModel city = cityRepository.findById(dto.cityId())
             .orElseThrow(() -> new ResourceNotFoundException("City not found"));
 
@@ -39,6 +40,11 @@ public class PoiService {
         poi.setMinLongitude(dto.minLongitude());
         poi.setMaxLongitude(dto.maxLongitude());
         poi.setCity(city);
+
+        if (image != null && !image.isEmpty()) {
+            String imageName = storageService.uploadFile(image, "pois");
+            poi.setImage(imageName);
+        }
 
         return repository.save(poi);
     }
