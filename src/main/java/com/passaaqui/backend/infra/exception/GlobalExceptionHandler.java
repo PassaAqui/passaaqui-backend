@@ -18,17 +18,17 @@ public class GlobalExceptionHandler {
     
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<Object> handleConflict(ConflictException ex, HttpServletRequest request) {
-        return buildErrorResponse(ex, HttpStatus.CONFLICT, request.getPathInfo());
+        return buildErrorResponse(ex, HttpStatus.CONFLICT, request.getRequestURI());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Object> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
-        return buildErrorResponse(ex, HttpStatus.NOT_FOUND, request.getPathInfo());
+        return buildErrorResponse(ex, HttpStatus.NOT_FOUND, request.getRequestURI());
     }
 
     @ExceptionHandler(InvalidRequestException.class)
     public ResponseEntity<Object> handleInvalidRequest(InvalidRequestException ex, HttpServletRequest request) {
-        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request.getPathInfo());
+        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request.getRequestURI());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
