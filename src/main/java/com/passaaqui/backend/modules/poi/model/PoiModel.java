@@ -1,5 +1,7 @@
 package com.passaaqui.backend.modules.poi.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.passaaqui.backend.modules.city.model.CityModel;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -44,6 +46,17 @@ public class PoiModel {
     @ManyToOne
     @JoinColumn(nullable = false)
     private CityModel city;
+
+    private String image;
+
+    @Transient
+    @JsonProperty("image")
+    private String imageUrl;
+
+    @JsonIgnore
+    public String getImage() {
+        return image;
+    }
 
     @CreatedDate
     @Column(updatable = false)

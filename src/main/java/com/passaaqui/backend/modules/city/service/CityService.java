@@ -2,11 +2,13 @@ package com.passaaqui.backend.modules.city.service;
 
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.infra.integration.ibge.IbgeClient;
+import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.city.model.CityModel;
 import com.passaaqui.backend.modules.city.repository.CityRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -16,9 +18,10 @@ public class CityService {
 
     private final CityRepository cityRepository;
     private final IbgeClient ibgeClient;
+    private final StorageService storageService;
 
     @Transactional
-    public CityModel createCity(String ibgeCode, String description, Double minLatitude, Double maxLatitude, Double minLongitude, Double maxLongitude) {
+    public CityModel createCity(String ibgeCode, String description, Double minLatitude, Double maxLatitude, Double minLongitude, Double maxLongitude, MultipartFile image) {
         var response = ibgeClient.getCityByIbgeCode(ibgeCode);
 
         CityModel city = new CityModel();
@@ -59,6 +62,11 @@ public class CityService {
         city.setMaxLatitude(maxLatitude);
         city.setMinLongitude(minLongitude);
         city.setMaxLongitude(maxLongitude);
+
+        if (image != null && !image.isEmpty()) {
+            String imageName = storageService.uploadFile(image, "cities");
+            city.setImage(imageName);
+        }
 
         cityRepository.save(city);
 
