@@ -3,7 +3,7 @@ VALUES (
     nextval('user_model_seq'),
     'root@passaaqui.com', 
     'Administrador Root', 
-    '$2a$10$3qILDhEwH4eBh0.UkLv3geZBiYNfSF3dz6fRxY8w4P8uY1gL3Xg/m',
+    '$2b$10$e58y/bH8KJsHFsJ7RGA2L.LyUBOXc5DrqBjBzQ1KHuOx1nTkTgcUi',
     'ADMIN', 
     CURRENT_TIMESTAMP, 
     CURRENT_TIMESTAMP
