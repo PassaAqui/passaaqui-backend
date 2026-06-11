@@ -61,10 +61,26 @@ A aplicação estará disponível em `http://localhost:8080`
 
 Após subir o projeto pela primeira vez, execute o script SQL para criar o administrador padrão:
 
-A senha configurada como padrão é: `Teste@123`
+A senha configurada como padrão é: `Root@123`
 
+**Linux / macOS**
+```bash
+psql -U postgres -d passaaqui < create-admin.sql
 ```
+
+**Windows (PowerShell)**
+```powershell
+Get-Content create-admin.sql | psql -U postgres -d passaaqui
+```
+
+**Com Docker (Linux / macOS / WSL)**
+```bash
 docker exec -i passaaqui_postgres psql -U postgres -d passaaqui < create-admin.sql
+```
+
+**Com Docker (Windows PowerShell)**
+```powershell
+Get-Content create-admin.sql | docker exec -i passaaqui_postgres psql -U postgres -d passaaqui
 ```
 
 **Credenciais padrão:**
