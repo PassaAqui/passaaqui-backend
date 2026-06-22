@@ -23,21 +23,22 @@ public class CategoryService {
     public void seedCategories() {
         if (repository.count() > 0) return;
 
-        String[][] categories = {
-            {"Alimentação", "Restaurantes, lanchonetes e food trucks"},
-            {"Mercado", "Supermercados, hortifrútis e açougues"},
-            {"Farmácia", "Farmácias e drogarias"},
-            {"Padaria", "Padarias e confeitarias"},
-            {"Pet Shop", "Produtos e serviços para animais de estimação"},
-            {"Academia", "Academias e estúdios de ginástica"},
-            {"Beleza", "Salões de beleza, barbearias e estéticas"},
-            {"Oficina", "Oficinas mecânicas e autopeças"},
+        Object[][] categories = {
+            {"Alimentação", "Restaurantes, lanchonetes e food trucks", 1.0},
+            {"Mercado", "Supermercados, hortifrútis e açougues", 0.8},
+            {"Farmácia", "Farmácias e drogarias", 1.2},
+            {"Padaria", "Padarias e confeitarias", 0.9},
+            {"Pet Shop", "Produtos e serviços para animais de estimação", 1.0},
+            {"Academia", "Academias e estúdios de ginástica", 1.1},
+            {"Beleza", "Salões de beleza, barbearias e estéticas", 1.0},
+            {"Oficina", "Oficinas mecânicas e autopeças", 0.7},
         };
 
-        for (String[] cat : categories) {
+        for (Object[] cat : categories) {
             CategoryModel category = new CategoryModel();
-            category.setName(cat[0]);
-            category.setDescription(cat[1]);
+            category.setName((String) cat[0]);
+            category.setDescription((String) cat[1]);
+            category.setCategoryWeight((Double) cat[2]);
             repository.save(category);
         }
     }
@@ -47,6 +48,7 @@ public class CategoryService {
         CategoryModel category = new CategoryModel();
         category.setName(dto.name());
         category.setDescription(dto.description());
+        category.setCategoryWeight(dto.categoryWeight());
         return repository.save(category);
     }
 
@@ -64,6 +66,7 @@ public class CategoryService {
         CategoryModel category = findById(id);
         if (dto.name() != null && !dto.name().isBlank()) category.setName(dto.name());
         if (dto.description() != null && !dto.description().isBlank()) category.setDescription(dto.description());
+        if (dto.categoryWeight() != null) category.setCategoryWeight(dto.categoryWeight());
         return repository.save(category);
     }
 

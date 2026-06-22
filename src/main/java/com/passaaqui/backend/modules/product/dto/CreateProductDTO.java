@@ -13,8 +13,7 @@ public record CreateProductDTO(
     @Min(0)
     Double price,
 
-    @Min(0)
-    Integer xpCost,
+    Integer maxXp,
 
     @NotNull
     Integer shopkeeperId,
