@@ -133,6 +133,11 @@ http://localhost:8080/api
 - [`PUT /api/products/{id}`](#put-apiproductsid)
 - [`DELETE /api/products/{id}`](#delete-apiproductsid)
 
+### 🛒 Pedidos (Orders)
+- [`POST /api/orders/checkout`](#post-apiorderscheckout)
+- [`GET /api/orders/shopkeeper`](#get-apiordersshopkeeper)
+- [`GET /api/orders/my-current`](#get-apiordersmy-current)
+
 ---
 
 ## 🔐 Autenticação
@@ -2305,6 +2310,197 @@ Remove um produto.
 
 ---
 
+## 🛒 Pedidos (Orders)
+
+### POST /api/orders/checkout
+
+#### Descrição
+
+Cria um novo pedido (checkout) para um produto, gerando um PIX para pagamento. O turista deve resgatar o pedido anterior antes de comprar outro.
+
+#### Controller
+
+`OrderController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Cookie | Sim | `access_token=<JWT>` |
+| Content-Type | Sim | `application/json` |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| productId | Integer | Sim | ID de produto existente |
+
+**Exemplo:**
+
+```json
+{
+  "productId": 1
+}
+```
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "productId": 1,
+  "productName": "Artesanato Local",
+  "shopkeeperId": 2,
+  "shopkeeperName": "Maria's Comércio",
+  "quantity": 1,
+  "unitPrice": 49.90,
+  "totalAmount": 49.90,
+  "status": "AWAITING_PAYMENT",
+  "transactionId": "abc123",
+  "createdAt": "2026-06-22T10:00:00",
+  "pix": "00020126580014BR.GOV.BCB.PIX0136...",
+  "qrCodeBase64": "iVBORw0KGgo...",
+  "pixExpiresAt": "2026-06-22T10:15:00",
+  "pickupCode": null
+}
+```
+
+> ⚠️ O `pickupCode` é gerado apenas quando o pagamento é confirmado.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Dados inválidos |
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+| 404 | Produto ou turista não encontrado |
+| 409 | Turista já possui um pedido ativo |
+
+---
+
+### GET /api/orders/shopkeeper
+
+#### Descrição
+
+Lista todos os pedidos **PAID** do lojista autenticado, contendo o `pickupCode` para retirada.
+
+#### Controller
+
+`OrderController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `SHOPKEEPER`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Cookie | Sim | `access_token=<JWT>` |
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "productId": 1,
+    "productName": "Artesanato Local",
+    "shopkeeperId": 2,
+    "shopkeeperName": "Maria's Comércio",
+    "quantity": 1,
+    "unitPrice": 49.90,
+    "totalAmount": 49.90,
+    "status": "PAID",
+    "transactionId": "abc123",
+    "createdAt": "2026-06-22T10:00:00",
+    "pix": "00020126580014BR.GOV.BCB.PIX0136...",
+    "qrCodeBase64": "iVBORw0KGgo...",
+    "pixExpiresAt": "2026-06-22T10:15:00",
+    "pickupCode": "A7X9K2"
+  }
+]
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é SHOPKEEPER |
+| 404 | Lojista não encontrado |
+
+---
+
+### GET /api/orders/my-current
+
+#### Descrição
+
+Retorna o **último pedido PAID** do turista autenticado.
+
+#### Controller
+
+`OrderController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Cookie | Sim | `access_token=<JWT>` |
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "productId": 1,
+  "productName": "Artesanato Local",
+  "shopkeeperId": 2,
+  "shopkeeperName": "Maria's Comércio",
+  "quantity": 1,
+  "unitPrice": 49.90,
+  "totalAmount": 49.90,
+  "status": "PAID",
+  "transactionId": "abc123",
+  "createdAt": "2026-06-22T10:00:00",
+  "pix": "00020126580014BR.GOV.BCB.PIX0136...",
+  "qrCodeBase64": "iVBORw0KGgo...",
+  "pixExpiresAt": "2026-06-22T10:15:00",
+  "pickupCode": "A7X9K2"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+| 404 | Nenhum pedido pago encontrado ou turista não encontrado |
+
+---
+
 ### 📊 Resumo de Endpoints
 
 | Módulo | Endpoints | Públicos | Autenticados | Admin | Role Específica |
@@ -2319,4 +2515,5 @@ Remove um produto.
 | POIs | 5 | — | 2 | 3 | — |
 | POI Ratings | 2 | — | 1 | — | TOURIST |
 | Products | 6 | — | 3 | — | SHOPKEEPER |
-| **Total** | **44** | **5** | **6** | **29** | **4** |
+| Orders | 3 | — | — | — | TOURIST / SHOPKEEPER |
+| **Total** | **48** | **5** | **6** | **29** | **7** |
