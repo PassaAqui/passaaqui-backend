@@ -31,6 +31,11 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request.getRequestURI());
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Object> handleForbidden(ForbiddenException ex, HttpServletRequest request) {
+        return buildErrorResponse(ex, HttpStatus.FORBIDDEN, request.getRequestURI());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Object> handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {
         Map<String, Object> body = new LinkedHashMap<>();
