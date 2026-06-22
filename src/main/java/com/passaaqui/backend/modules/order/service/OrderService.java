@@ -1,6 +1,7 @@
 package com.passaaqui.backend.modules.order.service;
 
 import com.passaaqui.backend.infra.abacatepay.AbacateClient;
+import com.passaaqui.backend.infra.exception.ConflictException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.modules.order.dto.CheckoutRequestDTO;
 import com.passaaqui.backend.modules.order.dto.OrderResponseDTO;
@@ -39,6 +40,10 @@ public class OrderService {
         String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         TouristModel tourist = touristRepository.findById(Integer.parseInt(userId))
                 .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
+
+        if (orderRepository.existsByTourist_IdAndStatusNotIn(tourist.getId(), List.of(OrderStatus.COMPLETED, OrderStatus.CANCELED))) {
+            throw new ConflictException("Você já possui um pedido ativo. Finalize-o antes de comprar outro.");
+        }
 
         ProductModel product = productRepository.findById(request.productId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + request.productId()));

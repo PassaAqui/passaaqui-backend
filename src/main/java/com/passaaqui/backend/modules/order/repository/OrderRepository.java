@@ -18,4 +18,6 @@ public interface OrderRepository extends JpaRepository<OrderModel, UUID> {
     List<OrderModel> findByShopkeeper_IdAndStatus(Integer shopkeeperId, OrderStatus status);
 
     Optional<OrderModel> findTopByTourist_IdAndStatusOrderByCreatedAtDesc(Integer touristId, OrderStatus status);
+
+    boolean existsByTourist_IdAndStatusNotIn(Integer touristId, List<OrderStatus> statuses);
 }
