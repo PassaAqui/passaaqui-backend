@@ -22,4 +22,6 @@ public class CategoryModel {
     private String name;
 
     private String description;
+
+    private Double categoryWeight = 1.0;
 }

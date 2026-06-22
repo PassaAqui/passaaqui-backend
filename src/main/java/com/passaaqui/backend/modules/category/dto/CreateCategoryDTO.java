@@ -6,5 +6,7 @@ public record CreateCategoryDTO(
     @NotBlank
     String name,
 
-    String description
+    String description,
+
+    Double categoryWeight
 ) {}

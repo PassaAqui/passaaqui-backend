@@ -12,6 +12,9 @@ import com.passaaqui.backend.modules.shopkeeper.repository.ShopkeeperRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,6 +26,7 @@ public class ProductService {
     private final ProductRepository repository;
     private final ShopkeeperRepository shopkeeperRepository;
     private final CategoryRepository categoryRepository;
+    private final XpCalculationStrategy xpCalculationStrategy;
 
     @Transactional
     public ProductModel create(CreateProductDTO dto) {
@@ -36,11 +40,27 @@ public class ProductService {
         product.setName(dto.name());
         product.setDescription(dto.description());
         product.setPrice(dto.price());
-        product.setXpCost(dto.xpCost());
+
+        Integer maxXp = resolveMaxXp(dto, category);
+        product.setMaxXp(maxXp);
+
         product.setShopkeeper(shopkeeper);
         product.setCategory(category);
 
         return repository.save(product);
+    }
+
+    private Integer resolveMaxXp(CreateProductDTO dto, CategoryModel category) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .anyMatch(a -> a.startsWith("ROLE_ADMIN"));
+
+        if (isAdmin && dto.maxXp() != null) {
+            return dto.maxXp();
+        }
+
+        return xpCalculationStrategy.calculate(dto.price(), category.getCategoryWeight());
     }
 
     public ProductModel findById(Integer id) {
@@ -55,7 +75,16 @@ public class ProductService {
         if (dto.name() != null && !dto.name().isBlank()) product.setName(dto.name());
         if (dto.description() != null && !dto.description().isBlank()) product.setDescription(dto.description());
         if (dto.price() != null) product.setPrice(dto.price());
-        if (dto.xpCost() != null) product.setXpCost(dto.xpCost());
+
+        if (dto.maxXp() != null) {
+            product.setMaxXp(dto.maxXp());
+        } else if (dto.price() != null || dto.categoryId() != null) {
+            CategoryModel category = dto.categoryId() != null
+                ? categoryRepository.findById(dto.categoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Category not found"))
+                : product.getCategory();
+            product.setMaxXp(xpCalculationStrategy.calculate(product.getPrice(), category.getCategoryWeight()));
+        }
 
         if (dto.shopkeeperId() != null) {
             ShopkeeperModel shopkeeper = shopkeeperRepository.findById(dto.shopkeeperId())

@@ -30,7 +30,7 @@ public class ProductModel {
 
     private Double price;
 
-    private Integer xpCost;
+    private Integer maxXp;
 
     @ManyToOne
     @JoinColumn(nullable = false)
