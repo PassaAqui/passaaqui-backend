@@ -59,6 +59,9 @@ services:
       MINIO_SECRET_KEY: root@123
       MINIO_BUCKET_NAME: passaaqui-bucket
 
+      ABACATEPAY_API_KEY: 
+      ABACATEPAY_WEBHOOK_SECRET:
+
     depends_on:
       postgres:
         condition: service_healthy

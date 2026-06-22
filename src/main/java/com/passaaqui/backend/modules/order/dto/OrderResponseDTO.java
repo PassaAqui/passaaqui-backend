@@ -17,5 +17,8 @@ public record OrderResponseDTO(
     BigDecimal totalAmount,
     OrderStatus status,
     String transactionId,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    String pix,
+    String qrCodeBase64,
+    LocalDateTime pixExpiresAt
 ) {}

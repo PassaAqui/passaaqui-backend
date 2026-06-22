@@ -51,10 +51,13 @@ public class OrderModel {
     @Column(length = 6)
     private String redemptionCode;
 
+    @Column(length = 6)
+    private String pickupCode;
+
     @Column(unique = true)
     private String transactionId;
 
-    @Column(length = 500)
+    @Column(columnDefinition = "TEXT")
     private String qrCodeUrl;
 
     @Column(length = 1000)

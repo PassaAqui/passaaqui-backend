@@ -1,5 +1,6 @@
 package com.passaaqui.backend.modules.order.service;
 
+import com.passaaqui.backend.infra.abacatepay.AbacateClient;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.modules.order.dto.CheckoutRequestDTO;
 import com.passaaqui.backend.modules.order.dto.OrderResponseDTO;
@@ -16,7 +17,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.UUID;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +28,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final TouristRepository touristRepository;
+    private final AbacateClient abacateClient;
 
     @Transactional
     public OrderResponseDTO checkout(CheckoutRequestDTO request) {
@@ -36,18 +40,32 @@ public class OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + request.productId()));
 
         BigDecimal unitPrice = BigDecimal.valueOf(product.getPrice());
-        BigDecimal totalAmount = unitPrice.multiply(BigDecimal.valueOf(request.quantity()));
-        String transactionId = UUID.randomUUID().toString();
+        BigDecimal totalAmount = unitPrice;
 
         OrderModel order = OrderModel.builder()
                 .tourist(tourist)
                 .shopkeeper(product.getShopkeeper())
                 .product(product)
-                .quantity(request.quantity())
+                .quantity(1)
                 .totalAmount(totalAmount)
                 .status(OrderStatus.PENDING)
-                .transactionId(transactionId)
                 .build();
+
+        order = orderRepository.save(order);
+
+        var checkoutRequest = new com.passaaqui.backend.infra.abacatepay.dto.CheckoutRequestDTO(
+                totalAmount.doubleValue(), order.getId()
+        );
+        var checkoutResponse = abacateClient.createCheckout(checkoutRequest);
+
+        order.setTransactionId(checkoutResponse.id());
+        order.setPix(checkoutResponse.brCode());
+        order.setQrCodeUrl(checkoutResponse.brCodeBase64());
+        order.setStatus(OrderStatus.AWAITING_PAYMENT);
+
+        if (checkoutResponse.expiresAt() != null) {
+            order.setPixExpiresAt(LocalDateTime.ofInstant(Instant.parse(checkoutResponse.expiresAt()), ZoneId.systemDefault()));
+        }
 
         order = orderRepository.save(order);
 
@@ -62,7 +80,10 @@ public class OrderService {
                 order.getTotalAmount(),
                 order.getStatus(),
                 order.getTransactionId(),
-                order.getCreatedAt()
+                order.getCreatedAt(),
+                order.getPix(),
+                order.getQrCodeUrl(),
+                order.getPixExpiresAt()
         );
     }
 }
