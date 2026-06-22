@@ -9,6 +9,8 @@ import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
 import com.passaaqui.backend.modules.order.repository.OrderRepository;
 import com.passaaqui.backend.modules.product.model.ProductModel;
 import com.passaaqui.backend.modules.product.repository.ProductRepository;
+import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
+import com.passaaqui.backend.modules.shopkeeper.repository.ShopkeeperRepository;
 import com.passaaqui.backend.modules.tourist.model.TouristModel;
 import com.passaaqui.backend.modules.tourist.repository.TouristRepository;
 import jakarta.transaction.Transactional;
@@ -20,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +30,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
+    private final ShopkeeperRepository shopkeeperRepository;
     private final TouristRepository touristRepository;
     private final AbacateClient abacateClient;
 
@@ -83,7 +87,62 @@ public class OrderService {
                 order.getCreatedAt(),
                 order.getPix(),
                 order.getQrCodeUrl(),
-                order.getPixExpiresAt()
+                order.getPixExpiresAt(),
+                null
+        );
+    }
+
+    public List<OrderResponseDTO> getShopkeeperOrders() {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        ShopkeeperModel shopkeeper = shopkeeperRepository.findById(Integer.parseInt(userId))
+                .orElseThrow(() -> new ResourceNotFoundException("Shopkeeper not found"));
+
+        return orderRepository.findByShopkeeper_IdAndStatus(shopkeeper.getId(), OrderStatus.PAID)
+                .stream()
+                .map(order -> new OrderResponseDTO(
+                        order.getId(),
+                        order.getProduct().getId(),
+                        order.getProduct().getName(),
+                        order.getShopkeeper().getId(),
+                        order.getShopkeeper().getCompanyName(),
+                        order.getQuantity(),
+                        BigDecimal.valueOf(order.getProduct().getPrice()),
+                        order.getTotalAmount(),
+                        order.getStatus(),
+                        order.getTransactionId(),
+                        order.getCreatedAt(),
+                        order.getPix(),
+                        order.getQrCodeUrl(),
+                        order.getPixExpiresAt(),
+                        order.getPickupCode()
+                ))
+                .toList();
+    }
+
+    public OrderResponseDTO getMyCurrentOrder() {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        TouristModel tourist = touristRepository.findById(Integer.parseInt(userId))
+                .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
+
+        OrderModel order = orderRepository.findTopByTourist_IdAndStatusOrderByCreatedAtDesc(tourist.getId(), OrderStatus.PAID)
+                .orElseThrow(() -> new ResourceNotFoundException("No paid order found"));
+
+        return new OrderResponseDTO(
+                order.getId(),
+                order.getProduct().getId(),
+                order.getProduct().getName(),
+                order.getShopkeeper().getId(),
+                order.getShopkeeper().getCompanyName(),
+                order.getQuantity(),
+                BigDecimal.valueOf(order.getProduct().getPrice()),
+                order.getTotalAmount(),
+                order.getStatus(),
+                order.getTransactionId(),
+                order.getCreatedAt(),
+                order.getPix(),
+                order.getQrCodeUrl(),
+                order.getPixExpiresAt(),
+                order.getPickupCode()
         );
     }
 }

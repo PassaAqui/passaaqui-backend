@@ -20,5 +20,6 @@ public record OrderResponseDTO(
     LocalDateTime createdAt,
     String pix,
     String qrCodeBase64,
-    LocalDateTime pixExpiresAt
+    LocalDateTime pixExpiresAt,
+    String pickupCode
 ) {}

@@ -14,4 +14,8 @@ public interface OrderRepository extends JpaRepository<OrderModel, UUID> {
     Optional<OrderModel> findByTransactionId(String transactionId);
 
     List<OrderModel> findByStatusAndCreatedAtBefore(OrderStatus status, LocalDateTime createdAt);
+
+    List<OrderModel> findByShopkeeper_IdAndStatus(Integer shopkeeperId, OrderStatus status);
+
+    Optional<OrderModel> findTopByTourist_IdAndStatusOrderByCreatedAtDesc(Integer touristId, OrderStatus status);
 }
