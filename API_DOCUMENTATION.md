@@ -17,6 +17,7 @@ API REST do **Passa Aqui**, plataforma que conecta turistas a pontos de interess
 | PostgreSQL | — |
 | JWT (jjwt 0.13.0) | — |
 | Maven | — |
+| Spring WebSocket / STOMP | — |
 
 ### Autenticação
 
@@ -137,6 +138,9 @@ http://localhost:8080/api
 - [`POST /api/orders/checkout`](#post-apiorderscheckout)
 - [`GET /api/orders/shopkeeper`](#get-apiordersshopkeeper)
 - [`GET /api/orders/my-current`](#get-apiordersmy-current)
+
+### 🔌 WebSocket (STOMP)
+- [`ws://host/ws`](#ws-websocket-stomp)
 
 ---
 
@@ -2501,6 +2505,69 @@ Apenas `TOURIST`
 
 ---
 
+## 🔌 WebSocket (STOMP)
+
+### ws://host/ws
+
+#### Descrição
+
+Endpoint **WebSocket com STOMP** para notificações em tempo real. Utilizado para receber atualizações do status do pedido sem necessidade de polling.
+
+#### Configuração
+
+| Parâmetro | Valor |
+|---|---|
+| Endpoint de conexão | `ws://localhost:8080/ws` |
+| Protocolo | STOMP sobre WebSocket nativo |
+| Broker de tópicos | `/topic/**` |
+
+#### Autenticação
+
+✅ Obrigatória — enviar JWT no header `Authorization: Bearer <token>` do frame STOMP `CONNECT`.
+
+**Exemplo de frame CONNECT:**
+
+```stomp
+CONNECT
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+accept-version:1.1,1.0
+host:localhost:8080
+
+```
+
+#### Tópicos
+
+| Tópico | Descrição | Payload |
+|---|---|---|
+| `/topic/orders/{orderId}` | Notificações de alteração de status do pedido | `OrderStatusDTO` |
+
+**Payload (`OrderStatusDTO`):**
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "PAID",
+  "pickupCode": "A7X9K2"
+}
+```
+
+#### Fluxo
+
+1. **Turista** faz `POST /api/orders/checkout` e recebe o `orderId`
+2. **Turista** conecta ao WebSocket e envia JWT no header `Authorization` do CONNECT
+3. **Turista** inscreve em `/topic/orders/{orderId}`
+4. **Pagamento confirmado** (webhook ou reconciliação) → servidor publica no tópico
+5. **Turista** recebe a mensagem em tempo real com o novo status
+
+#### Possíveis Erros
+
+| Situação | Comportamento |
+|---|---|
+| Token ausente | Conexão rejeitada com erro `IllegalArgumentException` |
+| Token inválido/expirado | Conexão rejeitada com erro `IllegalArgumentException` |
+
+---
+
 ### 📊 Resumo de Endpoints
 
 | Módulo | Endpoints | Públicos | Autenticados | Admin | Role Específica |
@@ -2516,4 +2583,5 @@ Apenas `TOURIST`
 | POI Ratings | 2 | — | 1 | — | TOURIST |
 | Products | 6 | — | 3 | — | SHOPKEEPER |
 | Orders | 3 | — | — | — | TOURIST / SHOPKEEPER |
-| **Total** | **48** | **5** | **6** | **29** | **7** |
+| WebSocket (STOMP) | 1 | — | — | — | TOURIST / SHOPKEEPER |
+| **Total** | **49** | **5** | **6** | **29** | **7** |
