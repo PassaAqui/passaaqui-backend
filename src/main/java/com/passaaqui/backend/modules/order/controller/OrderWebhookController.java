@@ -2,6 +2,7 @@ package com.passaaqui.backend.modules.order.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.passaaqui.backend.infra.abacatepay.AbacateClient;
+import com.passaaqui.backend.modules.order.dto.OrderStatusDTO;
 import com.passaaqui.backend.modules.order.model.OrderModel;
 import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
 import com.passaaqui.backend.modules.order.repository.OrderRepository;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +31,7 @@ public class OrderWebhookController {
     private final OrderRepository orderRepository;
     private final ObjectMapper objectMapper;
     private final AbacateClient abacateClient;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Value("${abacatepay.webhook.secret}")
     private String webhookSecret;
@@ -64,6 +67,10 @@ public class OrderWebhookController {
                             order.setStatus(OrderStatus.CANCELED);
                 }
                 orderRepository.save(order);
+                messagingTemplate.convertAndSend(
+                        "/topic/orders/" + order.getId(),
+                        new OrderStatusDTO(order.getId(), order.getStatus(), order.getPickupCode())
+                );
             });
 
         } catch (Exception e) {
@@ -81,6 +88,10 @@ public class OrderWebhookController {
         for (OrderModel order : orders) {
             order.setStatus(OrderStatus.CANCELED);
             orderRepository.save(order);
+            messagingTemplate.convertAndSend(
+                    "/topic/orders/" + order.getId(),
+                    new OrderStatusDTO(order.getId(), order.getStatus(), order.getPickupCode())
+            );
         }
     }
 
@@ -96,6 +107,10 @@ public class OrderWebhookController {
                     order.setStatus(OrderStatus.PAID);
                     order.setPickupCode(generatePickupCode());
                     orderRepository.save(order);
+                    messagingTemplate.convertAndSend(
+                            "/topic/orders/" + order.getId(),
+                            new OrderStatusDTO(order.getId(), order.getStatus(), order.getPickupCode())
+                    );
                 }
             } catch (Exception ignored) {
             }
