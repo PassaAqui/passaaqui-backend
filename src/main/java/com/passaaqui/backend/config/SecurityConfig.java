@@ -38,6 +38,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
 
+                        .requestMatchers("/api/orders-webhook/**").permitAll()
+
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html/**", "/h2-console/**").permitAll()
 
                         .anyRequest().authenticated()
