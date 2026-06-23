@@ -159,8 +159,13 @@ class OrderRepositoryIntegrationTest {
     @Test
     void shouldFindByStatusAndCreatedAtBefore() {
         var order = createOrder(OrderStatus.AWAITING_PAYMENT);
-        order.setCreatedAt(LocalDateTime.now().minusHours(2));
-        em.persistAndFlush(order);
+        em.clear();
+        em.getEntityManager().createNativeQuery(
+                "UPDATE tb_orders SET created_at = ? WHERE id = ?")
+                .setParameter(1, LocalDateTime.now().minusHours(2))
+                .setParameter(2, order.getId().toString())
+                .executeUpdate();
+        em.clear();
 
         var expired = orderRepository.findByStatusAndCreatedAtBefore(
                 OrderStatus.AWAITING_PAYMENT, LocalDateTime.now().minusHours(1));

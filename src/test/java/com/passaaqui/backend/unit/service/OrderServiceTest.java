@@ -102,7 +102,7 @@ class OrderServiceTest {
         when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(false);
         when(productRepository.findById(1)).thenReturn(Optional.of(product));
-        when(orderRepository.save(any(OrderModel.class))).thenReturn(order, (OrderModel) null);
+        when(orderRepository.save(any(OrderModel.class))).thenReturn(order);
         when(abacateClient.createCheckout(any())).thenReturn(checkoutResponse);
 
         var result = orderService.checkout(dto);
