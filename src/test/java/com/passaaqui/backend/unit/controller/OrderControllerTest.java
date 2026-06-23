@@ -52,7 +52,7 @@ class OrderControllerTest {
 
     @Test
     void checkout_shouldReturn200() throws Exception {
-        CheckoutRequestDTO dto = new CheckoutRequestDTO(1);
+        CheckoutRequestDTO dto = new CheckoutRequestDTO(1, null);
         UUID orderId = UUID.randomUUID();
         OrderResponseDTO response = new OrderResponseDTO(
                 orderId, 1, "Product", 2, "Shop", 1,
@@ -72,8 +72,28 @@ class OrderControllerTest {
     }
 
     @Test
+    void checkout_shouldReturn200WithXpDiscount() throws Exception {
+        CheckoutRequestDTO dto = new CheckoutRequestDTO(1, 200);
+        UUID orderId = UUID.randomUUID();
+        OrderResponseDTO response = new OrderResponseDTO(
+                orderId, 1, "Product", 2, "Shop", 1,
+                BigDecimal.TEN, BigDecimal.valueOf(48.00), OrderStatus.AWAITING_PAYMENT,
+                "tx-123", LocalDateTime.now(), "pix-code", "qr-base64",
+                LocalDateTime.now().plusMinutes(10), null
+        );
+
+        when(orderService.checkout(any(CheckoutRequestDTO.class))).thenReturn(response);
+
+        mockMvc.perform(post("/api/orders/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalAmount").value(48.00));
+    }
+
+    @Test
     void checkout_shouldReturn400WhenInvalid() throws Exception {
-        CheckoutRequestDTO dto = new CheckoutRequestDTO(null);
+        CheckoutRequestDTO dto = new CheckoutRequestDTO(null, null);
 
         mockMvc.perform(post("/api/orders/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -83,7 +103,7 @@ class OrderControllerTest {
 
     @Test
     void checkout_shouldReturn409WhenActiveOrderExists() throws Exception {
-        CheckoutRequestDTO dto = new CheckoutRequestDTO(1);
+        CheckoutRequestDTO dto = new CheckoutRequestDTO(1, null);
         when(orderService.checkout(any(CheckoutRequestDTO.class)))
                 .thenThrow(new ConflictException("Você já possui um pedido ativo."));
 
@@ -95,7 +115,7 @@ class OrderControllerTest {
 
     @Test
     void checkout_shouldReturn404WhenProductNotFound() throws Exception {
-        CheckoutRequestDTO dto = new CheckoutRequestDTO(999);
+        CheckoutRequestDTO dto = new CheckoutRequestDTO(999, null);
         when(orderService.checkout(any(CheckoutRequestDTO.class)))
                 .thenThrow(new ResourceNotFoundException("Product not found: 999"));
 

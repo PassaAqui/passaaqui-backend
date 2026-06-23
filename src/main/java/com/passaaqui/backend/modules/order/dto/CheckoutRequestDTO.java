@@ -5,5 +5,7 @@ import jakarta.validation.constraints.NotNull;
 public record CheckoutRequestDTO(
 
     @NotNull
-    Integer productId
+    Integer productId,
+
+    Integer xpToUse
 ) {}
