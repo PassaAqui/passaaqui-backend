@@ -157,4 +157,39 @@ class OrderControllerTest {
         mockMvc.perform(get("/api/orders/my-current"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void getShopkeeperHistory_shouldReturn200() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        OrderResponseDTO response = new OrderResponseDTO(
+                orderId, 1, "Product", 2, "Shop", 1,
+                BigDecimal.TEN, BigDecimal.TEN, OrderStatus.PAID,
+                "tx-123", LocalDateTime.now(), null, null, null, "CODE123"
+        );
+
+        when(orderService.getShopkeeperHistory()).thenReturn(List.of(response));
+
+        mockMvc.perform(get("/api/orders/shopkeeper/history"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(orderId.toString()))
+                .andExpect(jsonPath("$[0].pickupCode").value("CODE123"));
+    }
+
+    @Test
+    void getTouristHistory_shouldReturn200() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        OrderResponseDTO response = new OrderResponseDTO(
+                orderId, 1, "Product", 2, "Shop", 1,
+                BigDecimal.TEN, BigDecimal.TEN, OrderStatus.AWAITING_PAYMENT,
+                "tx-123", LocalDateTime.now(), "pix-code", "qr-base64",
+                LocalDateTime.now().plusMinutes(10), null
+        );
+
+        when(orderService.getTouristHistory()).thenReturn(List.of(response));
+
+        mockMvc.perform(get("/api/orders/my-history"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(orderId.toString()))
+                .andExpect(jsonPath("$[0].status").value("AWAITING_PAYMENT"));
+    }
 }

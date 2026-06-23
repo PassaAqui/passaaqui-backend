@@ -124,6 +124,60 @@ public class OrderService {
                 .toList();
     }
 
+    public List<OrderResponseDTO> getShopkeeperHistory() {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        ShopkeeperModel shopkeeper = shopkeeperRepository.findById(Integer.parseInt(userId))
+                .orElseThrow(() -> new ResourceNotFoundException("Shopkeeper not found"));
+
+        return orderRepository.findByShopkeeper_IdOrderByCreatedAtDesc(shopkeeper.getId())
+                .stream()
+                .map(order -> new OrderResponseDTO(
+                        order.getId(),
+                        order.getProduct().getId(),
+                        order.getProduct().getName(),
+                        order.getShopkeeper().getId(),
+                        order.getShopkeeper().getCompanyName(),
+                        order.getQuantity(),
+                        BigDecimal.valueOf(order.getProduct().getPrice()),
+                        order.getTotalAmount(),
+                        order.getStatus(),
+                        order.getTransactionId(),
+                        order.getCreatedAt(),
+                        order.getPix(),
+                        order.getQrCodeUrl(),
+                        order.getPixExpiresAt(),
+                        order.getPickupCode()
+                ))
+                .toList();
+    }
+
+    public List<OrderResponseDTO> getTouristHistory() {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        TouristModel tourist = touristRepository.findById(Integer.parseInt(userId))
+                .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
+
+        return orderRepository.findByTourist_IdOrderByCreatedAtDesc(tourist.getId())
+                .stream()
+                .map(order -> new OrderResponseDTO(
+                        order.getId(),
+                        order.getProduct().getId(),
+                        order.getProduct().getName(),
+                        order.getShopkeeper().getId(),
+                        order.getShopkeeper().getCompanyName(),
+                        order.getQuantity(),
+                        BigDecimal.valueOf(order.getProduct().getPrice()),
+                        order.getTotalAmount(),
+                        order.getStatus(),
+                        order.getTransactionId(),
+                        order.getCreatedAt(),
+                        order.getPix(),
+                        order.getQrCodeUrl(),
+                        order.getPixExpiresAt(),
+                        order.getPickupCode()
+                ))
+                .toList();
+    }
+
     public OrderResponseDTO getMyCurrentOrder() {
         String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         TouristModel tourist = touristRepository.findById(Integer.parseInt(userId))

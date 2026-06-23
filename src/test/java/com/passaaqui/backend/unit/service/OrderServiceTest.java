@@ -180,6 +180,44 @@ class OrderServiceTest {
     }
 
     @Test
+    void getShopkeeperHistory_shouldReturnAllOrders() {
+        when(shopkeeperRepository.findById(1)).thenReturn(Optional.of(shopkeeper));
+        when(orderRepository.findByShopkeeper_IdOrderByCreatedAtDesc(1)).thenReturn(List.of(order));
+
+        var result = orderService.getShopkeeperHistory();
+
+        assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
+        assertEquals(order.getId(), result.get(0).id());
+    }
+
+    @Test
+    void getShopkeeperHistory_shouldThrow_whenShopkeeperNotFound() {
+        when(shopkeeperRepository.findById(1)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> orderService.getShopkeeperHistory());
+    }
+
+    @Test
+    void getTouristHistory_shouldReturnAllOrders() {
+        when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
+        when(orderRepository.findByTourist_IdOrderByCreatedAtDesc(1)).thenReturn(List.of(order));
+
+        var result = orderService.getTouristHistory();
+
+        assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
+        assertEquals(order.getId(), result.get(0).id());
+    }
+
+    @Test
+    void getTouristHistory_shouldThrow_whenTouristNotFound() {
+        when(touristRepository.findById(1)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> orderService.getTouristHistory());
+    }
+
+    @Test
     void getMyCurrentOrder_shouldThrow_whenNoPaidOrder() {
         when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.findTopByTourist_IdAndStatusOrderByCreatedAtDesc(1, OrderStatus.PAID))

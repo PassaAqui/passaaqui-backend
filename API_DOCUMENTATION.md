@@ -140,7 +140,9 @@ http://localhost:8080/api
 ### 🛒 Pedidos (Orders)
 - [`POST /api/orders/checkout`](#post-apiorderscheckout)
 - [`GET /api/orders/shopkeeper`](#get-apiordersshopkeeper)
+- [`GET /api/orders/shopkeeper/history`](#get-apiordersshopkeeperhistory)
 - [`GET /api/orders/my-current`](#get-apiordersmy-current)
+- [`GET /api/orders/my-history`](#get-apiordersmyhistory)
 
 ## 🧭 Direções (Rotas)
 
@@ -2594,6 +2596,122 @@ Apenas `TOURIST`
 
 ---
 
+### GET /api/orders/shopkeeper/history
+
+#### Descrição
+
+Lista **todos os pedidos** do lojista autenticado, independentemente do status, ordenados do mais recente para o mais antigo.
+
+#### Controller
+
+`OrderController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `SHOPKEEPER`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Cookie | Sim | `access_token=<JWT>` |
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "productId": 1,
+    "productName": "Artesanato Local",
+    "shopkeeperId": 2,
+    "shopkeeperName": "Maria's Comércio",
+    "quantity": 1,
+    "unitPrice": 49.90,
+    "totalAmount": 49.90,
+    "status": "PAID",
+    "transactionId": "abc123",
+    "createdAt": "2026-06-22T10:00:00",
+    "pix": "00020126580014BR.GOV.BCB.PIX0136...",
+    "qrCodeBase64": "iVBORw0KGgo...",
+    "pixExpiresAt": "2026-06-22T10:15:00",
+    "pickupCode": "A7X9K2"
+  }
+]
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é SHOPKEEPER |
+| 404 | Lojista não encontrado |
+
+---
+
+### GET /api/orders/my-history
+
+#### Descrição
+
+Lista **todos os pedidos** do turista autenticado, independentemente do status, ordenados do mais recente para o mais antigo.
+
+#### Controller
+
+`OrderController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Cookie | Sim | `access_token=<JWT>` |
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "productId": 1,
+    "productName": "Artesanato Local",
+    "shopkeeperId": 2,
+    "shopkeeperName": "Maria's Comércio",
+    "quantity": 1,
+    "unitPrice": 49.90,
+    "totalAmount": 49.90,
+    "status": "AWAITING_PAYMENT",
+    "transactionId": "abc123",
+    "createdAt": "2026-06-22T10:00:00",
+    "pix": "00020126580014BR.GOV.BCB.PIX0136...",
+    "qrCodeBase64": "iVBORw0KGgo...",
+    "pixExpiresAt": "2026-06-22T10:15:00",
+    "pickupCode": null
+  }
+]
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+| 404 | Turista não encontrado |
+
+---
+
 ## 🔌 WebSocket (STOMP)
 
 ### ws://host/ws
@@ -2672,6 +2790,6 @@ host:localhost:8080
 | POI Ratings | 2 | — | 1 | — | TOURIST |
 | Direction | 1 | — | — | — | TOURIST |
 | Products | 6 | — | 3 | — | SHOPKEEPER |
-| Orders | 3 | — | — | — | TOURIST / SHOPKEEPER |
+| Orders | 5 | — | — | — | TOURIST / SHOPKEEPER |
 | WebSocket (STOMP) | 1 | — | — | — | TOURIST / SHOPKEEPER |
-| **Total** | **50** | **5** | **7** | **29** | **8** |
+| **Total** | **52** | **5** | **9** | **29** | **10** |
