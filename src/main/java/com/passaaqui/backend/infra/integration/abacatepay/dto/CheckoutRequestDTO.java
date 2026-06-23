@@ -1,4 +1,4 @@
-package com.passaaqui.backend.infra.abacatepay.dto;
+package com.passaaqui.backend.infra.integration.abacatepay.dto;
 
 import java.util.UUID;
 

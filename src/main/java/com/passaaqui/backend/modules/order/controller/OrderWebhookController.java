@@ -1,7 +1,7 @@
 package com.passaaqui.backend.modules.order.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.passaaqui.backend.infra.abacatepay.AbacateClient;
+import com.passaaqui.backend.infra.integration.abacatepay.AbacateClient;
 import com.passaaqui.backend.modules.order.dto.OrderStatusDTO;
 import com.passaaqui.backend.modules.order.model.OrderModel;
 import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
