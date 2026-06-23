@@ -29,6 +29,18 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getShopkeeperOrders());
     }
 
+    @GetMapping("/shopkeeper/history")
+    @PreAuthorize("hasRole('SHOPKEEPER')")
+    public ResponseEntity<List<OrderResponseDTO>> getShopkeeperHistory() {
+        return ResponseEntity.ok(orderService.getShopkeeperHistory());
+    }
+
+    @GetMapping("/my-history")
+    @PreAuthorize("hasRole('TOURIST')")
+    public ResponseEntity<List<OrderResponseDTO>> getTouristHistory() {
+        return ResponseEntity.ok(orderService.getTouristHistory());
+    }
+
     @GetMapping("/my-current")
     @PreAuthorize("hasRole('TOURIST')")
     public ResponseEntity<OrderResponseDTO> getMyCurrentOrder() {
