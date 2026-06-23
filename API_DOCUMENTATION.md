@@ -126,6 +126,9 @@ http://localhost:8080/api
 - [`POST /api/pois/{poiId}/ratings`](#post-appoispoidratings)
 - [`GET /api/pois/{poiId}/ratings`](#get-appoispoidratings)
 
+### 🧭 Direções
+- [`POST /api/direction`](#post-apidirection)
+
 ### 🛒 Produtos
 - [`POST /api/products`](#post-apiproducts)
 - [`GET /api/products`](#get-apiproducts)
@@ -139,7 +142,93 @@ http://localhost:8080/api
 - [`GET /api/orders/shopkeeper`](#get-apiordersshopkeeper)
 - [`GET /api/orders/my-current`](#get-apiordersmy-current)
 
-### 🔌 WebSocket (STOMP)
+## 🧭 Direções (Rotas)
+
+### POST /api/direction
+
+#### Descrição
+
+Calcula a **rota** entre dois pontos geográficos (origem e destino) utilizando a **OpenRouteService API**. Retorna as coordenadas do trajeto, duração e distância.
+
+#### Controller
+
+`DirectionController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Cookie | Sim | `access_token=<JWT>` |
+| Content-Type | Sim | `application/json` |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| mode | String | Sim | Tipo de locomoção (ex: `driving-car`, `foot-walking`, `cycling-regular`) |
+| startLongitude | Double | Sim | Longitude do ponto de partida |
+| startLatitude | Double | Sim | Latitude do ponto de partida |
+| endLongitude | Double | Sim | Longitude do destino |
+| endLatitude | Double | Sim | Latitude do destino |
+
+**Modos disponíveis:**
+
+| Modo | Descrição |
+|---|---|
+| `driving-car` | Carro |
+| `driving-hgv` | Caminhão |
+| `cycling-regular` | Bicicleta comum |
+| `cycling-road` | Bicicleta de estrada |
+| `cycling-mountain` | Mountain bike |
+| `cycling-electric` | Bicicleta elétrica |
+| `foot-walking` | A pé |
+| `foot-hiking` | Trilha |
+| `wheelchair` | Cadeira de rodas |
+
+**Exemplo:**
+
+```json
+{
+  "mode": "driving-car",
+  "startLongitude": -46.6576,
+  "startLatitude": -23.5874,
+  "endLongitude": -46.6333,
+  "endLatitude": -23.5505
+}
+```
+
+#### Response 200 (OK)
+
+Resposta da OpenRouteService contendo as informações da rota.
+
+```json
+{
+  "routes": [...]
+}
+```
+
+> ⚠️ O formato exato da resposta depende da API da OpenRouteService.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Modo de locomoção inválido |
+| 400 | Dados de validação inválidos |
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+
+---
+
+### 📊 Resumo de Endpoints
 - [`ws://host/ws`](#ws-websocket-stomp)
 
 ---
@@ -2581,7 +2670,8 @@ host:localhost:8080
 | Categories | 5 | — | — | 5 | ADMIN_USER/ROOT |
 | POIs | 5 | — | 2 | 3 | — |
 | POI Ratings | 2 | — | 1 | — | TOURIST |
+| Direction | 1 | — | — | — | TOURIST |
 | Products | 6 | — | 3 | — | SHOPKEEPER |
 | Orders | 3 | — | — | — | TOURIST / SHOPKEEPER |
 | WebSocket (STOMP) | 1 | — | — | — | TOURIST / SHOPKEEPER |
-| **Total** | **49** | **5** | **6** | **29** | **7** |
+| **Total** | **50** | **5** | **7** | **29** | **8** |
