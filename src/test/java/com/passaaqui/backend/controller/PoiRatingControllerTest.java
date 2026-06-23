@@ -24,6 +24,10 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
+
 @ExtendWith(MockitoExtension.class)
 class PoiRatingControllerTest {
 
@@ -39,6 +43,10 @@ class PoiRatingControllerTest {
 
     @BeforeEach
     void setup() {
+        SecurityContextHolder.clearContext();
+        Authentication auth = new UsernamePasswordAuthenticationToken("1", null, java.util.List.of());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();

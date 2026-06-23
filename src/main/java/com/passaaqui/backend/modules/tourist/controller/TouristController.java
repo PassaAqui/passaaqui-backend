@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.passaaqui.backend.modules.tourist.dto.UpdateTouristDTO;
 import com.passaaqui.backend.modules.tourist.model.TouristModel;
 import com.passaaqui.backend.modules.tourist.service.TouristService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -34,7 +35,7 @@ public class TouristController {
     }
 
     @PutMapping("/{identifier}")
-    public ResponseEntity<TouristModel> update(@PathVariable String identifier, @RequestBody UpdateTouristDTO dto) {
+    public ResponseEntity<TouristModel> update(@PathVariable String identifier, @RequestBody @Valid UpdateTouristDTO dto) {
         return ResponseEntity.ok(service.update(identifier, dto));
     }
 

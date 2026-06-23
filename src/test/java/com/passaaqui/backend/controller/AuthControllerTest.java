@@ -51,7 +51,7 @@ class AuthControllerTest {
 
     @Test
     void registerAccountTourist_shouldReturn201() throws Exception {
-        RegisterTouristDTO dto = new RegisterTouristDTO("test@test.com", "Test User", "Str0ng!pass", "Str0ng!pass", "12345678901");
+        RegisterTouristDTO dto = new RegisterTouristDTO("test@test.com", "Test User", "Str0ng!pass", "Str0ng!pass", "52998224725");
         TouristModel tourist = new TouristModel();
         tourist.setId(1);
         tourist.setEmail("test@test.com");
@@ -79,7 +79,7 @@ class AuthControllerTest {
 
     @Test
     void registerAccountShopkeeper_shouldReturn201() throws Exception {
-        RegisterShopkeeperDTO dto = new RegisterShopkeeperDTO("shop@test.com", "Shop", "Str0ng!pass", "Str0ng!pass", "12345678901234", "Company", "desc", 1);
+        RegisterShopkeeperDTO dto = new RegisterShopkeeperDTO("shop@test.com", "Shop", "Str0ng!pass", "Str0ng!pass", "11222333000181", "Company", "desc", 1);
         ShopkeeperModel shopkeeper = new ShopkeeperModel();
         shopkeeper.setId(2);
         shopkeeper.setEmail("shop@test.com");
