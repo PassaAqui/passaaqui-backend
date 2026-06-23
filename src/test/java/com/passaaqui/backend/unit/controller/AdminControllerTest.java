@@ -1,4 +1,4 @@
-package com.passaaqui.backend.controller;
+package com.passaaqui.backend.unit.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.passaaqui.backend.infra.exception.GlobalExceptionHandler;

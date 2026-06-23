@@ -5,6 +5,7 @@ import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @Service
+@Profile("!test")
 public class MinioStorageServiceImpl implements StorageService {
 
     private final MinioClient minioClient;

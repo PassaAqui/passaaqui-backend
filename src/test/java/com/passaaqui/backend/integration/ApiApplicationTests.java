@@ -1,4 +1,4 @@
-package com.passaaqui.backend;
+package com.passaaqui.backend.integration;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;

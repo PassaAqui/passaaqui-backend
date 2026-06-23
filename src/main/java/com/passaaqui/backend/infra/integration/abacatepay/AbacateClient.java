@@ -1,6 +1,5 @@
 package com.passaaqui.backend.infra.integration.abacatepay;
 
-import com.passaaqui.backend.infra.abacatepay.dto.*;
 import com.passaaqui.backend.infra.integration.abacatepay.dto.AbacateBaseResponseDTO;
 import com.passaaqui.backend.infra.integration.abacatepay.dto.CheckoutRequestDTO;
 import com.passaaqui.backend.infra.integration.abacatepay.dto.CheckoutResponseDTO;
