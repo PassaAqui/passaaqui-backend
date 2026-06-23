@@ -1,7 +1,7 @@
 package com.passaaqui.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.passaaqui.backend.infra.abacatepay.AbacateClient;
+import com.passaaqui.backend.infra.integration.abacatepay.AbacateClient;
 import com.passaaqui.backend.infra.exception.GlobalExceptionHandler;
 import com.passaaqui.backend.modules.order.controller.OrderWebhookController;
 import com.passaaqui.backend.modules.order.model.OrderModel;
@@ -19,11 +19,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.passaaqui.backend.modules.order.dto.OrderStatusDTO;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -136,7 +135,7 @@ class OrderWebhookControllerTest {
                 .andExpect(status().isOk());
 
         verify(orderRepository).save(order);
-        verify(messagingTemplate).convertAndSend(eq("/topic/orders/" + orderId), any());
+        verify(messagingTemplate).convertAndSend(eq("/topic/orders/" + orderId), any(OrderStatusDTO.class));
     }
 
     @Test
@@ -166,7 +165,7 @@ class OrderWebhookControllerTest {
                 .andExpect(status().isOk());
 
         verify(orderRepository).save(order);
-        verify(messagingTemplate).convertAndSend(eq("/topic/orders/" + orderId), any());
+        verify(messagingTemplate).convertAndSend(eq("/topic/orders/" + orderId), any(OrderStatusDTO.class));
     }
 
     @Test
@@ -235,7 +234,7 @@ class OrderWebhookControllerTest {
                 .andExpect(status().isOk());
 
         verify(orderRepository, never()).save(any());
-        verify(messagingTemplate, never()).convertAndSend(anyString(), any());
+        verify(messagingTemplate, never()).convertAndSend(anyString(), any(OrderStatusDTO.class));
     }
 
     private String computeHmacSha256(String data, String secret) {

@@ -1,6 +1,6 @@
 package com.passaaqui.backend.modules.order.service;
 
-import com.passaaqui.backend.infra.abacatepay.AbacateClient;
+import com.passaaqui.backend.infra.integration.abacatepay.AbacateClient;
 import com.passaaqui.backend.infra.exception.ConflictException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.modules.order.dto.CheckoutRequestDTO;
@@ -62,7 +62,7 @@ public class OrderService {
 
         order = orderRepository.save(order);
 
-        var checkoutRequest = new com.passaaqui.backend.infra.abacatepay.dto.CheckoutRequestDTO(
+        var checkoutRequest = new com.passaaqui.backend.infra.integration.abacatepay.dto.CheckoutRequestDTO(
                 totalAmount.doubleValue(), order.getId()
         );
         var checkoutResponse = abacateClient.createCheckout(checkoutRequest);
