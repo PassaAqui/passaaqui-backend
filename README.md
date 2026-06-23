@@ -27,6 +27,36 @@ Compile o projeto
 ./mvnw clean package -DskipTests
 ```
 
+## Testes
+
+Execute **todos** os testes (unitários, integração e security) com um único comando:
+
+```bash
+./mvnw test --no-transfer-progress
+```
+
+### Relatório formatado
+
+Para uma saída mais legível com sumário detalhado por classe de teste:
+
+**Windows (PowerShell)**
+```powershell
+.\test-report.ps1
+```
+
+**Linux / macOS**
+```bash
+./test-report.sh
+```
+
+### Organização dos testes
+
+| Tipo | Localização | Descrição |
+|---|---|---|
+| Unitários | `src/test/java/.../unit/` | Testes isolados com Mockito |
+| Integração | `src/test/java/.../integration/` | Testes com banco H2 (`@DataJpaTest`) |
+| Security | `src/test/java/.../security/` | Testes de segurança (`@SpringBootTest`) |
+
 > [!WARNING]
 > ATENÇÃO: é preciso ter o Java 21 e o Maven instalados em sua máquina
 
