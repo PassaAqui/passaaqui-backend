@@ -62,6 +62,8 @@ services:
       ABACATEPAY_API_KEY: 
       ABACATEPAY_WEBHOOK_SECRET:
 
+      OPENROUTESERVICE_API_KEY:
+
     depends_on:
       postgres:
         condition: service_healthy
