@@ -13,9 +13,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.Collections;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -38,6 +42,10 @@ class DirectionControllerTest {
 
     @BeforeEach
     void setup() {
+        SecurityContextHolder.setContext(new org.springframework.security.core.context.SecurityContextImpl(
+                new UsernamePasswordAuthenticationToken("1", null,
+                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_TOURIST")))
+        ));
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -49,7 +57,7 @@ class DirectionControllerTest {
         var dto = new DirectionRequestDTO("driving-car", -46.6576, -23.5874, -46.6333, -23.5505);
         var expected = Map.of("routes", "data");
 
-        when(service.getDirections(any(DirectionRequestDTO.class))).thenReturn(expected);
+        when(service.getDirections(any(DirectionRequestDTO.class), anyString())).thenReturn(expected);
 
         mockMvc.perform(post("/api/direction")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -72,7 +80,7 @@ class DirectionControllerTest {
     void getDirection_shouldReturn400WhenInvalidMode() throws Exception {
         var dto = new DirectionRequestDTO("bad-mode", 0, 0, 0, 0);
 
-        when(service.getDirections(any(DirectionRequestDTO.class)))
+        when(service.getDirections(any(DirectionRequestDTO.class), anyString()))
                 .thenThrow(new InvalidRequestException("Invalid driving mode: bad-mode"));
 
         mockMvc.perform(post("/api/direction")

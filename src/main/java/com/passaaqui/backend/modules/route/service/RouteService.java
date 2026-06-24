@@ -1,6 +1,8 @@
 package com.passaaqui.backend.modules.route.service;
 
 import com.passaaqui.backend.infra.integration.cache.CacheService;
+import com.passaaqui.backend.modules.route.dto.LocationDTO;
+import com.passaaqui.backend.modules.route.dto.RouteDestinationDTO;
 import com.passaaqui.backend.modules.route.dto.RouteSessionDTO;
 import com.passaaqui.backend.modules.route.dto.StartRouteDTO;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +29,23 @@ public class RouteService {
             return existing.get();
         }
 
-        RouteSessionDTO session = new RouteSessionDTO("ACTIVE", dto.destination(), null);
+        LocationDTO lastLocation = null;
+        if (dto.latitude() != null && dto.longitude() != null) {
+            lastLocation = new LocationDTO(dto.latitude(), dto.longitude());
+        }
+
+        RouteSessionDTO session = new RouteSessionDTO("ACTIVE", null, lastLocation);
         cacheService.setWithTtl(key, session, SESSION_TTL);
         return session;
+    }
+
+    public void updateDestination(String userId, RouteDestinationDTO destination) {
+        String key = ROUTE_KEY_PREFIX + userId;
+
+        Optional<RouteSessionDTO> existing = cacheService.get(key, RouteSessionDTO.class);
+        if (existing.isPresent()) {
+            RouteSessionDTO updated = new RouteSessionDTO(existing.get().status(), destination, existing.get().lastLocation());
+            cacheService.setWithTtl(key, updated, SESSION_TTL);
+        }
     }
 }

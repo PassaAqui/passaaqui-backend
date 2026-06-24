@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +22,11 @@ public class RouteController {
 
     @PostMapping("/start")
     @PreAuthorize("hasRole('TOURIST')")
-    public ResponseEntity<RouteSessionDTO> start(@RequestBody StartRouteDTO dto, Authentication authentication) {
+    public ResponseEntity<RouteSessionDTO> start(@RequestBody(required = false) StartRouteDTO dto) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (dto == null) {
+            dto = new StartRouteDTO(null, null);
+        }
         return ResponseEntity.ok(routeService.start(authentication.getName(), dto));
     }
 }
