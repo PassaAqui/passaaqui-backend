@@ -23,6 +23,20 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: passaaqui_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   minio:
     image: minio/minio:latest
     container_name: passaaqui_minio
@@ -59,13 +73,18 @@ services:
       MINIO_SECRET_KEY: root@123
       MINIO_BUCKET_NAME: passaaqui-bucket
 
-      ABACATEPAY_API_KEY: 
+      ABACATEPAY_API_KEY:
       ABACATEPAY_WEBHOOK_SECRET:
 
       OPENROUTESERVICE_API_KEY:
 
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       minio:
         condition: service_started
@@ -73,3 +92,4 @@ services:
 volumes:
   postgres_data:
   minio_data:
+  redis_data:
