@@ -5,6 +5,7 @@ import com.passaaqui.backend.modules.route.dto.LocationDTO;
 import com.passaaqui.backend.modules.route.dto.RouteDestinationDTO;
 import com.passaaqui.backend.modules.route.dto.RouteSessionDTO;
 import com.passaaqui.backend.modules.route.dto.StartRouteDTO;
+import com.passaaqui.backend.modules.websocket.service.WebSocketService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,7 @@ public class RouteService {
     private static final Duration SESSION_TTL = Duration.ofMinutes(25);
 
     private final CacheService cacheService;
+    private final WebSocketService webSocketService;
 
     public RouteSessionDTO start(String userId, StartRouteDTO dto) {
         String key = ROUTE_KEY_PREFIX + userId;
@@ -47,5 +49,11 @@ public class RouteService {
             RouteSessionDTO updated = new RouteSessionDTO(existing.get().status(), destination, existing.get().lastLocation());
             cacheService.setWithTtl(key, updated, SESSION_TTL);
         }
+    }
+
+    public void stop(String userId) {
+        String key = ROUTE_KEY_PREFIX + userId;
+        cacheService.delete(key);
+        webSocketService.pushToUser(userId, "/queue/route", "route-ended", "Session closed");
     }
 }
