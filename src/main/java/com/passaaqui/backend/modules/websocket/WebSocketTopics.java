@@ -19,6 +19,10 @@ public final class WebSocketTopics {
         return ROUTES + "/" + userId;
     }
 
+    public static String routeTracking(String userId) {
+        return ROUTES + "/tracking/" + userId;
+    }
+
     public static String userQueue(String userId) {
         return QUEUE_PREFIX + "/" + userId;
     }

@@ -32,6 +32,11 @@ public class RedisCacheServiceImpl implements CacheService {
     }
 
     @Override
+    public boolean setIfAbsent(String key, Object value, Duration ttl) {
+        return Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, value, ttl));
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public <T> Optional<T> get(String key, Class<T> type) {
         Object raw = redisTemplate.opsForValue().get(key);

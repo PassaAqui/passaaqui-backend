@@ -28,6 +28,11 @@ public class InMemoryCacheService implements CacheService {
     }
 
     @Override
+    public boolean setIfAbsent(String key, Object value, Duration ttl) {
+        return store.putIfAbsent(key, value) == null;
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public <T> Optional<T> get(String key, Class<T> type) {
         Object value = store.get(key);

@@ -1,5 +1,6 @@
 package com.passaaqui.backend.modules.route.controller;
 
+import com.passaaqui.backend.modules.route.dto.LocationDTO;
 import com.passaaqui.backend.modules.route.dto.RouteSessionDTO;
 import com.passaaqui.backend.modules.route.dto.StartRouteDTO;
 import com.passaaqui.backend.modules.route.service.RouteService;
@@ -37,6 +38,14 @@ public class RouteController {
     public ResponseEntity<RouteSessionDTO> current() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return ResponseEntity.ok(routeService.getCurrentSession(authentication.getName()));
+    }
+
+    @PostMapping("/location")
+    @PreAuthorize("hasRole('TOURIST')")
+    public ResponseEntity<Void> updateLocation(@RequestBody LocationDTO location) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        routeService.updateLocation(authentication.getName(), location);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/current")

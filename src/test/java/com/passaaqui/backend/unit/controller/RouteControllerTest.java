@@ -1,6 +1,7 @@
 package com.passaaqui.backend.unit.controller;
 
 import com.passaaqui.backend.modules.route.controller.RouteController;
+import com.passaaqui.backend.modules.route.dto.LocationDTO;
 import com.passaaqui.backend.modules.route.dto.RouteSessionDTO;
 import com.passaaqui.backend.modules.route.dto.StartRouteDTO;
 import com.passaaqui.backend.modules.route.service.RouteService;
@@ -75,6 +76,16 @@ class RouteControllerTest {
         mockMvc.perform(get("/api/route/current"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    @Test
+    void updateLocation_shouldReturn200() throws Exception {
+        mockMvc.perform(post("/api/route/location")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"latitude\": -23.5505, \"longitude\": -46.6333}"))
+                .andExpect(status().isOk());
+
+        verify(routeService).updateLocation(eq("1"), any(LocationDTO.class));
     }
 
     @Test

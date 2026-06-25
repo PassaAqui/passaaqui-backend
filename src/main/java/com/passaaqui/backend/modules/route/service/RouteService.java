@@ -1,12 +1,15 @@
 package com.passaaqui.backend.modules.route.service;
 
+import com.passaaqui.backend.infra.exception.InvalidRequestException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.infra.integration.cache.CacheService;
 import com.passaaqui.backend.modules.route.dto.LocationDTO;
 import com.passaaqui.backend.modules.route.dto.RouteDestinationDTO;
 import com.passaaqui.backend.modules.route.dto.RouteSessionDTO;
 import com.passaaqui.backend.modules.route.dto.StartRouteDTO;
+import com.passaaqui.backend.modules.websocket.WebSocketTopics;
 import com.passaaqui.backend.modules.websocket.service.WebSocketService;
+import com.passaaqui.backend.modules.websocket.service.WebSocketSessionManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,15 +25,10 @@ public class RouteService {
 
     private final CacheService cacheService;
     private final WebSocketService webSocketService;
+    private final WebSocketSessionManager sessionManager;
 
     public RouteSessionDTO start(String userId, StartRouteDTO dto) {
         String key = ROUTE_KEY_PREFIX + userId;
-
-        Optional<RouteSessionDTO> existing = cacheService.get(key, RouteSessionDTO.class);
-        if (existing.isPresent()) {
-            cacheService.setWithTtl(key, existing.get(), SESSION_TTL);
-            return existing.get();
-        }
 
         LocationDTO lastLocation = null;
         if (dto.latitude() != null && dto.longitude() != null) {
@@ -38,18 +36,29 @@ public class RouteService {
         }
 
         RouteSessionDTO session = new RouteSessionDTO("ACTIVE", null, lastLocation);
-        cacheService.setWithTtl(key, session, SESSION_TTL);
+
+        boolean created = cacheService.setIfAbsent(key, session, SESSION_TTL);
+        if (!created) {
+            Optional<RouteSessionDTO> existing = cacheService.get(key, RouteSessionDTO.class);
+            if (existing.isPresent()) {
+                cacheService.setWithTtl(key, existing.get(), SESSION_TTL);
+                return existing.get();
+            }
+        }
+
         return session;
     }
 
     public void updateDestination(String userId, RouteDestinationDTO destination) {
         String key = ROUTE_KEY_PREFIX + userId;
 
-        Optional<RouteSessionDTO> existing = cacheService.get(key, RouteSessionDTO.class);
-        if (existing.isPresent()) {
-            RouteSessionDTO updated = new RouteSessionDTO(existing.get().status(), destination, existing.get().lastLocation());
-            cacheService.setWithTtl(key, updated, SESSION_TTL);
-        }
+        RouteSessionDTO existing = cacheService.get(key, RouteSessionDTO.class)
+                .orElseThrow(() -> new InvalidRequestException("No active route session. Start a route first."));
+
+        RouteSessionDTO updated = new RouteSessionDTO(existing.status(), destination, existing.lastLocation());
+        cacheService.setWithTtl(key, updated, SESSION_TTL);
+
+        webSocketService.pushToUser(userId, "/queue/route", "destination-updated", destination);
     }
 
     public RouteSessionDTO getCurrentSession(String userId) {
@@ -58,9 +67,22 @@ public class RouteService {
                 .orElseThrow(() -> new ResourceNotFoundException("No active route session found"));
     }
 
+    public void updateLocation(String userId, LocationDTO location) {
+        String key = ROUTE_KEY_PREFIX + userId;
+
+        RouteSessionDTO existing = cacheService.get(key, RouteSessionDTO.class)
+                .orElseThrow(() -> new InvalidRequestException("No active route session. Start a route first."));
+
+        RouteSessionDTO updated = new RouteSessionDTO(existing.status(), existing.destination(), location);
+        cacheService.setWithTtl(key, updated, SESSION_TTL);
+
+        webSocketService.pushToTopic(WebSocketTopics.routeTracking(userId), "location-update", location);
+    }
+
     public void stop(String userId) {
         String key = ROUTE_KEY_PREFIX + userId;
         cacheService.delete(key);
+        sessionManager.removeUser(userId);
         webSocketService.pushToUser(userId, "/queue/route", "route-ended", "Session closed");
     }
 }

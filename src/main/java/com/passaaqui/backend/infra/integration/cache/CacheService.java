@@ -10,6 +10,8 @@ public interface CacheService {
 
     void setWithTtl(String key, Object value, Duration ttl);
 
+    boolean setIfAbsent(String key, Object value, Duration ttl);
+
     <T> Optional<T> get(String key, Class<T> type);
 
     void delete(String key);
