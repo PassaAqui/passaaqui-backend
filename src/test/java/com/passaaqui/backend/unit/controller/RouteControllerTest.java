@@ -68,7 +68,17 @@ class RouteControllerTest {
     }
 
     @Test
-    void current_shouldReturn204() throws Exception {
+    void current_shouldReturn200WithSession() throws Exception {
+        var session = new RouteSessionDTO("ACTIVE", null, null);
+        when(routeService.getCurrentSession("1")).thenReturn(session);
+
+        mockMvc.perform(get("/api/route/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    @Test
+    void deleteCurrent_shouldReturn204() throws Exception {
         mockMvc.perform(delete("/api/route/current"))
                 .andExpect(status().isNoContent());
 

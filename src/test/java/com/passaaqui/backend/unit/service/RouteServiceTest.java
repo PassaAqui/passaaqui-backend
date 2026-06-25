@@ -1,5 +1,6 @@
 package com.passaaqui.backend.unit.service;
 
+import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.infra.integration.cache.CacheService;
 import com.passaaqui.backend.modules.route.dto.LocationDTO;
 import com.passaaqui.backend.modules.route.dto.RouteDestinationDTO;
@@ -101,6 +102,23 @@ class RouteServiceTest {
         routeService.updateDestination(USER_ID, new RouteDestinationDTO(0.0, 0.0, 0.0, 0.0, "driving-car"));
 
         verify(cacheService, never()).setWithTtl(any(), any(), any());
+    }
+
+    @Test
+    void getCurrentSession_shouldReturnSession_whenExists() {
+        var expected = new RouteSessionDTO("ACTIVE", null, null);
+        when(cacheService.get("route:" + USER_ID, RouteSessionDTO.class)).thenReturn(Optional.of(expected));
+
+        var result = routeService.getCurrentSession(USER_ID);
+
+        assertSame(expected, result);
+    }
+
+    @Test
+    void getCurrentSession_shouldThrow_whenNoSession() {
+        when(cacheService.get("route:" + USER_ID, RouteSessionDTO.class)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> routeService.getCurrentSession(USER_ID));
     }
 
     @Test

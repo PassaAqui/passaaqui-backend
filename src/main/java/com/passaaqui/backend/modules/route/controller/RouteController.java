@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,9 +32,16 @@ public class RouteController {
         return ResponseEntity.ok(routeService.start(authentication.getName(), dto));
     }
 
+    @GetMapping("/current")
+    @PreAuthorize("hasRole('TOURIST')")
+    public ResponseEntity<RouteSessionDTO> current() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return ResponseEntity.ok(routeService.getCurrentSession(authentication.getName()));
+    }
+
     @DeleteMapping("/current")
     @PreAuthorize("hasRole('TOURIST')")
-    public ResponseEntity<Void> current() {
+    public ResponseEntity<Void> deleteCurrent() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         routeService.stop(authentication.getName());
         return ResponseEntity.noContent().build();

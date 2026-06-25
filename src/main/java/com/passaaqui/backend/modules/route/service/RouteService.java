@@ -1,5 +1,6 @@
 package com.passaaqui.backend.modules.route.service;
 
+import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.infra.integration.cache.CacheService;
 import com.passaaqui.backend.modules.route.dto.LocationDTO;
 import com.passaaqui.backend.modules.route.dto.RouteDestinationDTO;
@@ -49,6 +50,12 @@ public class RouteService {
             RouteSessionDTO updated = new RouteSessionDTO(existing.get().status(), destination, existing.get().lastLocation());
             cacheService.setWithTtl(key, updated, SESSION_TTL);
         }
+    }
+
+    public RouteSessionDTO getCurrentSession(String userId) {
+        String key = ROUTE_KEY_PREFIX + userId;
+        return cacheService.get(key, RouteSessionDTO.class)
+                .orElseThrow(() -> new ResourceNotFoundException("No active route session found"));
     }
 
     public void stop(String userId) {
