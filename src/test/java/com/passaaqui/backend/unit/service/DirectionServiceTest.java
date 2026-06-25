@@ -5,6 +5,7 @@ import com.passaaqui.backend.infra.integration.openrouteservice.OpenRouteService
 import com.passaaqui.backend.modules.direction.dto.DirectionRequestDTO;
 import com.passaaqui.backend.modules.direction.model.enums.DirectionMode;
 import com.passaaqui.backend.modules.direction.service.DirectionService;
+import com.passaaqui.backend.modules.route.service.RouteService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,8 +24,13 @@ class DirectionServiceTest {
     @Mock
     private OpenRouteServiceClient openRouteServiceClient;
 
+    @Mock
+    private RouteService routeService;
+
     @InjectMocks
     private DirectionService service;
+
+    private static final String USER_ID = "1";
 
     @Test
     void getDirections_shouldReturnResult_whenValidMode() {
@@ -34,18 +40,20 @@ class DirectionServiceTest {
         when(openRouteServiceClient.getDirections(any(DirectionRequestDTO.class), any(DirectionMode.class)))
                 .thenReturn(expected);
 
-        var result = service.getDirections(dto);
+        var result = service.getDirections(dto, USER_ID);
 
         assertNotNull(result);
         assertEquals(expected, result);
         verify(openRouteServiceClient).getDirections(eq(dto), eq(DirectionMode.DRIVING_CAR));
+        verify(routeService).updateDestination(eq(USER_ID), any());
     }
 
     @Test
     void getDirections_shouldThrow_whenInvalidMode() {
         var dto = new DirectionRequestDTO("invalid-mode", 0, 0, 0, 0);
 
-        assertThrows(InvalidRequestException.class, () -> service.getDirections(dto));
+        assertThrows(InvalidRequestException.class, () -> service.getDirections(dto, USER_ID));
         verify(openRouteServiceClient, never()).getDirections(any(), any());
+        verify(routeService, never()).updateDestination(any(), any());
     }
 }
