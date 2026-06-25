@@ -98,7 +98,7 @@ class RouteServiceTest {
         var destination = new RouteDestinationDTO(-23.5505, -46.6333, -23.5610, -46.6560, "driving-car");
         routeService.updateDestination(USER_ID, destination);
 
-        verify(cacheService).setWithTtl(eq("route:" + USER_ID), sessionCaptor.capture(), any());
+        verify(cacheService).setIfPresent(eq("route:" + USER_ID), sessionCaptor.capture(), any());
         var updated = sessionCaptor.getValue();
         assertEquals("ACTIVE", updated.status());
         assertNotNull(updated.destination());
@@ -114,7 +114,7 @@ class RouteServiceTest {
         assertThrows(InvalidRequestException.class,
                 () -> routeService.updateDestination(USER_ID, new RouteDestinationDTO(0.0, 0.0, 0.0, 0.0, "driving-car")));
 
-        verify(cacheService, never()).setWithTtl(any(), any(), any());
+        verify(cacheService, never()).setIfPresent(any(), any(), any());
         verify(webSocketService, never()).pushToUser(any(), any(), any(), any());
     }
 
@@ -143,7 +143,7 @@ class RouteServiceTest {
         var location = new LocationDTO(-23.5505, -46.6333);
         routeService.updateLocation(USER_ID, location);
 
-        verify(cacheService).setWithTtl(eq("route:" + USER_ID), sessionCaptor.capture(), any());
+        verify(cacheService).setIfPresent(eq("route:" + USER_ID), sessionCaptor.capture(), any());
         var updated = sessionCaptor.getValue();
         assertEquals(-23.5505, updated.lastLocation().latitude());
         assertEquals(-46.6333, updated.lastLocation().longitude());
@@ -158,7 +158,7 @@ class RouteServiceTest {
         assertThrows(InvalidRequestException.class,
                 () -> routeService.updateLocation(USER_ID, new LocationDTO(0.0, 0.0)));
 
-        verify(cacheService, never()).setWithTtl(any(), any(), any());
+        verify(cacheService, never()).setIfPresent(any(), any(), any());
         verify(webSocketService, never()).pushToTopic(any(), any(), any());
     }
 

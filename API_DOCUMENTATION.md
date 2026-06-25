@@ -129,6 +129,12 @@ http://localhost:8080/api
 ### 🧭 Direções
 - [`POST /api/direction`](#post-apidirection)
 
+### 🗺️ Rota (Route Session)
+- [`POST /api/route/start`](#post-apiroutestart)
+- [`GET /api/route/current`](#get-apiroutecurrent)
+- [`POST /api/route/location`](#post-apiroutelocation)
+- [`DELETE /api/route/current`](#delete-apiroutecurrent)
+
 ### 🛒 Produtos
 - [`POST /api/products`](#post-apiproducts)
 - [`GET /api/products`](#get-apiproducts)
@@ -225,8 +231,238 @@ Resposta da OpenRouteService contendo as informações da rota.
 |---|---|
 | 400 | Modo de locomoção inválido |
 | 400 | Dados de validação inválidos |
+| 400 | Nenhuma sessão de rota ativa |
 | 401 | Token ausente ou inválido |
 | 403 | Role não é TOURIST |
+
+#### Integração com Route Session
+
+Ao calcular uma direção, o sistema **automaticamente atualiza a sessão de rota ativa** do turista com os dados de destino (`startLatitude`, `startLongitude`, `stopLatitude`, `stopLongitude`, `mode`). Se o turista não possui uma rota ativa (`POST /api/route/start` não foi chamado antes), o endpoint retorna **400** com a mensagem "No active route session. Start a route first.".
+
+---
+
+## 🗺️ Rota (Route Session)
+
+### POST /api/route/start
+
+#### Descrição
+
+Inicia uma **nova sessão de rota** para o turista. A sessão é armazenada no **Redis** com TTL de **25 minutos** (renovado a cada requisição). Se já existir uma sessão ativa, o TTL é renovado e a sessão existente é retornada.
+
+#### Controller
+
+`RouteController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Cookie | Sim | `access_token=<JWT>` |
+| Content-Type | Não | `application/json` (se houver body) |
+
+#### Request Body
+
+Opcional. Se enviado, define a localização inicial do turista.
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| latitude | Double | Não | — |
+| longitude | Double | Não | — |
+
+**Exemplo:**
+```json
+{
+  "latitude": -23.5505,
+  "longitude": -46.6333
+}
+```
+
+#### Response 200 (OK)
+
+```json
+{
+  "status": "ACTIVE",
+  "destination": null,
+  "lastLocation": {
+    "latitude": -23.5505,
+    "longitude": -46.6333
+  }
+}
+```
+
+Se não houver body, `lastLocation` será `null`.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+
+---
+
+### GET /api/route/current
+
+#### Descrição
+
+Retorna a **sessão de rota ativa** do turista autenticado, incluindo status, destino e última localização conhecida.
+
+#### Controller
+
+`RouteController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Cookie | Sim | `access_token=<JWT>` |
+
+#### Response 200 (OK)
+
+```json
+{
+  "status": "ACTIVE",
+  "destination": {
+    "startLatitude": -23.5874,
+    "startLongitude": -46.6576,
+    "stopLatitude": -23.5505,
+    "stopLongitude": -46.6333,
+    "mode": "driving-car"
+  },
+  "lastLocation": {
+    "latitude": -23.5505,
+    "longitude": -46.6333
+  }
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+| 404 | Nenhuma rota ativa encontrada |
+
+---
+
+### POST /api/route/location
+
+#### Descrição
+
+Atualiza a **localização atual** do turista na sessão de rota ativa e **transmite em tempo real** para o tópico WebSocket `/topic/routes/tracking/{userId}`. Utilizado para **tracking ao vivo**: o app envia a coordenada GPS periodicamente (ex: a cada 5 segundos) e quem estiver inscrito no tópico recebe a posição em tempo real.
+
+> ⚠️ Requer uma sessão de rota ativa. Se não houver, retorna 400.
+
+#### Controller
+
+`RouteController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Cookie | Sim | `access_token=<JWT>` |
+| Content-Type | Sim | `application/json` |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| latitude | Double | Sim | — |
+| longitude | Double | Sim | — |
+
+**Exemplo:**
+```json
+{
+  "latitude": -23.5505,
+  "longitude": -46.6333
+}
+```
+
+#### Response 200 (OK)
+
+Corpo vazio.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Nenhuma rota ativa |
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+
+---
+
+### DELETE /api/route/current
+
+#### Descrição
+
+**Encerra** a sessão de rota ativa: remove os dados do Redis, limpa o rastreamento de sessão WebSocket e notifica o usuário via `/user/{userId}/queue/route` com ação `route-ended`. O cliente deve se desconectar do WebSocket ao receber essa notificação.
+
+#### Controller
+
+`RouteController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Cookie | Sim | `access_token=<JWT>` |
+
+#### Response 204 (No Content)
+
+Corpo vazio.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+
+---
+
+### Fluxo Completo: Direction → Route → Tracking
+
+1. **Iniciar rota:** `POST /api/route/start` → sessão criada no Redis (TTL 25min)
+2. **Pedir direção:** `POST /api/direction` → calcula rota na OpenRouteService **e** atualiza `destination` na sessão Redis automaticamente
+3. **Enviar localização:** `POST /api/route/location` (a cada 5s) → atualiza `lastLocation` + **broadcast** via WebSocket para `/topic/routes/tracking/{userId}`
+4. **Consultar sessão:** `GET /api/route/current` → retorna status + destination + lastLocation atuais
+5. **Encerrar rota:** `DELETE /api/route/current` → remove Redis + notifica socket (`route-ended`)
+6. **Sessão expira automaticamente** após 25 minutos de inatividade (TTL do Redis)
 
 ---
 
@@ -2747,6 +2983,8 @@ host:localhost:8080
 | Tópico | Descrição | Payload |
 |---|---|---|
 | `/topic/orders/{orderId}` | Notificações de alteração de status do pedido | `OrderStatusDTO` |
+| `/topic/routes/tracking/{userId}` | Tracking ao vivo de localização do turista | `PushMessageDTO(action, LocationDTO)` |
+| `/user/{userId}/queue/route` | Notificações de rota (destino atualizado, rota encerrada) | `PushMessageDTO(action, data)` |
 
 **Payload (`OrderStatusDTO`):**
 
@@ -2755,6 +2993,25 @@ host:localhost:8080
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "status": "PAID",
   "pickupCode": "A7X9K2"
+}
+```
+
+**Payload (`PushMessageDTO - tracking`):**
+```json
+{
+  "action": "location-update",
+  "data": {
+    "latitude": -23.5505,
+    "longitude": -46.6333
+  }
+}
+```
+
+**Payload (`PushMessageDTO - route-ended`):**
+```json
+{
+  "action": "route-ended",
+  "data": "Session closed"
 }
 ```
 
@@ -2789,7 +3046,8 @@ host:localhost:8080
 | POIs | 5 | — | 2 | 3 | — |
 | POI Ratings | 2 | — | 1 | — | TOURIST |
 | Direction | 1 | — | — | — | TOURIST |
+| Route | 4 | — | — | — | TOURIST |
 | Products | 6 | — | 3 | — | SHOPKEEPER |
 | Orders | 5 | — | — | — | TOURIST / SHOPKEEPER |
 | WebSocket (STOMP) | 1 | — | — | — | TOURIST / SHOPKEEPER |
-| **Total** | **52** | **5** | **9** | **29** | **10** |
+| **Total** | **56** | **5** | **9** | **29** | **14** |

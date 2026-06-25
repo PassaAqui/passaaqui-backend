@@ -56,7 +56,7 @@ public class RouteService {
                 .orElseThrow(() -> new InvalidRequestException("No active route session. Start a route first."));
 
         RouteSessionDTO updated = new RouteSessionDTO(existing.status(), destination, existing.lastLocation());
-        cacheService.setWithTtl(key, updated, SESSION_TTL);
+        cacheService.setIfPresent(key, updated, SESSION_TTL);
 
         webSocketService.pushToUser(userId, "/queue/route", "destination-updated", destination);
     }
@@ -74,7 +74,7 @@ public class RouteService {
                 .orElseThrow(() -> new InvalidRequestException("No active route session. Start a route first."));
 
         RouteSessionDTO updated = new RouteSessionDTO(existing.status(), existing.destination(), location);
-        cacheService.setWithTtl(key, updated, SESSION_TTL);
+        cacheService.setIfPresent(key, updated, SESSION_TTL);
 
         webSocketService.pushToTopic(WebSocketTopics.routeTracking(userId), "location-update", location);
     }

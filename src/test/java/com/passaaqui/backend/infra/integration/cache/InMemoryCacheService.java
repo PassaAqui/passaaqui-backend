@@ -33,6 +33,15 @@ public class InMemoryCacheService implements CacheService {
     }
 
     @Override
+    public boolean setIfPresent(String key, Object value, Duration ttl) {
+        if (store.containsKey(key)) {
+            store.put(key, value);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public <T> Optional<T> get(String key, Class<T> type) {
         Object value = store.get(key);
