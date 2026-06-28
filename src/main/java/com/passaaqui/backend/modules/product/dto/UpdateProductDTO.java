@@ -5,6 +5,7 @@ public record UpdateProductDTO(
     String description,
     Double price,
     Integer maxXp,
+    Integer stock,
     Integer shopkeeperId,
     Integer categoryId
 ) {}

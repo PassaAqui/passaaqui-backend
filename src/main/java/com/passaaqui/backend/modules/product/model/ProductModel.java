@@ -32,6 +32,12 @@ public class ProductModel {
 
     private Integer maxXp;
 
+    @Column(nullable = false)
+    private Integer stock = 0;
+
+    @Version
+    private Integer version;
+
     @ManyToOne
     @JoinColumn(nullable = false)
     private ShopkeeperModel shopkeeper;

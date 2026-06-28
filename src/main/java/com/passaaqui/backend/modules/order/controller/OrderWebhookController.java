@@ -6,6 +6,8 @@ import com.passaaqui.backend.modules.order.dto.OrderStatusDTO;
 import com.passaaqui.backend.modules.order.model.OrderModel;
 import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
 import com.passaaqui.backend.modules.order.repository.OrderRepository;
+import com.passaaqui.backend.modules.product.repository.ProductRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -29,6 +31,7 @@ import java.util.UUID;
 public class OrderWebhookController {
 
     private final OrderRepository orderRepository;
+    private final ProductRepository productRepository;
     private final ObjectMapper objectMapper;
     private final AbacateClient abacateClient;
     private final SimpMessagingTemplate messagingTemplate;
@@ -63,8 +66,10 @@ public class OrderWebhookController {
                         order.setStatus(OrderStatus.PAID);
                         order.setPickupCode(generatePickupCode());
                     }
-                    case "transparent.canceled", "transparent.failed", "transparent.refunded" ->
-                            order.setStatus(OrderStatus.CANCELED);
+                    case "transparent.canceled", "transparent.failed", "transparent.refunded" -> {
+                        order.setStatus(OrderStatus.CANCELED);
+                        restoreStock(order);
+                    }
                 }
                 orderRepository.save(order);
                 messagingTemplate.convertAndSend(
@@ -80,6 +85,7 @@ public class OrderWebhookController {
         return ResponseEntity.ok().build();
     }
 
+    @Transactional
     @Scheduled(cron = "0 * * * * *")
     public void expireOrdersJob() {
         LocalDateTime limitTime = LocalDateTime.now().minusMinutes(5);
@@ -87,6 +93,7 @@ public class OrderWebhookController {
 
         for (OrderModel order : orders) {
             order.setStatus(OrderStatus.CANCELED);
+            restoreStock(order);
             orderRepository.save(order);
             messagingTemplate.convertAndSend(
                     "/topic/orders/" + order.getId(),
@@ -139,6 +146,12 @@ public class OrderWebhookController {
             sb.append(chars.charAt(random.nextInt(chars.length())));
         }
         return sb.toString();
+    }
+
+    private void restoreStock(OrderModel order) {
+        var product = order.getProduct();
+        product.setStock(product.getStock() + order.getQuantity());
+        productRepository.save(product);
     }
 
     public record WebhookPayload(String event, WebhookData data) {}
