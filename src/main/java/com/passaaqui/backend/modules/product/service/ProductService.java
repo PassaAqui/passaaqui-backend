@@ -46,6 +46,7 @@ public class ProductService {
 
         product.setShopkeeper(shopkeeper);
         product.setCategory(category);
+        product.setStock(dto.stock() != null ? dto.stock() : 0);
 
         return repository.save(product);
     }
@@ -84,6 +85,10 @@ public class ProductService {
                     .orElseThrow(() -> new ResourceNotFoundException("Category not found"))
                 : product.getCategory();
             product.setMaxXp(xpCalculationStrategy.calculate(product.getPrice(), category.getCategoryWeight()));
+        }
+
+        if (dto.stock() != null) {
+            product.setStock(dto.stock());
         }
 
         if (dto.shopkeeperId() != null) {

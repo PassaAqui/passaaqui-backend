@@ -2406,6 +2406,7 @@ Cria um novo produto associado a um lojista e uma categoria.
 | description | String | Não | — |
 | price | Double | Não | `>= 0` |
 | xpCost | Integer | Não | `>= 0` |
+| stock | Integer | Não | `>= 0` (padrão: 0) |
 | shopkeeperId | Integer | Sim | ID de lojista existente |
 | categoryId | Integer | Sim | ID de categoria existente |
 
@@ -2417,6 +2418,7 @@ Cria um novo produto associado a um lojista e uma categoria.
   "description": "Peça feita à mão",
   "price": 49.90,
   "xpCost": 10,
+  "stock": 100,
   "shopkeeperId": 2,
   "categoryId": 1
 }
@@ -2431,6 +2433,7 @@ Cria um novo produto associado a um lojista e uma categoria.
   "description": "Peça feita à mão",
   "price": 49.90,
   "xpCost": 10,
+  "stock": 100,
   "shopkeeper": {
     "id": 2,
     "name": "Maria Lojista",
@@ -2475,6 +2478,7 @@ Lista **todos os produtos** cadastrados.
     "description": "Peça feita à mão",
     "price": 49.90,
     "xpCost": 10,
+    "stock": 100,
     "shopkeeper": { "id": 2, "name": "Maria Lojista" },
     "category": { "id": 1, "name": "Alimentação" },
     "createdAt": "2026-05-24T15:00:00",
@@ -2513,6 +2517,7 @@ Lista os **50 produtos mais recentes** cadastrados (ordenados por `createdAt` de
     "description": "Peça feita à mão",
     "price": 49.90,
     "xpCost": 10,
+    "stock": 100,
     "shopkeeper": { "id": 2, "name": "Maria Lojista" },
     "category": { "id": 1, "name": "Alimentação" },
     "createdAt": "2026-05-24T15:00:00",
@@ -2556,6 +2561,7 @@ Retorna um produto por ID.
   "description": "Peça feita à mão",
   "price": 49.90,
   "xpCost": 10,
+  "stock": 100,
   "shopkeeper": { "id": 2, "name": "Maria Lojista" },
   "category": { "id": 1, "name": "Alimentação" },
   "createdAt": "2026-05-24T15:00:00",
@@ -2599,6 +2605,7 @@ Todos os campos opcionais.
 | description | String | — |
 | price | Double | — |
 | xpCost | Integer | — |
+| stock | Integer | `>= 0` |
 | shopkeeperId | Integer | Deve existir |
 | categoryId | Integer | Deve existir |
 
@@ -2607,7 +2614,8 @@ Todos os campos opcionais.
 ```json
 {
   "price": 39.90,
-  "xpCost": 5
+  "xpCost": 5,
+  "stock": 200
 }
 ```
 
@@ -2711,6 +2719,7 @@ Apenas `TOURIST`
 | Status | Motivo |
 |---|---|
 | 400 | Dados inválidos |
+| 400 | Produto sem estoque disponível |
 | 401 | Token ausente ou inválido |
 | 403 | Role não é TOURIST |
 | 404 | Produto ou turista não encontrado |

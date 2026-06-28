@@ -65,6 +65,13 @@ public class OrderService {
         ProductModel product = productRepository.findById(request.productId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + request.productId()));
 
+        if (product.getStock() < 1) {
+            throw new InvalidRequestException("Produto sem estoque disponível.");
+        }
+
+        product.setStock(product.getStock() - 1);
+        product = productRepository.save(product);
+
         BigDecimal unitPrice = BigDecimal.valueOf(product.getPrice());
         BigDecimal totalAmount = unitPrice;
 

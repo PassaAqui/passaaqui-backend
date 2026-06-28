@@ -15,6 +15,9 @@ public record CreateProductDTO(
 
     Integer maxXp,
 
+    @Min(0)
+    Integer stock,
+
     @NotNull
     Integer shopkeeperId,
 

@@ -7,6 +7,8 @@ import com.passaaqui.backend.modules.order.controller.OrderWebhookController;
 import com.passaaqui.backend.modules.order.model.OrderModel;
 import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
 import com.passaaqui.backend.modules.order.repository.OrderRepository;
+import com.passaaqui.backend.modules.product.model.ProductModel;
+import com.passaaqui.backend.modules.product.repository.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +37,9 @@ class OrderWebhookControllerTest {
 
     @Mock
     private OrderRepository orderRepository;
+
+    @Mock
+    private ProductRepository productRepository;
 
     @Mock
     private ObjectMapper objectMapper;
@@ -138,6 +143,13 @@ class OrderWebhookControllerTest {
         verify(messagingTemplate).convertAndSend(eq("/topic/orders/" + orderId), any(OrderStatusDTO.class));
     }
 
+    private ProductModel createProductWithStock() {
+        ProductModel p = new ProductModel();
+        p.setId(1);
+        p.setStock(10);
+        return p;
+    }
+
     @Test
     void handleWebhook_shouldProcessCanceledPayment() throws Exception {
         UUID orderId = UUID.randomUUID();
@@ -146,6 +158,8 @@ class OrderWebhookControllerTest {
 
         OrderModel order = OrderModel.builder()
                 .id(orderId)
+                .product(createProductWithStock())
+                .quantity(1)
                 .status(OrderStatus.AWAITING_PAYMENT)
                 .build();
 
@@ -164,6 +178,7 @@ class OrderWebhookControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
+        verify(productRepository).save(any(ProductModel.class));
         verify(orderRepository).save(order);
         verify(messagingTemplate).convertAndSend(eq("/topic/orders/" + orderId), any(OrderStatusDTO.class));
     }
@@ -176,6 +191,8 @@ class OrderWebhookControllerTest {
 
         OrderModel order = OrderModel.builder()
                 .id(orderId)
+                .product(createProductWithStock())
+                .quantity(1)
                 .status(OrderStatus.AWAITING_PAYMENT)
                 .build();
 
@@ -194,6 +211,7 @@ class OrderWebhookControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
+        verify(productRepository).save(any(ProductModel.class));
         verify(orderRepository).save(order);
     }
 
