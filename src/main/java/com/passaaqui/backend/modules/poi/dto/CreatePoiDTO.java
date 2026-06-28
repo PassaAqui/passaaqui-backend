@@ -1,5 +1,6 @@
 package com.passaaqui.backend.modules.poi.dto;
 
+import com.passaaqui.backend.modules.poi.model.enums.PoiType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,6 +13,9 @@ public record CreatePoiDTO(
 
     @Min(0)
     Integer xpReward,
+
+    @NotNull
+    PoiType type,
 
     Double latitude,
 

@@ -3,6 +3,8 @@ package com.passaaqui.backend.modules.product.service;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.modules.category.model.CategoryModel;
 import com.passaaqui.backend.modules.category.repository.CategoryRepository;
+import com.passaaqui.backend.modules.poi.model.PoiModel;
+import com.passaaqui.backend.modules.poi.repository.PoiRepository;
 import com.passaaqui.backend.modules.product.dto.CreateProductDTO;
 import com.passaaqui.backend.modules.product.dto.UpdateProductDTO;
 import com.passaaqui.backend.modules.product.model.ProductModel;
@@ -26,6 +28,7 @@ public class ProductService {
     private final ProductRepository repository;
     private final ShopkeeperRepository shopkeeperRepository;
     private final CategoryRepository categoryRepository;
+    private final PoiRepository poiRepository;
     private final XpCalculationStrategy xpCalculationStrategy;
 
     @Transactional
@@ -36,6 +39,9 @@ public class ProductService {
         CategoryModel category = categoryRepository.findById(dto.categoryId())
             .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
+        PoiModel poi = poiRepository.findById(dto.poiId())
+            .orElseThrow(() -> new ResourceNotFoundException("POI not found"));
+
         ProductModel product = new ProductModel();
         product.setName(dto.name());
         product.setDescription(dto.description());
@@ -45,6 +51,7 @@ public class ProductService {
         product.setMaxXp(maxXp);
 
         product.setShopkeeper(shopkeeper);
+        product.setPoi(poi);
         product.setCategory(category);
         product.setStock(dto.stock() != null ? dto.stock() : 0);
 
@@ -101,6 +108,12 @@ public class ProductService {
             CategoryModel category = categoryRepository.findById(dto.categoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
             product.setCategory(category);
+        }
+
+        if (dto.poiId() != null) {
+            PoiModel poi = poiRepository.findById(dto.poiId())
+                .orElseThrow(() -> new ResourceNotFoundException("POI not found"));
+            product.setPoi(poi);
         }
 
         return repository.save(product);

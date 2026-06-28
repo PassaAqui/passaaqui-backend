@@ -4,8 +4,11 @@ import com.passaaqui.backend.infra.integration.abacatepay.AbacateClient;
 import com.passaaqui.backend.infra.integration.abacatepay.dto.CheckoutResponseDTO;
 import com.passaaqui.backend.modules.category.model.CategoryModel;
 import com.passaaqui.backend.modules.category.repository.CategoryRepository;
+import com.passaaqui.backend.modules.city.model.CityModel;
 import com.passaaqui.backend.modules.order.model.OrderModel;
 import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
+import com.passaaqui.backend.modules.poi.model.PoiModel;
+import com.passaaqui.backend.modules.poi.model.enums.PoiType;
 import com.passaaqui.backend.modules.order.repository.OrderRepository;
 import com.passaaqui.backend.modules.product.model.ProductModel;
 import com.passaaqui.backend.modules.product.repository.ProductRepository;
@@ -71,12 +74,24 @@ class OrderRepositoryIntegrationTest {
         shopkeeper.setCategory(category);
         shopkeeper = em.persistAndFlush(shopkeeper);
 
+        var city = new CityModel();
+        city.setName("Test City");
+        city.setDescription("Test Description");
+        city = em.persistAndFlush(city);
+
+        var poi = new PoiModel();
+        poi.setName("Test Store");
+        poi.setType(PoiType.STORE);
+        poi.setCity(city);
+        poi = em.persistAndFlush(poi);
+
         product = new ProductModel();
         product.setName("Test Product");
         product.setPrice(50.0);
         product.setStock(10);
         product.setShopkeeper(shopkeeper);
         product.setCategory(category);
+        product.setPoi(poi);
         product = em.persistAndFlush(product);
     }
 

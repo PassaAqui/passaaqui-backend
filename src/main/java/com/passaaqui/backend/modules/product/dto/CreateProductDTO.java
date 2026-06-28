@@ -22,5 +22,8 @@ public record CreateProductDTO(
     Integer shopkeeperId,
 
     @NotNull
+    Integer poiId,
+
+    @NotNull
     Integer categoryId
 ) {}

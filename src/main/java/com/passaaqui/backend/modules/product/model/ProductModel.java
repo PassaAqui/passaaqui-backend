@@ -1,6 +1,7 @@
 package com.passaaqui.backend.modules.product.model;
 
 import com.passaaqui.backend.modules.category.model.CategoryModel;
+import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -45,6 +46,10 @@ public class ProductModel {
     @ManyToOne
     @JoinColumn(nullable = false)
     private CategoryModel category;
+
+    @ManyToOne
+    @JoinColumn(nullable = false)
+    private PoiModel poi;
 
     @CreatedDate
     @Column(updatable = false)

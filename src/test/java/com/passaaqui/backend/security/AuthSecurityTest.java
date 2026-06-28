@@ -3,6 +3,7 @@ package com.passaaqui.backend.security;
 import com.passaaqui.backend.modules.city.model.CityModel;
 import com.passaaqui.backend.modules.city.repository.CityRepository;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
+import com.passaaqui.backend.modules.poi.model.enums.PoiType;
 import com.passaaqui.backend.modules.poi.repository.PoiRepository;
 import com.passaaqui.backend.modules.tourist.service.TouristService;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,6 +59,7 @@ class AuthSecurityTest {
         var poi = new PoiModel();
         poi.setName("Test POI");
         poi.setDescription("Test Description");
+        poi.setType(PoiType.TOURIST_POINT);
         poi.setCity(city);
         poiRepository.save(poi);
     }
