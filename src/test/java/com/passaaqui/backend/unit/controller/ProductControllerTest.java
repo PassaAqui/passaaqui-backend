@@ -48,7 +48,7 @@ class ProductControllerTest {
 
     @Test
     void create_shouldReturn200() throws Exception {
-        CreateProductDTO dto = new CreateProductDTO("Product", "Description", 29.99, 100, 1, 2);
+        CreateProductDTO dto = new CreateProductDTO("Product", "Description", 29.99, 100, 50, 1, 2);
         ProductModel product = new ProductModel();
         product.setId(1);
         product.setName("Product");
@@ -66,7 +66,7 @@ class ProductControllerTest {
 
     @Test
     void create_shouldReturn400WhenInvalid() throws Exception {
-        CreateProductDTO dto = new CreateProductDTO("", "", null, null, null, null);
+        CreateProductDTO dto = new CreateProductDTO("", "", null, null, null, null, null);
 
         mockMvc.perform(post("/api/products")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -76,7 +76,7 @@ class ProductControllerTest {
 
     @Test
     void create_shouldReturn404WhenShopkeeperNotFound() throws Exception {
-        CreateProductDTO dto = new CreateProductDTO("Product", "Desc", 10.0, null, 999, 1);
+        CreateProductDTO dto = new CreateProductDTO("Product", "Desc", 10.0, null, null, 999, 1);
         when(service.create(any(CreateProductDTO.class)))
                 .thenThrow(new ResourceNotFoundException("Shopkeeper not found"));
 
@@ -88,7 +88,7 @@ class ProductControllerTest {
 
     @Test
     void update_shouldReturn200() throws Exception {
-        UpdateProductDTO dto = new UpdateProductDTO("Updated", "Updated desc", 39.99, 200, 1, 2);
+        UpdateProductDTO dto = new UpdateProductDTO("Updated", "Updated desc", 39.99, 200, null, 1, 2);
         ProductModel product = new ProductModel();
         product.setId(1);
         product.setName("Updated");
@@ -106,7 +106,7 @@ class ProductControllerTest {
 
     @Test
     void update_shouldReturn404WhenNotFound() throws Exception {
-        UpdateProductDTO dto = new UpdateProductDTO("Updated", null, null, null, null, null);
+        UpdateProductDTO dto = new UpdateProductDTO("Updated", null, null, null, null, null, null);
         when(service.update(eq(999), any(UpdateProductDTO.class)))
                 .thenThrow(new ResourceNotFoundException("Product not found"));
 

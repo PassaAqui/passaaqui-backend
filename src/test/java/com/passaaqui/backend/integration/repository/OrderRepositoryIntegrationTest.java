@@ -74,6 +74,7 @@ class OrderRepositoryIntegrationTest {
         product = new ProductModel();
         product.setName("Test Product");
         product.setPrice(50.0);
+        product.setStock(10);
         product.setShopkeeper(shopkeeper);
         product.setCategory(category);
         product = em.persistAndFlush(product);

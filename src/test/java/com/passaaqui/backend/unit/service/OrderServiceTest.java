@@ -85,6 +85,7 @@ class OrderServiceTest {
         product.setName("Test Product");
         product.setPrice(50.0);
         product.setMaxXp(500);
+        product.setStock(10);
         product.setShopkeeper(shopkeeper);
 
         order = OrderModel.builder()
@@ -111,6 +112,7 @@ class OrderServiceTest {
         when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(false);
         when(productRepository.findById(1)).thenReturn(Optional.of(product));
+        when(productRepository.save(any(ProductModel.class))).thenAnswer(i -> i.getArgument(0));
         when(orderRepository.save(any(OrderModel.class))).thenReturn(order);
         when(abacateClient.createCheckout(any())).thenReturn(checkoutResponse);
 
@@ -131,6 +133,7 @@ class OrderServiceTest {
         when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(false);
         when(productRepository.findById(1)).thenReturn(Optional.of(product));
+        when(productRepository.save(any(ProductModel.class))).thenAnswer(i -> i.getArgument(0));
         when(orderRepository.save(any(OrderModel.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(abacateClient.createCheckout(any())).thenReturn(checkoutResponse);
 
@@ -150,6 +153,7 @@ class OrderServiceTest {
         when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(false);
         when(productRepository.findById(1)).thenReturn(Optional.of(product));
+        when(productRepository.save(any(ProductModel.class))).thenAnswer(i -> i.getArgument(0));
 
         assertThrows(InvalidRequestException.class, () -> orderService.checkout(dto));
     }
@@ -161,6 +165,7 @@ class OrderServiceTest {
         when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(false);
         when(productRepository.findById(1)).thenReturn(Optional.of(product));
+        when(productRepository.save(any(ProductModel.class))).thenAnswer(i -> i.getArgument(0));
 
         assertThrows(InvalidRequestException.class, () -> orderService.checkout(dto));
     }
@@ -173,6 +178,7 @@ class OrderServiceTest {
         when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(false);
         when(productRepository.findById(1)).thenReturn(Optional.of(product));
+        when(productRepository.save(any(ProductModel.class))).thenAnswer(i -> i.getArgument(0));
         when(orderRepository.save(any(OrderModel.class))).thenReturn(order);
         when(abacateClient.createCheckout(any())).thenReturn(checkoutResponse);
 
@@ -201,6 +207,18 @@ class OrderServiceTest {
         when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> orderService.checkout(dto));
+    }
+
+    @Test
+    void checkout_shouldThrow_whenProductOutOfStock() {
+        product.setStock(0);
+        var dto = new CheckoutRequestDTO(1, null);
+
+        when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
+        when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(false);
+        when(productRepository.findById(1)).thenReturn(Optional.of(product));
+
+        assertThrows(InvalidRequestException.class, () -> orderService.checkout(dto));
     }
 
     @Test
