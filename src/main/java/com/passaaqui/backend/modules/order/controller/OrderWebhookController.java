@@ -33,7 +33,7 @@ public class OrderWebhookController {
     private final AbacateClient abacateClient;
     private final SimpMessagingTemplate messagingTemplate;
 
-    @Value("${abacatepay.webhook.secret}")
+    @Value("${abacatepay.webhook.secret:}")
     private String webhookSecret;
 
     @PostMapping("/webhook/abacatepay")
