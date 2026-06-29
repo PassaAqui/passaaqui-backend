@@ -1,22 +1,24 @@
 package com.passaaqui.backend.modules.poi.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public record CheckinResponseDTO(
-        int xpConcedido,
-        Calculo calculo,
-        RegrasAplicadas regrasAplicadas,
-        String motivoBloqueio
+        @JsonProperty("xp_concedido") int xpGranted,
+        @JsonProperty("calculo") Calculation calculation,
+        @JsonProperty("regras_aplicadas") AppliedRules appliedRules,
+        @JsonProperty("motivo_bloqueio") String blockReason
 ) {
-    public record Calculo(
-            double distanciaKm,
-            double fatorDeslocamento,
-            int visitasRecentes,
-            double fatorInvisibilidade,
-            double xpBruto,
-            int xpFinal
+    public record Calculation(
+            @JsonProperty("distancia_km") double distanceKm,
+            @JsonProperty("fator_deslocamento") double displacementFactor,
+            @JsonProperty("visitas_recentes") int recentVisits,
+            @JsonProperty("fator_invisibilidade") double invisibilityFactor,
+            @JsonProperty("xp_bruto") double rawXp,
+            @JsonProperty("xp_final") int finalXp
     ) {}
 
-    public record RegrasAplicadas(
-            boolean antiFarmingAtivo,
-            boolean gpsInvalido
+    public record AppliedRules(
+            @JsonProperty("anti_farming_ativo") boolean antiFarmingActive,
+            @JsonProperty("gps_invalido") boolean invalidGps
     ) {}
 }

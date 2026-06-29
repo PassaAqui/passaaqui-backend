@@ -1,8 +1,8 @@
 package com.passaaqui.backend.modules.poi.service;
 
 import com.passaaqui.backend.modules.poi.dto.CheckinResponseDTO;
-import com.passaaqui.backend.modules.poi.dto.CheckinResponseDTO.Calculo;
-import com.passaaqui.backend.modules.poi.dto.CheckinResponseDTO.RegrasAplicadas;
+import com.passaaqui.backend.modules.poi.dto.CheckinResponseDTO.Calculation;
+import com.passaaqui.backend.modules.poi.dto.CheckinResponseDTO.AppliedRules;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -17,45 +17,45 @@ public class XpCalculationService {
     private static final int COOLDOWN_DAYS = 30;
 
     public CheckinResponseDTO calculate(
-            Integer usuarioId,
+            Integer userId,
             Integer poiId,
-            String poiTipo,
-            double distanciaKm,
-            int visitasRecentes,
-            LocalDateTime ultimoCheckinUsuario
+            String poiType,
+            double distanceKm,
+            int recentVisits,
+            LocalDateTime lastUserCheckin
     ) {
-        boolean antiFarmingAtivo = false;
-        boolean gpsInvalido = false;
-        String motivoBloqueio = null;
+        boolean antiFarmingActive = false;
+        boolean invalidGps = false;
+        String blockReason = null;
 
-        if (!"turistico".equals(poiTipo)) {
-            return new CheckinResponseDTO(0, null, new RegrasAplicadas(false, false), "POI não é do tipo turístico");
+        if (!"turistico".equals(poiType)) {
+            return new CheckinResponseDTO(0, null, new AppliedRules(false, false), "POI não é do tipo turístico");
         }
 
-        if (ultimoCheckinUsuario != null
-                && ChronoUnit.DAYS.between(ultimoCheckinUsuario, LocalDateTime.now()) < COOLDOWN_DAYS) {
-            antiFarmingAtivo = true;
-            motivoBloqueio = "Cooldown ativo (30 dias).";
+        if (lastUserCheckin != null
+                && ChronoUnit.DAYS.between(lastUserCheckin, LocalDateTime.now()) < COOLDOWN_DAYS) {
+            antiFarmingActive = true;
+            blockReason = "Cooldown ativo (30 dias).";
         }
 
-        if (distanciaKm < MIN_DISTANCE_KM) {
-            gpsInvalido = true;
-            motivoBloqueio = "Deslocamento insuficiente detectado.";
+        if (distanceKm < MIN_DISTANCE_KM) {
+            invalidGps = true;
+            blockReason = "Deslocamento insuficiente detectado.";
         }
 
-        if (antiFarmingAtivo || gpsInvalido) {
-            return new CheckinResponseDTO(0, null, new RegrasAplicadas(antiFarmingAtivo, gpsInvalido), motivoBloqueio);
+        if (antiFarmingActive || invalidGps) {
+            return new CheckinResponseDTO(0, null, new AppliedRules(antiFarmingActive, invalidGps), blockReason);
         }
 
-        double fatorDeslocamento = distanciaKm * DISPLACEMENT_FACTOR;
-        double fatorInvisibilidade = (double) INVISIBILITY_BASE / (visitasRecentes + 1);
-        double xpBruto = fatorDeslocamento * fatorInvisibilidade;
-        int xpFinal = (int) Math.round(xpBruto);
+        double displacementFactor = distanceKm * DISPLACEMENT_FACTOR;
+        double invisibilityFactor = (double) INVISIBILITY_BASE / (recentVisits + 1);
+        double rawXp = displacementFactor * invisibilityFactor;
+        int finalXp = (int) Math.round(rawXp);
 
-        if (xpFinal < 0) xpFinal = 0;
+        if (finalXp < 0) finalXp = 0;
 
-        Calculo calculo = new Calculo(distanciaKm, fatorDeslocamento, visitasRecentes, fatorInvisibilidade, xpBruto, xpFinal);
+        Calculation calculation = new Calculation(distanceKm, displacementFactor, recentVisits, invisibilityFactor, rawXp, finalXp);
 
-        return new CheckinResponseDTO(xpFinal, calculo, new RegrasAplicadas(false, false), null);
+        return new CheckinResponseDTO(finalXp, calculation, new AppliedRules(false, false), null);
     }
 }

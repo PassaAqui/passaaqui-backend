@@ -4,6 +4,6 @@ import jakarta.validation.constraints.Min;
 
 public record CheckinRequestDTO(
         @Min(0)
-        Double distanciaKm
+        Double distanceKm
 ) {
 }

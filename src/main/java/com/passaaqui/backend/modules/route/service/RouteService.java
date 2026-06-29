@@ -124,18 +124,18 @@ public class RouteService {
         Integer userIdInt = Integer.parseInt(userId);
 
         LocationDTO startLocation = session.lastLocation();
-        double distanciaKm = ARRIVAL_THRESHOLD_KM;
+        double distanceKm = ARRIVAL_THRESHOLD_KM;
         if (startLocation != null && startLocation.latitude() != null && startLocation.longitude() != null) {
-            distanciaKm = GeoUtils.haversineKm(
+            distanceKm = GeoUtils.haversineKm(
                     startLocation.latitude(), startLocation.longitude(),
                     poi.getLatitude(), poi.getLongitude());
         }
-        if (distanciaKm < ARRIVAL_THRESHOLD_KM) {
-            distanciaKm = ARRIVAL_THRESHOLD_KM;
+        if (distanceKm < ARRIVAL_THRESHOLD_KM) {
+            distanceKm = ARRIVAL_THRESHOLD_KM;
         }
 
         CheckinResponseDTO response = poiCheckinService.checkin(
-                destination.poiId(), userIdInt, new CheckinRequestDTO(distanciaKm));
+                destination.poiId(), userIdInt, new CheckinRequestDTO(distanceKm));
 
         webSocketService.pushToUser(userId, "/queue/poi", "checkin-result", response);
     }
