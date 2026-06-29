@@ -34,7 +34,7 @@ class DirectionServiceTest {
 
     @Test
     void getDirections_shouldReturnResult_whenValidMode() {
-        var dto = new DirectionRequestDTO("driving-car", -46.6576, -23.5874, -46.6333, -23.5505);
+        var dto = new DirectionRequestDTO("driving-car", -46.6576, -23.5874, -46.6333, -23.5505, null);
         var expected = Map.of("routes", "some route data");
 
         when(openRouteServiceClient.getDirections(any(DirectionRequestDTO.class), any(DirectionMode.class)))
@@ -50,7 +50,7 @@ class DirectionServiceTest {
 
     @Test
     void getDirections_shouldThrow_whenInvalidMode() {
-        var dto = new DirectionRequestDTO("invalid-mode", 0, 0, 0, 0);
+        var dto = new DirectionRequestDTO("invalid-mode", 0, 0, 0, 0, null);
 
         assertThrows(InvalidRequestException.class, () -> service.getDirections(dto, USER_ID));
         verify(openRouteServiceClient, never()).getDirections(any(), any());

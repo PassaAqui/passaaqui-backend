@@ -7,6 +7,7 @@ import com.passaaqui.backend.modules.city.repository.CityRepository;
 import com.passaaqui.backend.modules.poi.dto.CreatePoiDTO;
 import com.passaaqui.backend.modules.poi.dto.UpdatePoiDTO;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
+import com.passaaqui.backend.modules.poi.model.enums.PoiType;
 import com.passaaqui.backend.modules.poi.repository.PoiRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,8 @@ public class PoiService {
         PoiModel poi = new PoiModel();
         poi.setName(dto.name());
         poi.setDescription(dto.description());
-        poi.setXpReward(dto.xpReward());
+        poi.setType(dto.type());
+        poi.setXpReward(dto.type() == PoiType.STORE ? null : dto.xpReward());
         poi.setLatitude(dto.latitude());
         poi.setLongitude(dto.longitude());
         poi.setMinLatitude(dto.minLatitude());

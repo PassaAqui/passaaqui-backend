@@ -3,6 +3,7 @@ package com.passaaqui.backend.modules.poi.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.passaaqui.backend.modules.city.model.CityModel;
+import com.passaaqui.backend.modules.poi.model.enums.PoiType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,6 +31,10 @@ public class PoiModel {
     private String description;
 
     private Integer xpReward;
+
+    @Enumerated(EnumType.ORDINAL)
+    @Column(name = "poi_type", nullable = false, columnDefinition = "SMALLINT")
+    private PoiType type;
 
     private Double latitude;
 

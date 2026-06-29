@@ -28,7 +28,7 @@ public class RouteController {
     public ResponseEntity<RouteSessionDTO> start(@RequestBody(required = false) StartRouteDTO dto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (dto == null) {
-            dto = new StartRouteDTO(null, null);
+            dto = new StartRouteDTO(null, null, null);
         }
         return ResponseEntity.ok(routeService.start(authentication.getName(), dto));
     }

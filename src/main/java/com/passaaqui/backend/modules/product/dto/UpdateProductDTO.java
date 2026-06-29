@@ -7,5 +7,6 @@ public record UpdateProductDTO(
     Integer maxXp,
     Integer stock,
     Integer shopkeeperId,
+    Integer poiId,
     Integer categoryId
 ) {}

@@ -8,5 +8,6 @@ public record DirectionRequestDTO(
         double startLongitude,
         double startLatitude,
         double endLongitude,
-        double endLatitude
+        double endLatitude,
+        Integer poiId
 ) {}

@@ -27,7 +27,8 @@ public class DirectionService {
         RouteDestinationDTO destination = new RouteDestinationDTO(
                 dto.startLatitude(), dto.startLongitude(),
                 dto.endLatitude(), dto.endLongitude(),
-                dto.mode()
+                dto.mode(),
+                dto.poiId()
         );
         routeService.updateDestination(userId, destination);
 

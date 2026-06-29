@@ -5,6 +5,7 @@ public record RouteDestinationDTO(
         Double startLongitude,
         Double stopLatitude,
         Double stopLongitude,
-        String mode
+        String mode,
+        Integer poiId
 ) {
 }

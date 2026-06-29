@@ -123,6 +123,7 @@ http://localhost:8080/api
 - [`GET /api/pois/{id}`](#get-appoisid)
 - [`PUT /api/pois/{id}`](#put-appoisid)
 - [`DELETE /api/pois/{id}`](#delete-appoisid)
+- [`POST /api/pois/{poiId}/checkin`](#post-appoispoidcheckin)
 - [`POST /api/pois/{poiId}/ratings`](#post-appoispoidratings)
 - [`GET /api/pois/{poiId}/ratings`](#get-appoispoidratings)
 
@@ -180,12 +181,13 @@ Apenas `TOURIST`
 #### Request Body
 
 | Campo | Tipo | Obrigatório | Validação |
-|---|---|---|---|
+|---|---|---|---|---|
 | mode | String | Sim | Tipo de locomoção (ex: `driving-car`, `foot-walking`, `cycling-regular`) |
 | startLongitude | Double | Sim | Longitude do ponto de partida |
 | startLatitude | Double | Sim | Latitude do ponto de partida |
 | endLongitude | Double | Sim | Longitude do destino |
 | endLatitude | Double | Sim | Latitude do destino |
+| poiId | Integer | Não | ID do POI de destino (opcional — usado para auto check-in ao chegar) |
 
 **Modos disponíveis:**
 
@@ -209,7 +211,8 @@ Apenas `TOURIST`
   "startLongitude": -46.6576,
   "startLatitude": -23.5874,
   "endLongitude": -46.6333,
-  "endLatitude": -23.5505
+  "endLatitude": -23.5505,
+  "poiId": 1
 }
 ```
 
@@ -237,7 +240,7 @@ Resposta da OpenRouteService contendo as informações da rota.
 
 #### Integração com Route Session
 
-Ao calcular uma direção, o sistema **automaticamente atualiza a sessão de rota ativa** do turista com os dados de destino (`startLatitude`, `startLongitude`, `stopLatitude`, `stopLongitude`, `mode`). Se o turista não possui uma rota ativa (`POST /api/route/start` não foi chamado antes), o endpoint retorna **400** com a mensagem "No active route session. Start a route first.".
+Ao calcular uma direção, o sistema **automaticamente atualiza a sessão de rota ativa** do turista com os dados de destino (`startLatitude`, `startLongitude`, `stopLatitude`, `stopLongitude`, `mode`, `poiId`). Se fornecido `poiId`, o sistema associará o destino ao POI para detecção de chegada. Se o turista não possui uma rota ativa (`POST /api/route/start` não foi chamado antes), o endpoint retorna **400** com a mensagem "No active route session. Start a route first.".
 
 ---
 
@@ -273,15 +276,17 @@ Apenas `TOURIST`
 Opcional. Se enviado, define a localização inicial do turista.
 
 | Campo | Tipo | Obrigatório | Validação |
-|---|---|---|---|
+|---|---|---|---|---|
 | latitude | Double | Não | — |
 | longitude | Double | Não | — |
+| poiId | Integer | Não | ID do POI de destino (opcional) |
 
 **Exemplo:**
 ```json
 {
   "latitude": -23.5505,
-  "longitude": -46.6333
+  "longitude": -46.6333,
+  "poiId": 1
 }
 ```
 
@@ -343,7 +348,8 @@ Apenas `TOURIST`
     "startLongitude": -46.6576,
     "stopLatitude": -23.5505,
     "stopLongitude": -46.6333,
-    "mode": "driving-car"
+    "mode": "driving-car",
+    "poiId": 1
   },
   "lastLocation": {
     "latitude": -23.5505,
@@ -369,6 +375,18 @@ Apenas `TOURIST`
 Atualiza a **localização atual** do turista na sessão de rota ativa e **transmite em tempo real** para o tópico WebSocket `/topic/routes/tracking/{userId}`. Utilizado para **tracking ao vivo**: o app envia a coordenada GPS periodicamente (ex: a cada 5 segundos) e quem estiver inscrito no tópico recebe a posição em tempo real.
 
 > ⚠️ Requer uma sessão de rota ativa. Se não houver, retorna 400.
+
+#### Auto Check-in ao Chegar no POI
+
+Se a rota possuir um destino com `poiId` associado, o sistema automaticamente verifica a cada atualização de localização se o turista **chegou ao POI**. A detecção considera:
+- **Bounding box** do POI (`minLatitude`, `maxLatitude`, `minLongitude`, `maxLongitude`) — se definida
+- **Raio de 100m** do centro do POI — caso não haja bounding box
+
+Quando a chegada é detectada, o sistema:
+1. Dispara o **check-in** automático no POI
+2. Calcula o XP com base na **distância percorrida** (Haversine do ponto de partida ao POI)
+3. **Acumula o XP** no saldo do turista (`currentXP`)
+4. Notifica via WebSocket em `/user/{userId}/queue/poi` com ação `checkin-result`
 
 #### Controller
 
@@ -458,11 +476,12 @@ Corpo vazio.
 ### Fluxo Completo: Direction → Route → Tracking
 
 1. **Iniciar rota:** `POST /api/route/start` → sessão criada no Redis (TTL 25min)
-2. **Pedir direção:** `POST /api/direction` → calcula rota na OpenRouteService **e** atualiza `destination` na sessão Redis automaticamente
+2. **Pedir direção:** `POST /api/direction` → calcula rota na OpenRouteService **e** atualiza `destination` na sessão Redis automaticamente (com `poiId` opcional)
 3. **Enviar localização:** `POST /api/route/location` (a cada 5s) → atualiza `lastLocation` + **broadcast** via WebSocket para `/topic/routes/tracking/{userId}`
-4. **Consultar sessão:** `GET /api/route/current` → retorna status + destination + lastLocation atuais
-5. **Encerrar rota:** `DELETE /api/route/current` → remove Redis + notifica socket (`route-ended`)
-6. **Sessão expira automaticamente** após 25 minutos de inatividade (TTL do Redis)
+4. **Chegada ao POI:** sistema detecta proximidade → dispara **check-in automático** → calcula e acumula XP → notifica via `/user/{userId}/queue/poi`
+5. **Consultar sessão:** `GET /api/route/current` → retorna status + destination + lastLocation atuais
+6. **Encerrar rota:** `DELETE /api/route/current` → remove Redis + notifica socket (`route-ended`)
+7. **Sessão expira automaticamente** após 25 minutos de inatividade (TTL do Redis)
 
 ---
 
@@ -2039,7 +2058,8 @@ Cria um novo **Ponto de Interesse**.
 |---|---|---|---|
 | name | String | Sim | Não vazio |
 | description | String | Não | — |
-| xpReward | Integer | Não | `>= 0` |
+| xpReward | Integer | Não | `>= 0` (ignorado se `type` for `STORE`) |
+| type | String (enum) | Sim | `STORE` ou `TOURIST_POINT` |
 | latitude | Double | Não | — |
 | longitude | Double | Não | — |
 | minLatitude | Double | Não | — |
@@ -2048,15 +2068,29 @@ Cria um novo **Ponto de Interesse**.
 | maxLongitude | Double | Não | — |
 | cityId | Integer | Sim | ID de cidade existente |
 
-**Exemplo:**
+**Exemplo (ponto turístico):**
 
 ```json
 {
   "name": "Parque Ibirapuera",
   "description": "Principal parque da cidade",
   "xpReward": 50,
+  "type": "TOURIST_POINT",
   "latitude": -23.5874,
   "longitude": -46.6576,
+  "cityId": 1
+}
+```
+
+**Exemplo (loja):**
+
+```json
+{
+  "name": "Loja de Artesanato",
+  "description": "Artesanato local",
+  "type": "STORE",
+  "latitude": -23.5505,
+  "longitude": -46.6333,
   "cityId": 1
 }
 ```
@@ -2069,6 +2103,7 @@ Cria um novo **Ponto de Interesse**.
   "name": "Parque Ibirapuera",
   "description": "Principal parque da cidade",
   "xpReward": 50,
+  "type": "TOURIST_POINT",
   "latitude": -23.5874,
   "longitude": -46.6576,
   "minLatitude": null,
@@ -2125,6 +2160,7 @@ Lista **todos os POIs** cadastrados com **paginação**, incluindo avaliação m
       "name": "Parque Ibirapuera",
       "description": "Principal parque da cidade",
       "xpReward": 50,
+      "type": "TOURIST_POINT",
       "latitude": -23.5874,
       "longitude": -46.6576,
       "city": { "id": 1, "name": "São Paulo", "state": "SP" },
@@ -2175,6 +2211,7 @@ Retorna um POI específico por ID, incluindo avaliação média.
   "name": "Parque Ibirapuera",
   "description": "Principal parque da cidade",
   "xpReward": 50,
+  "type": "TOURIST_POINT",
   "latitude": -23.5874,
   "longitude": -46.6576,
   "city": { "id": 1, "name": "São Paulo", "state": "SP" },
@@ -2220,6 +2257,7 @@ Todos os campos opcionais.
 | name | String | Se preenchido, não vazio |
 | description | String | — |
 | xpReward | Integer | — |
+| type | String (enum) | `STORE` ou `TOURIST_POINT` |
 | latitude | Double | — |
 | longitude | Double | — |
 | minLatitude | Double | — |
@@ -2236,6 +2274,120 @@ Todos os campos opcionais.
   "xpReward": 75
 }
 ```
+
+---
+
+### POST /api/pois/{poiId}/checkin
+
+#### Descrição
+
+Realiza o **check-in** de um turista em um POI do tipo **ponto turístico**. O sistema calcula o XP com base na **fórmula oficial**:
+
+```
+XP = (distancia_km * 2.5) * (100 / (visitas_recentes + 1))
+```
+
+**Regras aplicadas:**
+- **Anti-farming:** mesmo usuário não pode check-in no mesmo POI dentro de 30 dias
+- **Deslocamento mínimo:** `distanciaKm` deve ser >= 0.1 km (caso contrário, tratado como GPS inválido)
+- **Invisibilidade:** POIs com mais visitas recentes rendem menos XP
+- **Arredondamento:** o XP final é arredondado para o inteiro mais próximo
+
+#### Controller
+
+`PoiController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `poiId` | Integer | ID do POI |
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Cookie | Sim | `access_token=<JWT>` |
+| Content-Type | Sim | `application/json` |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| distanceKm | Double | Não | `>= 0` — distância real percorrida em km |
+
+**Exemplo:**
+```json
+{
+  "distanceKm": 3.0
+}
+```
+
+#### Response 200 (OK)
+
+```json
+{
+  "xp_concedido": 750,
+  "calculo": {
+    "distancia_km": 3.0,
+    "fator_deslocamento": 7.5,
+    "visitas_recentes": 0,
+    "fator_invisibilidade": 100.0,
+    "xp_bruto": 750.0,
+    "xp_final": 750
+  },
+  "regras_aplicadas": {
+    "anti_farming_ativo": false,
+    "gps_invalido": false
+  },
+  "motivo_bloqueio": null
+}
+```
+
+#### Responses Bloqueadas
+
+**Cooldown ativo:**
+```json
+{
+  "xp_concedido": 0,
+  "calculo": null,
+  "regras_aplicadas": {
+    "anti_farming_ativo": true,
+    "gps_invalido": false
+  },
+  "motivo_bloqueio": "Cooldown ativo (30 dias)."
+}
+```
+
+**GPS inválido:**
+```json
+{
+  "xp_concedido": 0,
+  "calculo": null,
+  "regras_aplicadas": {
+    "anti_farming_ativo": false,
+    "gps_invalido": true
+  },
+  "motivo_bloqueio": "Deslocamento insuficiente detectado."
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Dados inválidos |
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+| 404 | POI não encontrado |
 
 ---
 
@@ -2409,6 +2561,7 @@ Cria um novo produto associado a um lojista e uma categoria.
 | stock | Integer | Não | `>= 0` (padrão: 0) |
 | shopkeeperId | Integer | Sim | ID de lojista existente |
 | categoryId | Integer | Sim | ID de categoria existente |
+| poiId | Integer | Sim | ID de POI do tipo `STORE` existente |
 
 **Exemplo:**
 
@@ -2420,7 +2573,8 @@ Cria um novo produto associado a um lojista e uma categoria.
   "xpCost": 10,
   "stock": 100,
   "shopkeeperId": 2,
-  "categoryId": 1
+  "categoryId": 1,
+  "poiId": 1
 }
 ```
 
@@ -2442,6 +2596,11 @@ Cria um novo produto associado a um lojista e uma categoria.
   "category": {
     "id": 1,
     "name": "Alimentação"
+  },
+  "poi": {
+    "id": 1,
+    "name": "Loja de Artesanato",
+    "type": "STORE"
   },
   "createdAt": "2026-05-24T15:00:00",
   "updatedAt": "2026-05-24T15:00:00"
@@ -2608,6 +2767,7 @@ Todos os campos opcionais.
 | stock | Integer | `>= 0` |
 | shopkeeperId | Integer | Deve existir |
 | categoryId | Integer | Deve existir |
+| poiId | Integer | Deve existir |
 
 **Exemplo:**
 
@@ -2990,10 +3150,11 @@ host:localhost:8080
 #### Tópicos
 
 | Tópico | Descrição | Payload |
-|---|---|---|
+|---|---|---|---|
 | `/topic/orders/{orderId}` | Notificações de alteração de status do pedido | `OrderStatusDTO` |
 | `/topic/routes/tracking/{userId}` | Tracking ao vivo de localização do turista | `PushMessageDTO(action, LocationDTO)` |
 | `/user/{userId}/queue/route` | Notificações de rota (destino atualizado, rota encerrada) | `PushMessageDTO(action, data)` |
+| `/user/{userId}/queue/poi` | Notificações de check-in e resultado de XP | `PushMessageDTO(action, CheckinResponseDTO)` |
 
 **Payload (`OrderStatusDTO`):**
 
@@ -3052,11 +3213,11 @@ host:localhost:8080
 | Shopkeepers | 4 | — | — | 4 | ADMIN_USER/ROOT |
 | Cities | 5 | — | — | 5 | ADMIN_USER/ROOT |
 | Categories | 5 | — | — | 5 | ADMIN_USER/ROOT |
-| POIs | 5 | — | 2 | 3 | — |
+| POIs | 6 | — | 3 | 3 | TOURIST (checkin) |
 | POI Ratings | 2 | — | 1 | — | TOURIST |
 | Direction | 1 | — | — | — | TOURIST |
 | Route | 4 | — | — | — | TOURIST |
 | Products | 6 | — | 3 | — | SHOPKEEPER |
 | Orders | 5 | — | — | — | TOURIST / SHOPKEEPER |
 | WebSocket (STOMP) | 1 | — | — | — | TOURIST / SHOPKEEPER |
-| **Total** | **56** | **5** | **9** | **29** | **14** |
+| **Total** | **57** | **5** | **10** | **29** | **14** |

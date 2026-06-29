@@ -49,7 +49,7 @@ class RouteServiceTest {
     void start_shouldCreateNewSession_whenNoExistingSession() {
         when(cacheService.setIfAbsent(anyString(), any(), any())).thenReturn(true);
 
-        var dto = new StartRouteDTO(-23.5505, -46.6333);
+        var dto = new StartRouteDTO(-23.5505, -46.6333, null);
         var result = routeService.start(USER_ID, dto);
 
         assertNotNull(result);
@@ -70,7 +70,7 @@ class RouteServiceTest {
         when(cacheService.setIfAbsent(anyString(), any(), any())).thenReturn(false);
         when(cacheService.get("route:" + USER_ID, RouteSessionDTO.class)).thenReturn(Optional.of(existing));
 
-        var result = routeService.start(USER_ID, new StartRouteDTO(null, null));
+        var result = routeService.start(USER_ID, new StartRouteDTO(null, null, null));
 
         assertSame(existing, result);
         verify(cacheService).setWithTtl(eq("route:" + USER_ID), eq(existing), any());
@@ -80,7 +80,7 @@ class RouteServiceTest {
     void start_shouldCreateSessionWithoutLocation_whenDtoHasNullCoordinates() {
         when(cacheService.setIfAbsent(anyString(), any(), any())).thenReturn(true);
 
-        var result = routeService.start(USER_ID, new StartRouteDTO(null, null));
+        var result = routeService.start(USER_ID, new StartRouteDTO(null, null, null));
 
         assertNotNull(result);
         assertEquals("ACTIVE", result.status());
@@ -95,7 +95,7 @@ class RouteServiceTest {
         var existing = new RouteSessionDTO("ACTIVE", null, null);
         when(cacheService.get("route:" + USER_ID, RouteSessionDTO.class)).thenReturn(Optional.of(existing));
 
-        var destination = new RouteDestinationDTO(-23.5505, -46.6333, -23.5610, -46.6560, "driving-car");
+        var destination = new RouteDestinationDTO(-23.5505, -46.6333, -23.5610, -46.6560, "driving-car", null);
         routeService.updateDestination(USER_ID, destination);
 
         verify(cacheService).setIfPresent(eq("route:" + USER_ID), sessionCaptor.capture(), any());
@@ -112,7 +112,7 @@ class RouteServiceTest {
         when(cacheService.get("route:" + USER_ID, RouteSessionDTO.class)).thenReturn(Optional.empty());
 
         assertThrows(InvalidRequestException.class,
-                () -> routeService.updateDestination(USER_ID, new RouteDestinationDTO(0.0, 0.0, 0.0, 0.0, "driving-car")));
+                () -> routeService.updateDestination(USER_ID, new RouteDestinationDTO(0.0, 0.0, 0.0, 0.0, "driving-car", null)));
 
         verify(cacheService, never()).setIfPresent(any(), any(), any());
         verify(webSocketService, never()).pushToUser(any(), any(), any(), any());
