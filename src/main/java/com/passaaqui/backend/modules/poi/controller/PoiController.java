@@ -1,9 +1,12 @@
 package com.passaaqui.backend.modules.poi.controller;
 
 import com.passaaqui.backend.infra.integration.storage.StorageService;
+import com.passaaqui.backend.modules.poi.dto.CheckinRequestDTO;
+import com.passaaqui.backend.modules.poi.dto.CheckinResponseDTO;
 import com.passaaqui.backend.modules.poi.dto.CreatePoiDTO;
 import com.passaaqui.backend.modules.poi.dto.UpdatePoiDTO;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
+import com.passaaqui.backend.modules.poi.service.PoiCheckinService;
 import com.passaaqui.backend.modules.poi.service.PoiService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +15,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,6 +27,7 @@ public class PoiController {
 
     private final PoiService service;
     private final StorageService storageService;
+    private final PoiCheckinService checkinService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'ADMIN_ROOT')")
@@ -70,5 +76,15 @@ public class PoiController {
             poi.setImageUrl(storageService.getFileUrl(poi.getImage()));
         }
         return ResponseEntity.ok(poi);
+    }
+
+    @PostMapping("/{poiId}/checkin")
+    @PreAuthorize("hasRole('TOURIST')")
+    public ResponseEntity<CheckinResponseDTO> checkin(
+            @PathVariable Integer poiId,
+            @RequestBody @Valid CheckinRequestDTO request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.parseInt(authentication.getName());
+        return ResponseEntity.ok(checkinService.checkin(poiId, userId, request));
     }
 }

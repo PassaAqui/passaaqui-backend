@@ -54,7 +54,7 @@ class DirectionControllerTest {
 
     @Test
     void getDirection_shouldReturn200() throws Exception {
-        var dto = new DirectionRequestDTO("driving-car", -46.6576, -23.5874, -46.6333, -23.5505);
+        var dto = new DirectionRequestDTO("driving-car", -46.6576, -23.5874, -46.6333, -23.5505, null);
         var expected = Map.of("routes", "data");
 
         when(service.getDirections(any(DirectionRequestDTO.class), anyString())).thenReturn(expected);
@@ -68,7 +68,7 @@ class DirectionControllerTest {
 
     @Test
     void getDirection_shouldReturn400WhenModeBlank() throws Exception {
-        var dto = new DirectionRequestDTO("", 0, 0, 0, 0);
+        var dto = new DirectionRequestDTO("", 0, 0, 0, 0, null);
 
         mockMvc.perform(post("/api/direction")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -78,7 +78,7 @@ class DirectionControllerTest {
 
     @Test
     void getDirection_shouldReturn400WhenInvalidMode() throws Exception {
-        var dto = new DirectionRequestDTO("bad-mode", 0, 0, 0, 0);
+        var dto = new DirectionRequestDTO("bad-mode", 0, 0, 0, 0, null);
 
         when(service.getDirections(any(DirectionRequestDTO.class), anyString()))
                 .thenThrow(new InvalidRequestException("Invalid driving mode: bad-mode"));
