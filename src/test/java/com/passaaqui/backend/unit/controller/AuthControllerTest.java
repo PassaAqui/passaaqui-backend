@@ -12,7 +12,6 @@ import com.passaaqui.backend.modules.auth.service.AuthService;
 import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
 import com.passaaqui.backend.modules.tourist.model.TouristModel;
 import com.passaaqui.backend.shared.objects.JWTObject;
-import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -123,9 +122,7 @@ class AuthControllerTest {
                         }))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.access_token").value("access"))
-                .andExpect(jsonPath("$.refresh_token").value("refresh"))
-                .andExpect(cookie().exists("access_token"))
-                .andExpect(cookie().exists("refresh_token"));
+                .andExpect(jsonPath("$.refresh_token").value("refresh"));
     }
 
     @Test
@@ -164,7 +161,7 @@ class AuthControllerTest {
         when(service.refreshToken(eq("valid-refresh"), anyString(), anyString())).thenReturn(tokens);
 
         mockMvc.perform(get("/api/auth/refresh")
-                        .cookie(new Cookie("refresh_token", "valid-refresh"))
+                        .header("Authorization", "Bearer valid-refresh")
                         .header("User-Agent", "agent")
                         .with(request -> {
                             request.setRemoteAddr("127.0.0.1");
@@ -172,12 +169,11 @@ class AuthControllerTest {
                         }))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.access_token").value("new-access"))
-                .andExpect(cookie().exists("access_token"))
-                .andExpect(cookie().exists("refresh_token"));
+                .andExpect(jsonPath("$.refresh_token").value("new-refresh"));
     }
 
     @Test
-    void refresh_shouldReturn404WhenCookieMissing() throws Exception {
+    void refresh_shouldReturn404WhenTokenMissing() throws Exception {
         mockMvc.perform(get("/api/auth/refresh")
                         .header("User-Agent", "agent")
                         .with(request -> {
@@ -193,7 +189,7 @@ class AuthControllerTest {
                 .thenThrow(new InvalidRequestException("Invalid or expired refresh token."));
 
         mockMvc.perform(get("/api/auth/refresh")
-                        .cookie(new Cookie("refresh_token", "bad-token"))
+                        .header("Authorization", "Bearer bad-token")
                         .header("User-Agent", "agent")
                         .with(request -> {
                             request.setRemoteAddr("127.0.0.1");
@@ -207,12 +203,12 @@ class AuthControllerTest {
         doNothing().when(service).logout(anyString());
 
         mockMvc.perform(get("/api/auth/logout")
-                        .cookie(new Cookie("refresh_token", "some-token")))
+                        .header("Authorization", "Bearer some-token"))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void logout_shouldReturn200EvenWithoutCookie() throws Exception {
+    void logout_shouldReturn200EvenWithoutToken() throws Exception {
         mockMvc.perform(get("/api/auth/logout"))
                 .andExpect(status().isOk());
     }

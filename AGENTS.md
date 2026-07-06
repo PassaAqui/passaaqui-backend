@@ -22,7 +22,7 @@ O projeto utiliza **Java 21** e **Spring Boot 4.0.5**. A arquitetura é baseada 
 - **Validações Customizadas:** Use as anotações customizadas já construídas em `shared/validation` quando aplicável (ex: `@Document` para validar formato de CPF/CNPJ e `@Password` para impor as regras de senha do sistema).
 
 ### 1.3. Segurança e Autenticação
-- A autenticação baseia-se em **JWT armazenado em cookies HttpOnly** (`access_token` e `refresh_token`).
+- A autenticação baseia-se em **JWT via header Authorization** no formato `Bearer <token>`.
 - Endpoints protegidos devem utilizar a anotação `@PreAuthorize` com as roles apropriadas definidas no enum `UserRole` e `AdminType` (ex: `hasAnyRole('ADMIN_USER', 'ADMIN_ROOT')`, `hasRole('TOURIST')`).
 
 ---
