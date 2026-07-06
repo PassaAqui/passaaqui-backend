@@ -73,9 +73,9 @@ class AuthSecurityTest {
     }
 
     @Test
-    void protectedEndpoint_shouldReturn403_whenNoAuth() throws Exception {
+    void protectedEndpoint_shouldReturn401_whenNoAuth() throws Exception {
         mockMvc.perform(get("/api/tourists"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

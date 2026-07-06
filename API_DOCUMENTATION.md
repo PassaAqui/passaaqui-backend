@@ -21,12 +21,12 @@ API REST do **Passa Aqui**, plataforma que conecta turistas a pontos de interess
 
 ### Autenticação
 
-- **JWT** armazenado em cookies **HttpOnly** (`access_token` e `refresh_token`)
+- **JWT** via header `Authorization` no formato `Bearer <token>`
 - `access_token`: expira em **15 minutos**
 - `refresh_token`: expira em **7 dias**
 - O token JWT contém as claims: `sub` (user ID), `role`, `deviceId` e `adminType` (apenas para admins)
-- Para acessar endpoints protegidos, o cookie `access_token` é enviado automaticamente pelo navegador
-- Para refresh, o cookie `refresh_token` é lido no endpoint `/api/auth/refresh`
+- Para acessar endpoints protegidos, envie o header `Authorization: Bearer <access_token>`
+- Para refresh, envie o `refresh_token` no header `Authorization: Bearer <refresh_token>`
 
 ### URL Base
 
@@ -175,7 +175,7 @@ Apenas `TOURIST`
 
 | Nome | Obrigatório | Descrição |
 |---|---|---|
-| Cookie | Sim | `access_token=<JWT>` |
+| Authorization | Sim | `Bearer <access_token>` |
 | Content-Type | Sim | `application/json` |
 
 #### Request Body
@@ -268,7 +268,7 @@ Apenas `TOURIST`
 
 | Nome | Obrigatório | Descrição |
 |---|---|---|
-| Cookie | Sim | `access_token=<JWT>` |
+| Authorization | Sim | `Bearer <access_token>` |
 | Content-Type | Não | `application/json` (se houver body) |
 
 #### Request Body
@@ -336,7 +336,7 @@ Apenas `TOURIST`
 
 | Nome | Obrigatório | Descrição |
 |---|---|---|
-| Cookie | Sim | `access_token=<JWT>` |
+| Authorization | Sim | `Bearer <access_token>` |
 
 #### Response 200 (OK)
 
@@ -404,7 +404,7 @@ Apenas `TOURIST`
 
 | Nome | Obrigatório | Descrição |
 |---|---|---|
-| Cookie | Sim | `access_token=<JWT>` |
+| Authorization | Sim | `Bearer <access_token>` |
 | Content-Type | Sim | `application/json` |
 
 #### Request Body
@@ -458,7 +458,7 @@ Apenas `TOURIST`
 
 | Nome | Obrigatório | Descrição |
 |---|---|---|
-| Cookie | Sim | `access_token=<JWT>` |
+| Authorization | Sim | `Bearer <access_token>` |
 
 #### Response 204 (No Content)
 
@@ -705,12 +705,7 @@ Nenhuma (público)
 }
 ```
 
-**Cookies definidos:**
-
-| Cookie | Valor | HttpOnly | Path | MaxAge |
-|---|---|---|---|---|
-| `access_token` | JWT | Sim | `/` | 900s (15 min) |
-| `refresh_token` | JWT | Sim | `/` | 604800s (7 dias) |
+> Os tokens devem ser armazenados pelo cliente e enviados no header `Authorization` das requisições autenticadas como `Bearer <access_token>`. O `refresh_token` deve ser enviado no header `Authorization: Bearer <refresh_token>` para renovar o access token.
 
 #### Possíveis Erros
 
@@ -724,7 +719,7 @@ Nenhuma (público)
 
 #### Descrição
 
-Renova o `access_token` usando o `refresh_token` armazenado no cookie.
+Renova o `access_token` usando o `refresh_token` enviado no header `Authorization`.
 
 #### Controller
 
@@ -732,17 +727,17 @@ Renova o `access_token` usando o `refresh_token` armazenado no cookie.
 
 #### Autenticação
 
-❌ **Pública** (usa o cookie `refresh_token`)
+❌ **Pública** (usa o `refresh_token` do header)
 
 #### Permissões
 
 Nenhuma (baseada no token de refresh)
 
-#### Cookies Necessários
+#### Headers
 
-| Cookie | Obrigatório | Descrição |
+| Nome | Obrigatório | Descrição |
 |---|---|---|
-| `refresh_token` | Sim | Token de refresh JWT |
+| Authorization | Sim | `Bearer <refresh_token>` |
 
 #### Response 200 (OK)
 
@@ -753,14 +748,12 @@ Nenhuma (baseada no token de refresh)
 }
 ```
 
-**Cookies redefinidos:** mesmos nomes e parâmetros do login.
-
 #### Possíveis Erros
 
 | Status | Motivo |
 |---|---|
-| 400 | Cookie `refresh_token` ausente, inválido ou expirado |
-| 400 | Sessão revogada |
+| 404 | Header `Authorization` ausente |
+| 400 | Token inválido, expirado ou sessão revogada |
 
 ---
 
@@ -768,7 +761,7 @@ Nenhuma (baseada no token de refresh)
 
 #### Descrição
 
-Revoga a sessão atual e limpa os cookies de autenticação.
+Revoga a sessão atual.
 
 #### Controller
 
@@ -776,17 +769,17 @@ Revoga a sessão atual e limpa os cookies de autenticação.
 
 #### Autenticação
 
-❌ **Pública** (usa o cookie `refresh_token`)
+❌ **Pública** (usa o `refresh_token` do header)
 
-#### Cookies Necessários
+#### Headers
 
-| Cookie | Obrigatório | Descrição |
+| Nome | Obrigatório | Descrição |
 |---|---|---|
-| `refresh_token` | Sim | Token de refresh da sessão a ser revogada |
+| Authorization | Não | `Bearer <refresh_token>` da sessão a ser revogada |
 
 #### Response 200 (OK)
 
-Corpo vazio. Cookies `access_token` e `refresh_token` são limpos (MaxAge = 0).
+Corpo vazio.
 
 #### Possíveis Erros
 
@@ -820,7 +813,7 @@ A classe `UserController` possui `@PreAuthorize("hasRole('ROLE_ADMIN')")` — en
 
 | Nome | Obrigatório | Descrição |
 |---|---|---|
-| Cookie | Sim | `access_token=<JWT>` |
+| Authorization | Sim | `Bearer <access_token>` |
 
 #### Response 200 (OK)
 
@@ -926,7 +919,7 @@ Cria um novo **administrador** na plataforma.
 
 | Nome | Obrigatório | Descrição |
 |---|---|---|
-| Cookie | Sim | `access_token=<JWT>` |
+| Authorization | Sim | `Bearer <access_token>` |
 | Content-Type | Sim | `application/json` |
 
 #### Request Body
@@ -1245,7 +1238,7 @@ Lista **todos os turistas** cadastrados.
 
 | Nome | Obrigatório | Descrição |
 |---|---|---|
-| Cookie | Sim | `access_token=<JWT>` |
+| Authorization | Sim | `Bearer <access_token>` |
 
 #### Response 200 (OK)
 
@@ -2315,7 +2308,7 @@ Apenas `TOURIST`
 
 | Nome | Obrigatório | Descrição |
 |---|---|---|
-| Cookie | Sim | `access_token=<JWT>` |
+| Authorization | Sim | `Bearer <access_token>` |
 | Content-Type | Sim | `application/json` |
 
 #### Request Body
@@ -2833,7 +2826,7 @@ Apenas `TOURIST`
 
 | Nome | Obrigatório | Descrição |
 |---|---|---|
-| Cookie | Sim | `access_token=<JWT>` |
+| Authorization | Sim | `Bearer <access_token>` |
 | Content-Type | Sim | `application/json` |
 
 #### Request Body
@@ -2909,7 +2902,7 @@ Apenas `SHOPKEEPER`
 
 | Nome | Obrigatório | Descrição |
 |---|---|---|
-| Cookie | Sim | `access_token=<JWT>` |
+| Authorization | Sim | `Bearer <access_token>` |
 
 #### Response 200 (OK)
 
@@ -2967,7 +2960,7 @@ Apenas `TOURIST`
 
 | Nome | Obrigatório | Descrição |
 |---|---|---|
-| Cookie | Sim | `access_token=<JWT>` |
+| Authorization | Sim | `Bearer <access_token>` |
 
 #### Response 200 (OK)
 
@@ -3023,7 +3016,7 @@ Apenas `SHOPKEEPER`
 
 | Nome | Obrigatório | Descrição |
 |---|---|---|
-| Cookie | Sim | `access_token=<JWT>` |
+| Authorization | Sim | `Bearer <access_token>` |
 
 #### Response 200 (OK)
 
@@ -3081,7 +3074,7 @@ Apenas `TOURIST`
 
 | Nome | Obrigatório | Descrição |
 |---|---|---|
-| Cookie | Sim | `access_token=<JWT>` |
+| Authorization | Sim | `Bearer <access_token>` |
 
 #### Response 200 (OK)
 
