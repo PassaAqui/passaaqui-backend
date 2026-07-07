@@ -78,8 +78,10 @@ services:
 
       OPENROUTESERVICE_API_KEY: eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImZlNjc1ZDlmZTFmZDRmMjA5NWEyZmY2YTFhNGE2ZGE4IiwiaCI6Im11cm11cjY0In0=
 
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
+      JAVA_TOOL_OPTIONS: "-Djava.net.preferIPv4Stack=true -Dio.netty.noNative=true -Dio.netty.transport.noNative=true"
 
     depends_on:
       postgres:
