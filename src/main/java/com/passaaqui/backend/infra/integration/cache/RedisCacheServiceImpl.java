@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Service
-@Profile("!test & !dev")
+@Profile("!test")
 public class RedisCacheServiceImpl implements CacheService {
 
     private final RedisTemplate<String, Object> redisTemplate;
