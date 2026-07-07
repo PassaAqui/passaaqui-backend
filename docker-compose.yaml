@@ -81,6 +81,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
 
+      JAVA_TOOL_OPTIONS: "-Djava.net.preferIPv4Stack=true -Dio.netty.noNative=true -Dio.netty.transport.noNative=true"
+
     depends_on:
       postgres:
         condition: service_healthy
