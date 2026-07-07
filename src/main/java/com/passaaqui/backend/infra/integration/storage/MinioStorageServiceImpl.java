@@ -20,7 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @Service
-@Profile("!test")
+@Profile("!test & !dev")
 public class MinioStorageServiceImpl implements StorageService {
 
     private final MinioClient minioClient;

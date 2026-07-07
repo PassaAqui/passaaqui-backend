@@ -141,11 +141,12 @@ public class AuthService {
     public JWTObject refreshToken(String refreshToken, String userAgent, String ipAddress) {
         String deviceId;
         try {
+            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
             var claims = Jwts.parser()
-                    .setSigningKey(jwtSecret)
+                    .verifyWith(key)
                     .build()
-                    .parseClaimsJws(refreshToken)
-                    .getBody();
+                    .parseSignedClaims(refreshToken)
+                    .getPayload();
             deviceId = claims.get("deviceId", String.class);
         } catch (Exception e) {
             throw new InvalidRequestException("Invalid or expired refresh token.");
@@ -180,11 +181,12 @@ public class AuthService {
     public void logout(String refreshToken) {
         String deviceId = null;
         try {
+            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
             var claims = Jwts.parser()
-                    .setSigningKey(jwtSecret)
+                    .verifyWith(key)
                     .build()
-                    .parseClaimsJws(refreshToken)
-                    .getBody();
+                    .parseSignedClaims(refreshToken)
+                    .getPayload();
             deviceId = claims.get("deviceId", String.class);
         } catch (ExpiredJwtException e) {
             deviceId = e.getClaims().get("deviceId", String.class);
