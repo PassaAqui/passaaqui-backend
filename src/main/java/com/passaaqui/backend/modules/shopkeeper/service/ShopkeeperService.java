@@ -4,6 +4,11 @@ import java.util.List;
 
 import com.passaaqui.backend.modules.category.model.CategoryModel;
 import com.passaaqui.backend.modules.category.repository.CategoryRepository;
+import com.passaaqui.backend.modules.city.model.CityModel;
+import com.passaaqui.backend.modules.city.repository.CityRepository;
+import com.passaaqui.backend.modules.poi.model.PoiModel;
+import com.passaaqui.backend.modules.poi.model.enums.PoiType;
+import com.passaaqui.backend.modules.poi.repository.PoiRepository;
 import com.passaaqui.backend.modules.shopkeeper.repository.ShopkeeperRepository;
 import com.passaaqui.backend.modules.user.model.enums.UserRole;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,10 +28,14 @@ public class ShopkeeperService {
 
     private final ShopkeeperRepository repository;
     private final CategoryRepository categoryRepository;
+    private final PoiRepository poiRepository;
+    private final CityRepository cityRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public ShopkeeperModel createUser(String email, String name, String password, String documentId, String companyName, String description, Integer categoryId) {
+    public ShopkeeperModel createUser(String email, String name, String password, String documentId, String companyName, String description, Integer categoryId,
+                                      String poiName, String poiDescription, Double latitude, Double longitude,
+                                      Double minLatitude, Double maxLatitude, Double minLongitude, Double maxLongitude, Integer cityId) {
         if (repository.existsByEmail(email))
             throw new ConflictException("There is already a user with this account.");
 
@@ -44,6 +53,24 @@ public class ShopkeeperService {
         newShopkeeper.setRole(UserRole.SHOPKEEPER);
 
         repository.save(newShopkeeper);
+
+        CityModel city = cityRepository.findById(cityId)
+            .orElseThrow(() -> new ResourceNotFoundException("City not found"));
+
+        PoiModel poi = new PoiModel();
+        poi.setName(poiName);
+        poi.setDescription(poiDescription);
+        poi.setType(PoiType.STORE);
+        poi.setXpReward(null);
+        poi.setLatitude(latitude);
+        poi.setLongitude(longitude);
+        poi.setMinLatitude(minLatitude);
+        poi.setMaxLatitude(maxLatitude);
+        poi.setMinLongitude(minLongitude);
+        poi.setMaxLongitude(maxLongitude);
+        poi.setCity(city);
+
+        poiRepository.save(poi);
 
         return newShopkeeper;
     }
