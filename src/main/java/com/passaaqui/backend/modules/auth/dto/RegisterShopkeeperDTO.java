@@ -3,6 +3,7 @@ package com.passaaqui.backend.modules.auth.dto;
 import com.passaaqui.backend.shared.validation.document.Document;
 import com.passaaqui.backend.shared.validation.password.Password;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -33,7 +34,27 @@ public record RegisterShopkeeperDTO(
     String description,
 
     @NotNull
-    Integer categoryId
+    Integer categoryId,
+
+    @NotBlank
+    String poiName,
+
+    String poiDescription,
+
+    Double latitude,
+
+    Double longitude,
+
+    Double minLatitude,
+
+    Double maxLatitude,
+
+    Double minLongitude,
+
+    Double maxLongitude,
+
+    @NotNull
+    Integer cityId
 ) {
     
 }

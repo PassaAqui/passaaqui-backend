@@ -111,7 +111,9 @@ public class AuthService {
 
         String password_hash = passwordEncoder.encode(dto.password());
 
-        return shopkeeperService.createUser(dto.email(), dto.name(), password_hash, dto.documentId(), dto.companyName(), dto.description(), dto.categoryId());
+        return shopkeeperService.createUser(dto.email(), dto.name(), password_hash, dto.documentId(), dto.companyName(), dto.description(), dto.categoryId(),
+            dto.poiName(), dto.poiDescription(), dto.latitude(), dto.longitude(),
+            dto.minLatitude(), dto.maxLatitude(), dto.minLongitude(), dto.maxLongitude(), dto.cityId());
     }
 
     public JWTObject loginAccount(String email, String password, String userAgent, String ipAddress) {
