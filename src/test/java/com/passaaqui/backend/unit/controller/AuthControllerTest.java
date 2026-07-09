@@ -78,7 +78,7 @@ class AuthControllerTest {
 
     @Test
     void registerAccountShopkeeper_shouldReturn201() throws Exception {
-        RegisterShopkeeperDTO dto = new RegisterShopkeeperDTO("shop@test.com", "Shop", "Str0ng!pass", "Str0ng!pass", "11222333000181", "Company", "desc", 1);
+        RegisterShopkeeperDTO dto = new RegisterShopkeeperDTO("shop@test.com", "Shop", "Str0ng!pass", "Str0ng!pass", "11222333000181", "Company", "desc", 1, "My Store", "Store desc", -23.5, -46.6, -23.6, -23.4, -46.7, -46.5, 1);
         ShopkeeperModel shopkeeper = new ShopkeeperModel();
         shopkeeper.setId(2);
         shopkeeper.setEmail("shop@test.com");
@@ -95,7 +95,7 @@ class AuthControllerTest {
 
     @Test
     void registerAccountShopkeeper_shouldReturn400WhenInvalid() throws Exception {
-        RegisterShopkeeperDTO dto = new RegisterShopkeeperDTO("bad", "", "", "", "", "", "", null);
+        RegisterShopkeeperDTO dto = new RegisterShopkeeperDTO("bad", "", "", "", "", "", "", null, "", "", null, null, null, null, null, null, null);
 
         mockMvc.perform(post("/api/auth/register/shopkeeper")
                         .contentType(MediaType.APPLICATION_JSON)
