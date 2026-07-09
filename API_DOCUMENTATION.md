@@ -606,6 +606,17 @@ Nenhuma (público)
 | companyName | String | Sim | Não vazio |
 | description | String | Não | — |
 | categoryId | Integer | Sim | ID de categoria existente |
+| poiName | String | Sim | Nome do POI (loja física) |
+| poiDescription | String | Não | Descrição do POI |
+| latitude | Double | Não | Latitude do centro do POI |
+| longitude | Double | Não | Longitude do centro do POI |
+| minLatitude | Double | Não | Limite sul do geofencing |
+| maxLatitude | Double | Não | Limite norte do geofencing |
+| minLongitude | Double | Não | Limite oeste do geofencing |
+| maxLongitude | Double | Não | Limite leste do geofencing |
+| cityId | Integer | Sim | ID de cidade existente |
+
+> O sistema cria automaticamente um **POI do tipo STORE** vinculado ao lojista no momento do registro.
 
 **Exemplo:**
 
@@ -618,7 +629,12 @@ Nenhuma (público)
   "documentId": "11222333000181",
   "companyName": "Maria's Comércio",
   "description": "Loja de artesanato local",
-  "categoryId": 1
+  "categoryId": 1,
+  "poiName": "Maria's Comércio",
+  "poiDescription": "Loja de artesanato local",
+  "latitude": -23.5505,
+  "longitude": -46.6333,
+  "cityId": 1
 }
 ```
 
@@ -652,6 +668,7 @@ Retorna o objeto `ShopkeeperModel` criado.
 | 400 | Dados inválidos |
 | 400 | `password` e `confirm_password` não conferem |
 | 404 | `categoryId` não encontrado |
+| 404 | `cityId` não encontrado |
 | 409 | E-mail já cadastrado |
 
 ---
