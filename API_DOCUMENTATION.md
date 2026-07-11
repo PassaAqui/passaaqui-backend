@@ -109,6 +109,7 @@ http://localhost:8080/api
 - [`GET /api/city/{id}`](#get-apicityid)
 - [`PUT /api/city/{id}`](#put-apicityid)
 - [`DELETE /api/city/{id}`](#delete-apicityid)
+- [`POST /api/city/locate`](#post-apicitylocate)
 
 ### 📂 Categorias
 - [`POST /api/categories`](#post-apicategories)
@@ -1847,6 +1848,82 @@ Remove uma cidade cadastrada.
 | `id` | Integer | ID da cidade |
 
 #### Response 204 (No Content)
+
+---
+
+### POST /api/city/locate
+
+#### Descrição
+
+Localiza uma cidade a partir de coordenadas geográficas (latitude e longitude). O sistema busca qual cidade possui um **bounding box** (minLatitude/maxLatitude, minLongitude/maxLongitude) que contenha o ponto informado.
+
+#### Controller
+
+`CityController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`TOURIST`, `SHOPKEEPER`, `ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `application/json` |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| latitude | Double | Sim | Deve estar entre -90 e 90 |
+| longitude | Double | Sim | Deve estar entre -180 e 180 |
+
+**Exemplo:**
+```json
+{
+  "latitude": -23.5505,
+  "longitude": -46.6333
+}
+```
+
+#### Response 200 (OK)
+
+Retorna o objeto completo da cidade cujo bounding box contém as coordenadas fornecidas.
+
+```json
+{
+  "id": 1,
+  "name": "São Paulo",
+  "description": "Capital do estado de São Paulo",
+  "state": "SP",
+  "ibgeCode": "3550308",
+  "region": "Sudeste",
+  "microRegion": "São Paulo",
+  "mesoRegion": "Metropolitana de São Paulo",
+  "stateName": "São Paulo",
+  "regionCode": 3,
+  "minLatitude": -23.6821,
+  "maxLatitude": -23.3620,
+  "minLongitude": -46.8259,
+  "maxLongitude": -46.3656,
+  "createdAt": "2026-05-24T12:00:00",
+  "updatedAt": "2026-05-24T12:00:00"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Latitude ou longitude ausentes ou inválidos |
+| 401 | Token ausente ou inválido |
+| 403 | Role não autorizada (TOURIST, SHOPKEEPER, ADMIN) |
+| 404 | Nenhuma cidade encontrada para as coordenadas fornecidas |
 
 ---
 

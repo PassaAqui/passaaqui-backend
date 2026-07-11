@@ -2,6 +2,7 @@ package com.passaaqui.backend.modules.city.controller;
 
 import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.city.dto.CreateCityDTO;
+import com.passaaqui.backend.modules.city.dto.LocateCityDTO;
 import com.passaaqui.backend.modules.city.dto.UpdateCityDTO;
 import com.passaaqui.backend.modules.city.model.CityModel;
 import com.passaaqui.backend.modules.city.service.CityService;
@@ -68,5 +69,15 @@ public class CityController {
             }
         }
         return ResponseEntity.ok(cities);
+    }
+
+    @PostMapping("/locate")
+    @PreAuthorize("hasAnyRole('TOURIST', 'SHOPKEEPER', 'ADMIN_USER', 'ADMIN_ROOT')")
+    public ResponseEntity<CityModel> locateCity(@RequestBody @Valid LocateCityDTO dto) {
+        CityModel city = cityService.locateCity(dto.latitude(), dto.longitude());
+        if (city.getImage() != null) {
+            city.setImageUrl(storageService.getFileUrl(city.getImage()));
+        }
+        return ResponseEntity.ok(city);
     }
 }
