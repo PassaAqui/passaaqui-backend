@@ -2,10 +2,12 @@ package com.passaaqui.backend.unit.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.passaaqui.backend.infra.exception.GlobalExceptionHandler;
+import com.passaaqui.backend.infra.exception.InvalidRequestException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.city.controller.CityController;
 import com.passaaqui.backend.modules.city.dto.CreateCityDTO;
+import com.passaaqui.backend.modules.city.dto.LocateCityDTO;
 import com.passaaqui.backend.modules.city.dto.UpdateCityDTO;
 import com.passaaqui.backend.modules.city.model.CityModel;
 import com.passaaqui.backend.modules.city.service.CityService;
@@ -254,5 +256,63 @@ class CityControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void locateCity_shouldReturn200() throws Exception {
+        LocateCityDTO dto = new LocateCityDTO(-23.5505, -46.6333);
+        CityModel city = new CityModel();
+        city.setId(1);
+        city.setName("São Paulo");
+        city.setState("SP");
+
+        when(cityService.locateCity(-23.5505, -46.6333)).thenReturn(city);
+
+        mockMvc.perform(post("/api/city/locate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("São Paulo"))
+                .andExpect(jsonPath("$.state").value("SP"));
+    }
+
+    @Test
+    void locateCity_shouldReturn200WithImageUrl() throws Exception {
+        LocateCityDTO dto = new LocateCityDTO(-23.5505, -46.6333);
+        CityModel city = new CityModel();
+        city.setId(1);
+        city.setName("São Paulo");
+        city.setImage("sp.jpg");
+
+        when(cityService.locateCity(-23.5505, -46.6333)).thenReturn(city);
+        when(storageService.getFileUrl("sp.jpg")).thenReturn("http://storage.com/sp.jpg");
+
+        mockMvc.perform(post("/api/city/locate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.image").value("http://storage.com/sp.jpg"));
+    }
+
+    @Test
+    void locateCity_shouldReturn400WhenInvalidCoords() throws Exception {
+        LocateCityDTO dto = new LocateCityDTO(-23.5505, -46.6333);
+
+        when(cityService.locateCity(-23.5505, -46.6333))
+                .thenThrow(new ResourceNotFoundException("No city found for the given coordinates"));
+
+        mockMvc.perform(post("/api/city/locate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void locateCity_shouldReturn400WhenNullBody() throws Exception {
+        mockMvc.perform(post("/api/city/locate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new LocateCityDTO(null, null))))
+                .andExpect(status().isBadRequest());
     }
 }

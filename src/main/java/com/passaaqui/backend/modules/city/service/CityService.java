@@ -1,5 +1,6 @@
 package com.passaaqui.backend.modules.city.service;
 
+import com.passaaqui.backend.infra.exception.InvalidRequestException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.infra.integration.ibge.IbgeClient;
 import com.passaaqui.backend.infra.integration.storage.StorageService;
@@ -112,4 +113,18 @@ public class CityService {
         return cityRepository.findAll();
     }
 
+    public CityModel locateCity(Double latitude, Double longitude) {
+        if (latitude == null || longitude == null) {
+            throw new InvalidRequestException("Latitude and longitude are required");
+        }
+        if (latitude < -90 || latitude > 90) {
+            throw new InvalidRequestException("Latitude must be between -90 and 90");
+        }
+        if (longitude < -180 || longitude > 180) {
+            throw new InvalidRequestException("Longitude must be between -180 and 180");
+        }
+
+        return cityRepository.findByCoordinatesWithinBoundingBox(latitude, longitude)
+                .orElseThrow(() -> new ResourceNotFoundException("No city found for the given coordinates"));
+    }
 }
