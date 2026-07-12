@@ -2,7 +2,6 @@ package com.passaaqui.backend.unit.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.passaaqui.backend.infra.exception.GlobalExceptionHandler;
-import com.passaaqui.backend.infra.exception.InvalidRequestException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.city.controller.CityController;
@@ -103,6 +102,35 @@ class CityControllerTest {
 
         mockMvc.perform(multipart("/api/city/create")
                         .file(dataPart))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createCityJson_shouldReturn200() throws Exception {
+        CreateCityDTO dto = new CreateCityDTO("1234567", "Test City", -10.0, -5.0, -40.0, -35.0);
+        CityModel city = new CityModel();
+        city.setId(1);
+        city.setName("Test City");
+        city.setIbgeCode("1234567");
+
+        when(cityService.createCity(anyString(), anyString(), anyDouble(), anyDouble(), anyDouble(), anyDouble(), isNull()))
+                .thenReturn(city);
+
+        mockMvc.perform(post("/api/city/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Test City"));
+    }
+
+    @Test
+    void createCityJson_shouldReturn400WhenInvalid() throws Exception {
+        CreateCityDTO dto = new CreateCityDTO("", "", null, null, null, null);
+
+        mockMvc.perform(post("/api/city/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest());
     }
 

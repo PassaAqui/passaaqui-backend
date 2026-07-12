@@ -1613,7 +1613,14 @@ Cria uma nova cidade. Os dados geográficos (nome, estado, região) são enrique
 
 `ADMIN_USER` ou `ADMIN_ROOT`
 
-#### Request Body
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `application/json` (JSON) ou `multipart/form-data` (com imagem) |
+
+#### Request Body (JSON)
 
 | Campo | Tipo | Obrigatório | Validação |
 |---|---|---|---|
@@ -1624,7 +1631,7 @@ Cria uma nova cidade. Os dados geográficos (nome, estado, região) são enrique
 | minLongitude | Double | Não | — |
 | maxLongitude | Double | Não | — |
 
-**Exemplo:**
+**Exemplo JSON:**
 
 ```json
 {
@@ -1636,6 +1643,12 @@ Cria uma nova cidade. Os dados geográficos (nome, estado, região) são enrique
   "maxLongitude": -46.3656
 }
 ```
+
+#### Multipart Form (com imagem)
+
+Para criar com imagem, envie como `multipart/form-data`:
+- **data:** JSON string do `CreateCityDTO`
+- **image:** arquivo de imagem (opcional)
 
 #### Response 200 (OK)
 
