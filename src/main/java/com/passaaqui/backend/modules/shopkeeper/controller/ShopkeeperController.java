@@ -18,7 +18,7 @@ import com.passaaqui.backend.modules.shopkeeper.service.ShopkeeperService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/shopkeepers")
+@RequestMapping({"/api/shopkeepers", "/api/shopkeeper"})
 @RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('ADMIN_USER', 'ADMIN_ROOT')")
 public class ShopkeeperController {

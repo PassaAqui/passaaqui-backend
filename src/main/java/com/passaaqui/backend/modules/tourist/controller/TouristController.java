@@ -19,7 +19,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/tourists")
+@RequestMapping({"/api/tourists", "/api/tourist"})
 @RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('ADMIN_USER', 'ADMIN_ROOT')")
 public class TouristController {
