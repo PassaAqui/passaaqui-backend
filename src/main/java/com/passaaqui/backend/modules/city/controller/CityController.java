@@ -36,15 +36,6 @@ public class CityController {
         return ResponseEntity.ok(city);
     }
 
-    @PostMapping(value = "/create", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<CityModel> createCityJson(@RequestBody @Valid CreateCityDTO dto) {
-        CityModel city = cityService.createCity(dto.ibgeCode(), dto.description(), dto.minLatitude(), dto.maxLatitude(), dto.minLongitude(), dto.maxLongitude(), null);
-        if (city.getImage() != null) {
-            city.setImageUrl(storageService.getFileUrl(city.getImage()));
-        }
-        return ResponseEntity.ok(city);
-    }
-
     @PutMapping("/{id}")
     public ResponseEntity<CityModel> updateCity(@PathVariable Integer id, @RequestBody @Valid UpdateCityDTO dto) {
         CityModel city = cityService.updateCity(id, dto);

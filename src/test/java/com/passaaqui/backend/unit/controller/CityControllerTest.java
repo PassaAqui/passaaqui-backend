@@ -106,35 +106,6 @@ class CityControllerTest {
     }
 
     @Test
-    void createCityJson_shouldReturn200() throws Exception {
-        CreateCityDTO dto = new CreateCityDTO("1234567", "Test City", -10.0, -5.0, -40.0, -35.0);
-        CityModel city = new CityModel();
-        city.setId(1);
-        city.setName("Test City");
-        city.setIbgeCode("1234567");
-
-        when(cityService.createCity(anyString(), anyString(), anyDouble(), anyDouble(), anyDouble(), anyDouble(), isNull()))
-                .thenReturn(city);
-
-        mockMvc.perform(post("/api/city/create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("Test City"));
-    }
-
-    @Test
-    void createCityJson_shouldReturn400WhenInvalid() throws Exception {
-        CreateCityDTO dto = new CreateCityDTO("", "", null, null, null, null);
-
-        mockMvc.perform(post("/api/city/create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     void updateCity_shouldReturn200() throws Exception {
         UpdateCityDTO dto = new UpdateCityDTO("Updated City", "desc", "SP", "1234567", "Southeast", "Micro", "Meso", "São Paulo", 35L, -10.0, -5.0, -40.0, -35.0);
         CityModel city = new CityModel();
