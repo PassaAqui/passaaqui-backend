@@ -8,6 +8,7 @@ import com.passaaqui.backend.modules.shopkeeper.controller.ShopkeeperController;
 import com.passaaqui.backend.modules.shopkeeper.dto.UpdateShopkeeperDTO;
 import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
 import com.passaaqui.backend.modules.shopkeeper.service.ShopkeeperService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +16,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -44,6 +47,40 @@ class ShopkeeperControllerTest {
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
         objectMapper = new ObjectMapper();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void me_shouldReturn200() throws Exception {
+        ShopkeeperModel shopkeeper = new ShopkeeperModel();
+        shopkeeper.setId(1);
+        shopkeeper.setEmail("shop@test.com");
+        shopkeeper.setName("Shop");
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("1", null, null));
+
+        when(service.findById(1)).thenReturn(shopkeeper);
+
+        mockMvc.perform(get("/api/shopkeepers/me"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.email").value("shop@test.com"));
+    }
+
+    @Test
+    void me_shouldReturn404WhenNotFound() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("999", null, null));
+
+        when(service.findById(999)).thenThrow(new ResourceNotFoundException("Shopkeeper not found"));
+
+        mockMvc.perform(get("/api/shopkeepers/me"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

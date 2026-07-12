@@ -46,6 +46,11 @@ public class TouristService {
         return repository.findAll();
     }
 
+    public TouristModel findById(Integer id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
+    }
+
     public TouristModel findByIdOrEmail(String identifier) {
         if (identifier.contains("@")) {
             return repository.findByEmail(identifier)

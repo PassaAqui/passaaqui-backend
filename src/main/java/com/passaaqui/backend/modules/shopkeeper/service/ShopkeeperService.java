@@ -79,6 +79,11 @@ public class ShopkeeperService {
         return repository.findAll();
     }
 
+    public ShopkeeperModel findById(Integer id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Shopkeeper not found"));
+    }
+
     public ShopkeeperModel findByIdOrEmail(String identifier) {
         if (identifier.contains("@")) {
             return repository.findByEmail(identifier)
