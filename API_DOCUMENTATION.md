@@ -93,12 +93,14 @@ http://localhost:8080/api
 
 ### 🏖️ Turistas
 - [`GET /api/tourists`](#get-apitourists)
+- [`GET /api/tourists/me`](#get-apitouristsme)
 - [`GET /api/tourists/{identifier}`](#get-apitouristsidentifier)
 - [`PUT /api/tourists/{identifier}`](#put-apitouristsidentifier)
 - [`DELETE /api/tourists/{identifier}`](#delete-apitouristsidentifier)
 
 ### 🏪 Lojistas
 - [`GET /api/shopkeepers`](#get-apishopkeepers)
+- [`GET /api/shopkeepers/me`](#get-apishopkeepersme)
 - [`GET /api/shopkeepers/{identifier}`](#get-apishopkeepersidentifier)
 - [`PUT /api/shopkeepers/{identifier}`](#put-apishopkeepersidentifier)
 - [`DELETE /api/shopkeepers/{identifier}`](#delete-apishopkeepersidentifier)
@@ -1287,6 +1289,58 @@ Lista **todos os turistas** cadastrados.
 
 ---
 
+### GET /api/tourists/me
+
+#### Descrição
+
+Retorna os dados do **turista autenticado** com base no token JWT. Utiliza o `sub` (user ID) do token para buscar o turista no banco.
+
+#### Controller
+
+`TouristController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "email": "turista@email.com",
+  "name": "João Turista",
+  "role": "TOURIST",
+  "createdAt": "2026-05-24T10:00:00",
+  "updatedAt": "2026-05-24T10:00:00",
+  "deviceId": null,
+  "documentId": "12345678909",
+  "lastKnownLocation": null,
+  "currentXP": 0,
+  "level": 0
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+| 404 | Turista não encontrado |
+
+---
+
 ### GET /api/tourists/{identifier}
 
 #### Descrição
@@ -1489,6 +1543,61 @@ Lista **todos os lojistas** cadastrados.
   }
 ]
 ```
+
+---
+
+### GET /api/shopkeepers/me
+
+#### Descrição
+
+Retorna os dados do **lojista autenticado** com base no token JWT. Utiliza o `sub` (user ID) do token para buscar o lojista no banco.
+
+#### Controller
+
+`ShopkeeperController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `SHOPKEEPER`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 2,
+  "email": "lojista@email.com",
+  "name": "Maria Lojista",
+  "role": "SHOPKEEPER",
+  "createdAt": "2026-05-24T10:01:00",
+  "updatedAt": "2026-05-24T10:01:00",
+  "documentId": "11222333000181",
+  "companyName": "Maria's Comércio",
+  "description": "Loja de artesanato local",
+  "category": {
+    "id": 1,
+    "name": "Alimentação",
+    "description": "Restaurantes, lanchonetes e food trucks"
+  }
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é SHOPKEEPER |
+| 404 | Lojista não encontrado |
 
 ---
 

@@ -3,6 +3,8 @@ package com.passaaqui.backend.modules.shopkeeper.controller;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,6 +28,14 @@ public class ShopkeeperController {
     @GetMapping
     public ResponseEntity<List<ShopkeeperModel>> findAll() {
         return ResponseEntity.ok(service.findAll());
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('SHOPKEEPER')")
+    public ResponseEntity<ShopkeeperModel> me() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.parseInt(authentication.getPrincipal().toString());
+        return ResponseEntity.ok(service.findById(userId));
     }
 
     @GetMapping("/{identifier}")
