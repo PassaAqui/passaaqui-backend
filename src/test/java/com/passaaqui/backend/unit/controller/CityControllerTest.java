@@ -2,7 +2,6 @@ package com.passaaqui.backend.unit.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.passaaqui.backend.infra.exception.GlobalExceptionHandler;
-import com.passaaqui.backend.infra.exception.InvalidRequestException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.city.controller.CityController;

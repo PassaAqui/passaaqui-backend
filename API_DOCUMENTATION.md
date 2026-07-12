@@ -1613,7 +1613,21 @@ Cria uma nova cidade. Os dados geográficos (nome, estado, região) são enrique
 
 `ADMIN_USER` ou `ADMIN_ROOT`
 
-#### Request Body
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `multipart/form-data` |
+
+#### Request Body (multipart/form-data)
+
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| data | String (JSON) | Sim | JSON com os campos abaixo |
+| image | File | Não | Arquivo de imagem da cidade |
+
+**Campos do JSON `data`:**
 
 | Campo | Tipo | Obrigatório | Validação |
 |---|---|---|---|
@@ -1624,17 +1638,19 @@ Cria uma nova cidade. Os dados geográficos (nome, estado, região) são enrique
 | minLongitude | Double | Não | — |
 | maxLongitude | Double | Não | — |
 
-**Exemplo:**
+**Exemplo de requisição com `curl`:**
 
-```json
-{
+```bash
+curl -X POST http://localhost:8080/api/city/create \
+  -H "Authorization: Bearer <token>" \
+  -F 'data={
   "ibgeCode": "3550308",
-  "description": "Capital do estado de São Paulo",
+  "description": "Capital de SP",
   "minLatitude": -23.6821,
   "maxLatitude": -23.3620,
   "minLongitude": -46.8259,
   "maxLongitude": -46.3656
-}
+};type=application/json'
 ```
 
 #### Response 200 (OK)
