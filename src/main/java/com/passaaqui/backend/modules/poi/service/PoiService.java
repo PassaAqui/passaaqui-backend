@@ -5,6 +5,7 @@ import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.city.model.CityModel;
 import com.passaaqui.backend.modules.city.repository.CityRepository;
 import com.passaaqui.backend.modules.poi.dto.CreatePoiDTO;
+import com.passaaqui.backend.modules.poi.dto.PoiNearbyDTO;
 import com.passaaqui.backend.modules.poi.dto.UpdatePoiDTO;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.poi.model.enums.PoiType;
@@ -17,9 +18,28 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class PoiService {
+
+    private static final double EARTH_RADIUS_KM = 6371.0;
+    private static final double DEFAULT_RADIUS_KM = 1.0;
+
+    private static final Map<String, Double> RADIUS_BY_MODE = Map.of(
+        "foot-walking", 1.0,
+        "foot-hiking", 1.5,
+        "cycling-regular", 5.0,
+        "cycling-road", 7.0,
+        "cycling-mountain", 5.0,
+        "cycling-electric", 8.0,
+        "driving-car", 20.0,
+        "driving-hgv", 15.0,
+        "wheelchair", 0.5
+    );
 
     private final PoiRepository repository;
     private final CityRepository cityRepository;
@@ -55,6 +75,28 @@ public class PoiService {
         return repository.findAll(pageable);
     }
 
+    public List<PoiNearbyDTO> findNearby(Double latitude, Double longitude, String mode) {
+        double radius = getRadiusForMode(mode);
+
+        double latDelta = Math.toDegrees(radius / EARTH_RADIUS_KM);
+        double lonDelta = Math.toDegrees(radius / (EARTH_RADIUS_KM * Math.cos(Math.toRadians(latitude))));
+
+        List<PoiModel> candidates = repository.findByBoundingBox(
+            latitude - latDelta, latitude + latDelta,
+            longitude - lonDelta, longitude + lonDelta
+        );
+
+        return candidates.stream()
+            .map(poi -> {
+                double distance = GeoUtils.haversineKm(latitude, longitude, poi.getLatitude(), poi.getLongitude());
+                String imageUrl = poi.getImage() != null ? storageService.getFileUrl(poi.getImage()) : null;
+                return PoiNearbyDTO.from(poi, distance, imageUrl);
+            })
+            .filter(dto -> dto.distanceKm() <= radius)
+            .sorted(Comparator.comparingDouble(PoiNearbyDTO::distanceKm))
+            .toList();
+    }
+
     public PoiModel findById(Integer id) {
         return repository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("POI not found"));
@@ -87,5 +129,10 @@ public class PoiService {
     public void delete(Integer id) {
         PoiModel poi = findById(id);
         repository.delete(poi);
+    }
+
+    private double getRadiusForMode(String mode) {
+        if (mode == null) return DEFAULT_RADIUS_KM;
+        return RADIUS_BY_MODE.getOrDefault(mode, DEFAULT_RADIUS_KM);
     }
 }

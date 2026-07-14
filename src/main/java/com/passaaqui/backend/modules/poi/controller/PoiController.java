@@ -4,6 +4,7 @@ import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.poi.dto.CheckinRequestDTO;
 import com.passaaqui.backend.modules.poi.dto.CheckinResponseDTO;
 import com.passaaqui.backend.modules.poi.dto.CreatePoiDTO;
+import com.passaaqui.backend.modules.poi.dto.PoiNearbyDTO;
 import com.passaaqui.backend.modules.poi.dto.UpdatePoiDTO;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.poi.service.PoiCheckinService;
@@ -19,6 +20,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/pois")
@@ -59,7 +62,17 @@ public class PoiController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<PoiModel>> findAll(Pageable pageable) {
+    public ResponseEntity<?> findAll(
+            @RequestParam(required = false) Double latitude,
+            @RequestParam(required = false) Double longitude,
+            @RequestParam(required = false) String mode,
+            Pageable pageable) {
+
+        if (latitude != null && longitude != null) {
+            List<PoiNearbyDTO> pois = service.findNearby(latitude, longitude, mode);
+            return ResponseEntity.ok(pois);
+        }
+
         Page<PoiModel> pois = service.findAll(pageable);
         for (PoiModel poi : pois) {
             if (poi.getImage() != null) {
