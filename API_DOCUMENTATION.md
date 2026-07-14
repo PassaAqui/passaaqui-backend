@@ -2340,7 +2340,10 @@ Cria um novo **Ponto de Interesse**.
 
 #### Descrição
 
-Lista **todos os POIs** cadastrados com **paginação**, incluindo avaliação média.
+Lista POIs com dois modos de operação:
+
+1. **Busca por proximidade** (quando `latitude` e `longitude` são fornecidos): retorna os POIs próximos à localização informada, ordenados por distância, com raio de busca ajustável conforme o modo de locomoção.
+2. **Paginação** (fallback quando nenhuma coordenada é informada): retorna todos os POIs cadastrados com paginação.
 
 #### Controller
 
@@ -2354,15 +2357,77 @@ Lista **todos os POIs** cadastrados com **paginação**, incluindo avaliação m
 
 `TOURIST`, `SHOPKEEPER`, `ADMIN_USER` ou `ADMIN_ROOT`
 
-#### Query Params (paginação)
+#### Query Params
 
-| Parâmetro | Tipo | Padrão | Descrição |
-|---|---|---|---|
-| `page` | Integer | `0` | Número da página |
-| `size` | Integer | `20` | Tamanho da página |
-| `sort` | String | — | Campo para ordenação (ex: `name,asc`) |
+| Parâmetro | Tipo | Padrão | Obrigatório | Descrição |
+|---|---|---|---|---|
+| `latitude` | Double | — | Não (requer `longitude`) | Latitude do usuário para busca por proximidade |
+| `longitude` | Double | — | Não (requer `latitude`) | Longitude do usuário para busca por proximidade |
+| `mode` | String | `foot-walking` | Não | Modo de locomoção (ajusta o raio de busca) |
+| `page` | Integer | `0` | Não | Número da página (apenas no modo paginação) |
+| `size` | Integer | `20` | Não | Tamanho da página (apenas no modo paginação) |
+| `sort` | String | — | Não | Campo para ordenação (apenas no modo paginação) |
 
-#### Response 200 (OK)
+##### Raio de busca por modo de locomoção
+
+| Modo | Raio de busca | Descrição |
+|---|---|---|
+| `foot-walking` | 1 km | A pé |
+| `foot-hiking` | 1.5 km | Trilha |
+| `wheelchair` | 0.5 km | Cadeira de rodas |
+| `cycling-regular` | 5 km | Bicicleta comum |
+| `cycling-road` | 7 km | Bicicleta de estrada |
+| `cycling-mountain` | 5 km | Mountain bike |
+| `cycling-electric` | 8 km | Bicicleta elétrica |
+| `driving-car` | 20 km | Carro |
+| `driving-hgv` | 15 km | Caminhão |
+
+#### Response 200 (OK) — Busca por proximidade
+
+Retorna um **array** de POIs próximos ordenados por distância, cada um com o campo `distance_km`.
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Parque Ibirapuera",
+    "description": "Principal parque da cidade",
+    "xp_reward": 50,
+    "type": "TOURIST_POINT",
+    "latitude": -23.5874,
+    "longitude": -46.6576,
+    "average_rating": 4.5,
+    "ratings_count": 10,
+    "image": null,
+    "distance_km": 0.0
+  },
+  {
+    "id": 2,
+    "name": "MASP",
+    "description": "Museu de arte",
+    "xp_reward": 30,
+    "type": "TOURIST_POINT",
+    "latitude": -23.5614,
+    "longitude": -46.6559,
+    "average_rating": 4.2,
+    "ratings_count": 8,
+    "image": null,
+    "distance_km": 2.9
+  }
+]
+```
+
+> O raio de busca é determinado pelo `mode`. POIs além do raio são filtrados automaticamente.
+
+**Exemplo com curl:**
+```bash
+curl -X GET "http://localhost:8080/api/pois?latitude=-23.55&longitude=-46.63&mode=driving-car" \
+  -H "Authorization: Bearer <token>"
+```
+
+#### Response 200 (OK) — Paginação (fallback)
+
+Quando `latitude` e `longitude` não são informados, o comportamento padrão é retornar todos os POIs com paginação.
 
 ```json
 {
@@ -2388,6 +2453,12 @@ Lista **todos os POIs** cadastrados com **paginação**, incluindo avaliação m
   "totalPages": 1
 }
 ```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
 
 ---
 
