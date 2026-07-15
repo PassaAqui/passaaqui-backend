@@ -4,6 +4,7 @@ import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.poi.dto.CheckinRequestDTO;
 import com.passaaqui.backend.modules.poi.dto.CheckinResponseDTO;
 import com.passaaqui.backend.modules.poi.dto.CreatePoiDTO;
+import com.passaaqui.backend.modules.poi.dto.PoiDetailDTO;
 import com.passaaqui.backend.modules.poi.dto.PoiNearbyDTO;
 import com.passaaqui.backend.modules.poi.dto.UpdatePoiDTO;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
@@ -83,12 +84,8 @@ public class PoiController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PoiModel> findById(@PathVariable Integer id) {
-        PoiModel poi = service.findById(id);
-        if (poi.getImage() != null) {
-            poi.setImageUrl(storageService.getFileUrl(poi.getImage()));
-        }
-        return ResponseEntity.ok(poi);
+    public ResponseEntity<PoiDetailDTO> findById(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.findDetailById(id));
     }
 
     @PostMapping("/{poiId}/checkin")
