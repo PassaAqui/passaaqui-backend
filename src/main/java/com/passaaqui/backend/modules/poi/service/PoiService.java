@@ -5,11 +5,14 @@ import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.city.model.CityModel;
 import com.passaaqui.backend.modules.city.repository.CityRepository;
 import com.passaaqui.backend.modules.poi.dto.CreatePoiDTO;
+import com.passaaqui.backend.modules.poi.dto.PoiDetailDTO;
 import com.passaaqui.backend.modules.poi.dto.PoiNearbyDTO;
 import com.passaaqui.backend.modules.poi.dto.UpdatePoiDTO;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.poi.model.enums.PoiType;
 import com.passaaqui.backend.modules.poi.repository.PoiRepository;
+import com.passaaqui.backend.modules.product.dto.ProductDTO;
+import com.passaaqui.backend.modules.product.repository.ProductRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +48,7 @@ public class PoiService {
     private final PoiRepository repository;
     private final CityRepository cityRepository;
     private final StorageService storageService;
+    private final ProductRepository productRepository;
 
     @Transactional
     public PoiModel create(CreatePoiDTO dto, MultipartFile image) {
@@ -100,6 +105,20 @@ public class PoiService {
     public PoiModel findById(Integer id) {
         return repository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("POI not found"));
+    }
+
+    public PoiDetailDTO findDetailById(Integer id) {
+        PoiModel poi = findById(id);
+        String imageUrl = poi.getImage() != null ? storageService.getFileUrl(poi.getImage()) : null;
+
+        List<ProductDTO> products = Collections.emptyList();
+        if (poi.getType() == PoiType.STORE) {
+            products = productRepository.findByPoiId(id).stream()
+                .map(ProductDTO::from)
+                .toList();
+        }
+
+        return PoiDetailDTO.from(poi, imageUrl, products);
     }
 
     @Transactional
