@@ -2466,7 +2466,7 @@ Quando `latitude` e `longitude` não são informados, o comportamento padrão é
 
 #### Descrição
 
-Retorna um POI específico por ID, incluindo avaliação média.
+Retorna um POI específico por ID, incluindo avaliação média e lista de produtos (preenchida apenas para POIs do tipo `STORE`).
 
 #### Controller
 
@@ -2486,22 +2486,50 @@ Retorna um POI específico por ID, incluindo avaliação média.
 |---|---|---|
 | `id` | Integer | ID do POI |
 
-#### Response 200 (OK)
+#### Response 200 (OK) — POI do tipo `TOURIST_POINT` (products vazio)
 
 ```json
 {
   "id": 1,
   "name": "Parque Ibirapuera",
   "description": "Principal parque da cidade",
-  "xpReward": 50,
+  "xp_reward": 50,
   "type": "TOURIST_POINT",
   "latitude": -23.5874,
   "longitude": -46.6576,
-  "city": { "id": 1, "name": "São Paulo", "state": "SP" },
-  "averageRating": 4.5,
-  "ratingsCount": 10,
-  "createdAt": "2026-05-24T13:00:00",
-  "updatedAt": "2026-05-24T13:00:00"
+  "average_rating": 4.5,
+  "ratings_count": 10,
+  "image": null,
+  "products": []
+}
+```
+
+#### Response 200 (OK) — POI do tipo `STORE` (products populado)
+
+```json
+{
+  "id": 2,
+  "name": "Loja Exemplo",
+  "description": "Loja de souvenirs",
+  "xp_reward": 30,
+  "type": "STORE",
+  "latitude": -23.55,
+  "longitude": -46.63,
+  "average_rating": null,
+  "ratings_count": 0,
+  "image": null,
+  "products": [
+    {
+      "id": 1,
+      "name": "Camiseta",
+      "description": "Camiseta oficial",
+      "price": 59.90,
+      "max_xp": 15,
+      "stock": 100,
+      "shopkeeper_id": 1,
+      "category_id": 1
+    }
+  ]
 }
 ```
 
