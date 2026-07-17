@@ -13,6 +13,7 @@ import com.passaaqui.backend.modules.poi.model.enums.PoiType;
 import com.passaaqui.backend.modules.poi.repository.PoiRepository;
 import com.passaaqui.backend.modules.product.dto.ProductDTO;
 import com.passaaqui.backend.modules.product.repository.ProductRepository;
+import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -114,7 +115,7 @@ public class PoiService {
         List<ProductDTO> products = Collections.emptyList();
         if (poi.getType() == PoiType.STORE) {
             products = productRepository.findByPoiId(id).stream()
-                .map(ProductDTO::from)
+                .map(p -> ProductDTO.from(p, p.getImage() != null ? storageService.getFileUrl(p.getImage()) : null))
                 .toList();
         }
 
@@ -148,6 +149,16 @@ public class PoiService {
     public void delete(Integer id) {
         PoiModel poi = findById(id);
         repository.delete(poi);
+    }
+
+    @Transactional
+    public PoiModel updateImage(Integer id, MultipartFile image) {
+        PoiModel poi = findById(id);
+        if (image != null && !image.isEmpty()) {
+            String imageName = storageService.uploadFile(image, "pois");
+            poi.setImage(imageName);
+        }
+        return repository.save(poi);
     }
 
     private double getRadiusForMode(String mode) {

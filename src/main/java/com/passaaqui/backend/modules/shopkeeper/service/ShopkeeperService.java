@@ -70,6 +70,7 @@ public class ShopkeeperService {
         poi.setMaxLongitude(maxLongitude);
         poi.setCity(city);
 
+        poi.setShopkeeper(newShopkeeper);
         poiRepository.save(poi);
 
         return newShopkeeper;

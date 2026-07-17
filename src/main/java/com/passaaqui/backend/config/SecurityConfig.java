@@ -17,6 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -49,6 +50,8 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html/**", "/h2-console/**").permitAll()
 
                         .requestMatchers("/error").permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
 
                         .anyRequest().authenticated()
                 )

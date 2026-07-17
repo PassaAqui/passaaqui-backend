@@ -8,8 +8,11 @@ import com.passaaqui.backend.modules.poi.dto.PoiDetailDTO;
 import com.passaaqui.backend.modules.poi.dto.PoiNearbyDTO;
 import com.passaaqui.backend.modules.poi.dto.UpdatePoiDTO;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
+import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.poi.service.PoiCheckinService;
 import com.passaaqui.backend.modules.poi.service.PoiService;
+import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
+import com.passaaqui.backend.modules.shopkeeper.service.ShopkeeperService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -32,6 +35,7 @@ public class PoiController {
     private final PoiService service;
     private final StorageService storageService;
     private final PoiCheckinService checkinService;
+    private final ShopkeeperService shopkeeperService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'ADMIN_ROOT')")
@@ -86,6 +90,38 @@ public class PoiController {
     @GetMapping("/{id}")
     public ResponseEntity<PoiDetailDTO> findById(@PathVariable Integer id) {
         return ResponseEntity.ok(service.findDetailById(id));
+    }
+
+    @PostMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SHOPKEEPER')")
+    public ResponseEntity<PoiModel> updateImageShopkeeper(
+            @PathVariable Integer id,
+            @RequestParam("image") MultipartFile image) {
+        PoiModel poi = service.findById(id);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        ShopkeeperModel shopkeeper = shopkeeperService.findById(Integer.parseInt(auth.getName()));
+
+        if (poi.getShopkeeper() == null || !poi.getShopkeeper().getId().equals(shopkeeper.getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        PoiModel updated = service.updateImage(id, image);
+        if (updated.getImage() != null) {
+            updated.setImageUrl(storageService.getFileUrl(updated.getImage()));
+        }
+        return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping(value = "/{id}/image/admin", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'ADMIN_ROOT')")
+    public ResponseEntity<PoiModel> updateImageAdmin(
+            @PathVariable Integer id,
+            @RequestParam("image") MultipartFile image) {
+        PoiModel updated = service.updateImage(id, image);
+        if (updated.getImage() != null) {
+            updated.setImageUrl(storageService.getFileUrl(updated.getImage()));
+        }
+        return ResponseEntity.ok(updated);
     }
 
     @PostMapping("/{poiId}/checkin")

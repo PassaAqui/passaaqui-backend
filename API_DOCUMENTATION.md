@@ -114,11 +114,11 @@ http://localhost:8080/api
 - [`POST /api/city/locate`](#post-apicitylocate)
 
 ### 📂 Categorias
-- [`POST /api/categories`](#post-apicategories)
-- [`GET /api/categories`](#get-apicategories)
-- [`GET /api/categories/{id}`](#get-apicategoriesid)
-- [`PUT /api/categories/{id}`](#put-apicategoriesid)
-- [`DELETE /api/categories/{id}`](#delete-apicategoriesid)
+- [`POST /api/categories`](#post-apicategories) `🔒 ADMIN`
+- [`GET /api/categories`](#get-apicategories) `🔓 Público`
+- [`GET /api/categories/{id}`](#get-apicategoriesid) `🔓 Público`
+- [`PUT /api/categories/{id}`](#put-apicategoriesid) `🔒 ADMIN`
+- [`DELETE /api/categories/{id}`](#delete-apicategoriesid) `🔒 ADMIN`
 
 ### 📍 Pontos de Interesse (POIs)
 - [`POST /api/pois`](#post-appois)
@@ -126,6 +126,8 @@ http://localhost:8080/api
 - [`GET /api/pois/{id}`](#get-appoisid)
 - [`PUT /api/pois/{id}`](#put-appoisid)
 - [`DELETE /api/pois/{id}`](#delete-appoisid)
+- [`POST /api/pois/{id}/image`](#post-appoisidimage) `🔒 SHOPKEEPER`
+- [`POST /api/pois/{id}/image/admin`](#post-appoisidimageadmin) `🔒 ADMIN`
 - [`POST /api/pois/{poiId}/checkin`](#post-appoispoidcheckin)
 - [`POST /api/pois/{poiId}/ratings`](#post-appoispoidratings)
 - [`GET /api/pois/{poiId}/ratings`](#get-appoispoidratings)
@@ -146,6 +148,7 @@ http://localhost:8080/api
 - [`GET /api/products/{id}`](#get-apiproductsid)
 - [`PUT /api/products/{id}`](#put-apiproductsid)
 - [`DELETE /api/products/{id}`](#delete-apiproductsid)
+- [`POST /api/products/{id}/image`](#post-apiproductsidimage) `🔒 SHOPKEEPER`
 
 ### 🛒 Pedidos (Orders)
 - [`POST /api/orders/checkout`](#post-apiorderscheckout)
@@ -2106,7 +2109,7 @@ Cria uma nova categoria.
 
 #### Descrição
 
-Lista **todas as categorias** cadastradas.
+Lista **todas as categorias** cadastradas. **Endpoint público** — não requer autenticação.
 
 #### Controller
 
@@ -2114,11 +2117,7 @@ Lista **todas as categorias** cadastradas.
 
 #### Autenticação
 
-✅ Obrigatória
-
-#### Permissões
-
-`ADMIN_USER` ou `ADMIN_ROOT`
+❌ **Pública** — não exige token
 
 #### Response 200 (OK)
 
@@ -2143,7 +2142,7 @@ Lista **todas as categorias** cadastradas.
 
 #### Descrição
 
-Retorna uma categoria por ID.
+Retorna uma categoria por ID. **Endpoint público** — não requer autenticação.
 
 #### Controller
 
@@ -2151,11 +2150,7 @@ Retorna uma categoria por ID.
 
 #### Autenticação
 
-✅ Obrigatória
-
-#### Permissões
-
-`ADMIN_USER` ou `ADMIN_ROOT`
+❌ **Pública** — não exige token
 
 #### Path Params
 
@@ -2535,6 +2530,108 @@ Retorna um POI específico por ID, incluindo avaliação média e lista de produ
 
 ---
 
+### POST /api/pois/{id}/image
+
+#### Descrição
+
+Faz upload de imagem para um POI do tipo **STORE** (loja). Apenas o **lojista proprietário** do POI pode enviar a imagem.
+
+#### Controller
+
+`PoiController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `SHOPKEEPER` — e deve ser o dono do POI
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `multipart/form-data` |
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do POI (deve ser do tipo STORE e pertencer ao lojista) |
+
+#### Request Body (multipart/form-data)
+
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| image | File | Sim | Arquivo de imagem do POI |
+
+#### Response 200 (OK)
+
+Retorna o `PoiModel` atualizado com o campo `image` contendo a URL pública.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é SHOPKEEPER ou POI não pertence ao lojista |
+| 404 | POI não encontrado |
+
+---
+
+### POST /api/pois/{id}/image/admin
+
+#### Descrição
+
+Faz upload de imagem para um POI do tipo **TOURIST_POINT** (ponto turístico). Apenas **administradores** podem enviar a imagem.
+
+#### Controller
+
+`PoiController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `multipart/form-data` |
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do POI |
+
+#### Request Body (multipart/form-data)
+
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| image | File | Sim | Arquivo de imagem do POI |
+
+#### Response 200 (OK)
+
+Retorna o `PoiModel` atualizado com o campo `image` contendo a URL pública.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é ADMIN |
+| 404 | POI não encontrado |
+
+---
+
 ### PUT /api/pois/{id}
 
 #### Descrição
@@ -2849,6 +2946,8 @@ Lista **todas as avaliações** de um POI específico.
 
 Cria um novo produto associado a um lojista e uma categoria.
 
+> ⚠️ **Lojistas** só podem criar produtos em POIs que **pertencem a eles** (POI com `shopkeeper_id` igual ao seu ID). Administradores podem criar em qualquer POI.
+
 #### Controller
 
 `ProductController`
@@ -2868,11 +2967,11 @@ Cria um novo produto associado a um lojista e uma categoria.
 | name | String | Sim | Não vazio |
 | description | String | Não | — |
 | price | Double | Não | `>= 0` |
-| xpCost | Integer | Não | `>= 0` |
+| maxXp | Integer | Não | XP máximo (calculado automaticamente se não informado) |
 | stock | Integer | Não | `>= 0` (padrão: 0) |
 | shopkeeperId | Integer | Sim | ID de lojista existente |
 | categoryId | Integer | Sim | ID de categoria existente |
-| poiId | Integer | Sim | ID de POI do tipo `STORE` existente |
+| poiId | Integer | Sim | ID de POI do tipo `STORE` existente (deve pertencer ao lojista) |
 
 **Exemplo:**
 
@@ -2881,7 +2980,6 @@ Cria um novo produto associado a um lojista e uma categoria.
   "name": "Artesanato Local",
   "description": "Peça feita à mão",
   "price": 49.90,
-  "xpCost": 10,
   "stock": 100,
   "shopkeeperId": 2,
   "categoryId": 1,
@@ -2897,8 +2995,9 @@ Cria um novo produto associado a um lojista e uma categoria.
   "name": "Artesanato Local",
   "description": "Peça feita à mão",
   "price": 49.90,
-  "xpCost": 10,
+  "maxXp": 31,
   "stock": 100,
+  "image": null,
   "shopkeeper": {
     "id": 2,
     "name": "Maria Lojista",
@@ -2917,6 +3016,15 @@ Cria um novo produto associado a um lojista e uma categoria.
   "updatedAt": "2026-05-24T15:00:00"
 }
 ```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Dados inválidos |
+| 401 | Token ausente ou inválido |
+| 403 | Lojista tentando criar produto em POI de outro lojista |
+| 404 | Shopkeeper, categoria ou POI não encontrado |
 
 ---
 
@@ -2947,8 +3055,11 @@ Lista **todos os produtos** cadastrados.
     "name": "Artesanato Local",
     "description": "Peça feita à mão",
     "price": 49.90,
-    "xpCost": 10,
+    "maxXp": 31,
     "stock": 100,
+    "image": "http://storage.com/produto.jpg",
+    "averageRating": 4.5,
+    "ratingsCount": 12,
     "shopkeeper": { "id": 2, "name": "Maria Lojista" },
     "category": { "id": 1, "name": "Alimentação" },
     "createdAt": "2026-05-24T15:00:00",
@@ -2986,8 +3097,11 @@ Lista os **50 produtos mais recentes** cadastrados (ordenados por `createdAt` de
     "name": "Artesanato Local",
     "description": "Peça feita à mão",
     "price": 49.90,
-    "xpCost": 10,
+    "maxXp": 31,
     "stock": 100,
+    "image": "http://storage.com/produto.jpg",
+    "averageRating": 4.5,
+    "ratingsCount": 12,
     "shopkeeper": { "id": 2, "name": "Maria Lojista" },
     "category": { "id": 1, "name": "Alimentação" },
     "createdAt": "2026-05-24T15:00:00",
@@ -3030,8 +3144,11 @@ Retorna um produto por ID.
   "name": "Artesanato Local",
   "description": "Peça feita à mão",
   "price": 49.90,
-  "xpCost": 10,
+  "maxXp": 31,
   "stock": 100,
+  "image": "http://storage.com/produto.jpg",
+  "averageRating": 4.5,
+  "ratingsCount": 12,
   "shopkeeper": { "id": 2, "name": "Maria Lojista" },
   "category": { "id": 1, "name": "Alimentação" },
   "createdAt": "2026-05-24T15:00:00",
@@ -3117,6 +3234,148 @@ Remove um produto.
 | `id` | Integer | ID do produto |
 
 #### Response 204 (No Content)
+
+---
+
+### POST /api/products/{id}/image
+
+#### Descrição
+
+Faz upload de imagem para um produto. Apenas o **lojista proprietário** do produto pode enviar a imagem.
+
+#### Controller
+
+`ProductController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `SHOPKEEPER`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `multipart/form-data` |
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do produto |
+
+#### Request Body (multipart/form-data)
+
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| image | File | Sim | Arquivo de imagem do produto |
+
+#### Response 200 (OK)
+
+Retorna o `ProductModel` atualizado com o campo `image` contendo a URL pública.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é SHOPKEEPER |
+| 404 | Produto não encontrado |
+
+---
+
+### POST /api/products/{productId}/ratings
+
+#### Descrição
+
+Avalia um produto com nota de 0 a 5. Cada turista só pode avaliar o mesmo produto **uma vez** (chamadas subsequentes atualizam a nota). Após a avaliação, os campos `averageRating` e `ratingsCount` do produto são recalculados automaticamente.
+
+#### Controller
+
+`ProductRatingController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `productId` | Integer | ID do produto |
+
+#### Request Body
+
+| Campo | Tipo | Validação |
+|---|---|---|
+| `rating` | Integer | `0` a `5` (obrigatório) |
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "rating": 4,
+  "createdAt": "2026-05-24T15:00:00"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Rating fora do intervalo 0-5 |
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+| 404 | Produto não encontrado |
+
+---
+
+### GET /api/products/{productId}/ratings
+
+#### Descrição
+
+Retorna a lista de avaliações de um produto.
+
+#### Controller
+
+`ProductRatingController`
+
+#### Autenticação
+
+✅ Não obrigatória
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `productId` | Integer | ID do produto |
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": 1,
+    "rating": 4,
+    "createdAt": "2026-05-24T15:00:00"
+  }
+]
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 404 | Produto não encontrado |
 
 ---
 
