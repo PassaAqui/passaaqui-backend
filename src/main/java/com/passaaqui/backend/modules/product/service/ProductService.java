@@ -1,6 +1,8 @@
 package com.passaaqui.backend.modules.product.service;
 
+import com.passaaqui.backend.infra.exception.ForbiddenException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
+import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.category.model.CategoryModel;
 import com.passaaqui.backend.modules.category.repository.CategoryRepository;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
@@ -18,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -30,6 +33,7 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
     private final PoiRepository poiRepository;
     private final XpCalculationStrategy xpCalculationStrategy;
+    private final StorageService storageService;
 
     @Transactional
     public ProductModel create(CreateProductDTO dto) {
@@ -41,6 +45,15 @@ public class ProductService {
 
         PoiModel poi = poiRepository.findById(dto.poiId())
             .orElseThrow(() -> new ResourceNotFoundException("POI not found"));
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .anyMatch(a -> a.startsWith("ROLE_ADMIN"));
+
+        if (!isAdmin && (poi.getShopkeeper() == null || !poi.getShopkeeper().getId().equals(shopkeeper.getId()))) {
+            throw new ForbiddenException("You can only create products for your own POI");
+        }
 
         ProductModel product = new ProductModel();
         product.setName(dto.name());
@@ -72,8 +85,10 @@ public class ProductService {
     }
 
     public ProductModel findById(Integer id) {
-        return repository.findById(id)
+        ProductModel product = repository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+        enrichImageUrl(product);
+        return product;
     }
 
     @Transactional
@@ -126,10 +141,32 @@ public class ProductService {
     }
 
     public List<ProductModel> findAll() {
-        return repository.findAll();
+        List<ProductModel> products = repository.findAll();
+        products.forEach(this::enrichImageUrl);
+        return products;
     }
 
     public List<ProductModel> getRecentProducts() {
-        return repository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 50)).getContent();
+        List<ProductModel> products = repository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 50)).getContent();
+        products.forEach(this::enrichImageUrl);
+        return products;
+    }
+
+    @Transactional
+    public ProductModel updateImage(Integer id, MultipartFile image) {
+        ProductModel product = findById(id);
+        if (image != null && !image.isEmpty()) {
+            String imageName = storageService.uploadFile(image, "products");
+            product.setImage(imageName);
+        }
+        ProductModel saved = repository.save(product);
+        enrichImageUrl(saved);
+        return saved;
+    }
+
+    private void enrichImageUrl(ProductModel product) {
+        if (product.getImage() != null) {
+            product.setImageUrl(storageService.getFileUrl(product.getImage()));
+        }
     }
 }

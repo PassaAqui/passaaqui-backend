@@ -6,6 +6,7 @@ import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.poi.controller.PoiController;
 import com.passaaqui.backend.modules.poi.dto.CreatePoiDTO;
+import com.passaaqui.backend.modules.poi.dto.PoiDetailDTO;
 import com.passaaqui.backend.modules.poi.dto.UpdatePoiDTO;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.poi.model.enums.PoiType;
@@ -208,11 +209,10 @@ class PoiControllerTest {
 
     @Test
     void findById_shouldReturn200() throws Exception {
-        PoiModel poi = new PoiModel();
-        poi.setId(1);
-        poi.setName("Test POI");
+        PoiDetailDTO dto = new PoiDetailDTO(1, "Test POI", "desc", 50, PoiType.TOURIST_POINT,
+                -23.5, -46.6, 4.5, 10, null, List.of());
 
-        when(service.findById(1)).thenReturn(poi);
+        when(service.findDetailById(1)).thenReturn(dto);
 
         mockMvc.perform(get("/api/pois/1"))
                 .andExpect(status().isOk())
@@ -222,13 +222,10 @@ class PoiControllerTest {
 
     @Test
     void findById_shouldReturn200WithImageUrl() throws Exception {
-        PoiModel poi = new PoiModel();
-        poi.setId(1);
-        poi.setName("Test POI");
-        poi.setImage("img.jpg");
+        PoiDetailDTO dto = new PoiDetailDTO(1, "Test POI", "desc", 50, PoiType.TOURIST_POINT,
+                -23.5, -46.6, 4.5, 10, "http://storage.com/img.jpg", List.of());
 
-        when(service.findById(1)).thenReturn(poi);
-        when(storageService.getFileUrl("img.jpg")).thenReturn("http://storage.com/img.jpg");
+        when(service.findDetailById(1)).thenReturn(dto);
 
         mockMvc.perform(get("/api/pois/1"))
                 .andExpect(status().isOk())
@@ -237,7 +234,7 @@ class PoiControllerTest {
 
     @Test
     void findById_shouldReturn404WhenNotFound() throws Exception {
-        when(service.findById(999)).thenThrow(new ResourceNotFoundException("POI not found"));
+        when(service.findDetailById(999)).thenThrow(new ResourceNotFoundException("POI not found"));
 
         mockMvc.perform(get("/api/pois/999"))
                 .andExpect(status().isNotFound());

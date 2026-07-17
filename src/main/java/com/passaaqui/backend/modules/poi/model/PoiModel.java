@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.passaaqui.backend.modules.city.model.CityModel;
 import com.passaaqui.backend.modules.poi.model.enums.PoiType;
+import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -55,6 +56,9 @@ public class PoiModel {
     @ManyToOne
     @JoinColumn(nullable = false)
     private CityModel city;
+
+    @ManyToOne
+    private ShopkeeperModel shopkeeper;
 
     private String image;
 

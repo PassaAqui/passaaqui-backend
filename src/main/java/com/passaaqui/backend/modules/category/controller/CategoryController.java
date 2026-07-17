@@ -15,12 +15,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN_USER', 'ADMIN_ROOT')")
 public class CategoryController {
 
     private final CategoryService service;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'ADMIN_ROOT')")
     public ResponseEntity<CategoryModel> create(@RequestBody @Valid CreateCategoryDTO dto) {
         return ResponseEntity.ok(service.create(dto));
     }
@@ -36,11 +36,13 @@ public class CategoryController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'ADMIN_ROOT')")
     public ResponseEntity<CategoryModel> update(@PathVariable Integer id, @RequestBody UpdateCategoryDTO dto) {
         return ResponseEntity.ok(service.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'ADMIN_ROOT')")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         service.delete(id);
         return ResponseEntity.noContent().build();

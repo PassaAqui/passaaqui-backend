@@ -1,5 +1,7 @@
 package com.passaaqui.backend.modules.product.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.passaaqui.backend.modules.category.model.CategoryModel;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
@@ -35,6 +37,17 @@ public class ProductModel {
 
     @Column(nullable = false)
     private Integer stock = 0;
+
+    private String image;
+
+    @Transient
+    @JsonProperty("image")
+    private String imageUrl;
+
+    @JsonIgnore
+    public String getImage() {
+        return image;
+    }
 
     @Version
     private Integer version;
