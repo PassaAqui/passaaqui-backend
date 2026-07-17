@@ -44,6 +44,10 @@ public class ProductModel {
     @JsonProperty("image")
     private String imageUrl;
 
+    private Double averageRating;
+
+    private Integer ratingsCount;
+
     @JsonIgnore
     public String getImage() {
         return image;

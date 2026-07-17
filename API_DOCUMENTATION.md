@@ -3055,8 +3055,11 @@ Lista **todos os produtos** cadastrados.
     "name": "Artesanato Local",
     "description": "Peça feita à mão",
     "price": 49.90,
-    "xpCost": 10,
+    "maxXp": 31,
     "stock": 100,
+    "image": "http://storage.com/produto.jpg",
+    "averageRating": 4.5,
+    "ratingsCount": 12,
     "shopkeeper": { "id": 2, "name": "Maria Lojista" },
     "category": { "id": 1, "name": "Alimentação" },
     "createdAt": "2026-05-24T15:00:00",
@@ -3094,8 +3097,11 @@ Lista os **50 produtos mais recentes** cadastrados (ordenados por `createdAt` de
     "name": "Artesanato Local",
     "description": "Peça feita à mão",
     "price": 49.90,
-    "xpCost": 10,
+    "maxXp": 31,
     "stock": 100,
+    "image": "http://storage.com/produto.jpg",
+    "averageRating": 4.5,
+    "ratingsCount": 12,
     "shopkeeper": { "id": 2, "name": "Maria Lojista" },
     "category": { "id": 1, "name": "Alimentação" },
     "createdAt": "2026-05-24T15:00:00",
@@ -3141,6 +3147,8 @@ Retorna um produto por ID.
   "maxXp": 31,
   "stock": 100,
   "image": "http://storage.com/produto.jpg",
+  "averageRating": 4.5,
+  "ratingsCount": 12,
   "shopkeeper": { "id": 2, "name": "Maria Lojista" },
   "category": { "id": 1, "name": "Alimentação" },
   "createdAt": "2026-05-24T15:00:00",
@@ -3276,6 +3284,97 @@ Retorna o `ProductModel` atualizado com o campo `image` contendo a URL pública.
 |---|---|
 | 401 | Token ausente ou inválido |
 | 403 | Role não é SHOPKEEPER |
+| 404 | Produto não encontrado |
+
+---
+
+### POST /api/products/{productId}/ratings
+
+#### Descrição
+
+Avalia um produto com nota de 0 a 5. Cada turista só pode avaliar o mesmo produto **uma vez** (chamadas subsequentes atualizam a nota). Após a avaliação, os campos `averageRating` e `ratingsCount` do produto são recalculados automaticamente.
+
+#### Controller
+
+`ProductRatingController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `productId` | Integer | ID do produto |
+
+#### Request Body
+
+| Campo | Tipo | Validação |
+|---|---|---|
+| `rating` | Integer | `0` a `5` (obrigatório) |
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "rating": 4,
+  "createdAt": "2026-05-24T15:00:00"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Rating fora do intervalo 0-5 |
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+| 404 | Produto não encontrado |
+
+---
+
+### GET /api/products/{productId}/ratings
+
+#### Descrição
+
+Retorna a lista de avaliações de um produto.
+
+#### Controller
+
+`ProductRatingController`
+
+#### Autenticação
+
+✅ Não obrigatória
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `productId` | Integer | ID do produto |
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": 1,
+    "rating": 4,
+    "createdAt": "2026-05-24T15:00:00"
+  }
+]
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
 | 404 | Produto não encontrado |
 
 ---
