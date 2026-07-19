@@ -1,11 +1,15 @@
 package com.passaaqui.backend.modules.category.controller;
 
+import com.passaaqui.backend.modules.category.dto.CategoryFeedDTO;
 import com.passaaqui.backend.modules.category.dto.CreateCategoryDTO;
 import com.passaaqui.backend.modules.category.dto.UpdateCategoryDTO;
 import com.passaaqui.backend.modules.category.model.CategoryModel;
 import com.passaaqui.backend.modules.category.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -31,8 +35,10 @@ public class CategoryController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CategoryModel> findById(@PathVariable Integer id) {
-        return ResponseEntity.ok(service.findById(id));
+    public ResponseEntity<CategoryFeedDTO> findById(
+            @PathVariable Integer id,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(service.findFeedById(id, pageable));
     }
 
     @PutMapping("/{id}")
