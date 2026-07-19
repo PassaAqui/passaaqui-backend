@@ -116,7 +116,7 @@ http://localhost:8080/api
 ### 📂 Categorias
 - [`POST /api/categories`](#post-apicategories) `🔒 ADMIN`
 - [`GET /api/categories`](#get-apicategories) `🔓 Público`
-- [`GET /api/categories/{id}`](#get-apicategoriesid) `🔓 Público`
+- [`GET /api/categories/{id}`](#get-apicategoriesid) `🔓 Público` *(feed paginado de produtos)*
 - [`PUT /api/categories/{id}`](#put-apicategoriesid) `🔒 ADMIN`
 - [`DELETE /api/categories/{id}`](#delete-apicategoriesid) `🔒 ADMIN`
 
@@ -2142,7 +2142,7 @@ Lista **todas as categorias** cadastradas. **Endpoint público** — não requer
 
 #### Descrição
 
-Retorna uma categoria por ID. **Endpoint público** — não requer autenticação.
+Retorna uma categoria por ID com **feed paginado de produtos** relacionados a essa categoria. **Endpoint público** — não requer autenticação.
 
 #### Controller
 
@@ -2158,15 +2158,70 @@ Retorna uma categoria por ID. **Endpoint público** — não requer autenticaç�
 |---|---|---|
 | `id` | Integer | ID da categoria |
 
+#### Query Params
+
+| Parâmetro | Tipo | Padrão | Descrição |
+|---|---|---|---|
+| `page` | Integer | 0 | Número da página (0-indexed) |
+| `size` | Integer | 20 | Quantidade de itens por página |
+| `sort` | String | `createdAt,desc` | Ordenação (ex: `name,asc` ou `price,desc`) |
+
 #### Response 200 (OK)
 
 ```json
 {
   "id": 1,
   "name": "Alimentação",
-  "description": "Restaurantes, lanchonetes e food trucks"
+  "description": "Restaurantes, lanchonetes e food trucks",
+  "products": {
+    "content": [
+      {
+        "id": 1,
+        "name": "Artesanato Local",
+        "description": "Peça feita à mão",
+        "price": 49.90,
+        "maxXp": 31,
+        "stock": 100,
+        "image": "http://storage.com/produto.jpg",
+        "averageRating": 4.5,
+        "ratingsCount": 12,
+        "shopkeeper": { "id": 2, "name": "Maria Lojista" },
+        "category": { "id": 1, "name": "Alimentação" },
+        "createdAt": "2026-05-24T15:00:00",
+        "updatedAt": "2026-05-24T15:00:00"
+      }
+    ],
+    "pageable": {
+      "pageNumber": 0,
+      "pageSize": 20,
+      "sort": { "empty": false, "sorted": true, "unsorted": false }
+    },
+    "totalElements": 1,
+    "totalPages": 1,
+    "number": 0,
+    "size": 20,
+    "first": true,
+    "last": true,
+    "empty": false
+  }
 }
 ```
+
+#### Exemplo de requisição
+
+```bash
+# Primeira página com 10 itens
+curl -X GET "http://localhost:8080/api/categories/1?page=0&size=10&sort=createdAt,desc"
+
+# Segunda página ordenada por preço crescente
+curl -X GET "http://localhost:8080/api/categories/1?page=1&size=5&sort=price,asc"
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 404 | Categoria não encontrada |
 
 ---
 

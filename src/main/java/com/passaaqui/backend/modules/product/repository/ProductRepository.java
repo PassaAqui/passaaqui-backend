@@ -12,4 +12,6 @@ public interface ProductRepository extends JpaRepository<ProductModel, Integer> 
     Page<ProductModel> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     List<ProductModel> findByPoiId(Integer poiId);
+
+    Page<ProductModel> findByCategoryId(Integer categoryId, Pageable pageable);
 }
