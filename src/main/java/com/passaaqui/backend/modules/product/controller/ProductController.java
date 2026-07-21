@@ -40,12 +40,20 @@ public class ProductController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('SHOPKEEPER')")
-    public ResponseEntity<ProductModel> updateImage(
+    @PostMapping(value = "/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('SHOPKEEPER', 'ADMIN_USER', 'ADMIN_ROOT')")
+    public ResponseEntity<ProductModel> addImage(
             @PathVariable Integer id,
             @RequestParam("image") MultipartFile image) {
-        return ResponseEntity.ok(service.updateImage(id, image));
+        return ResponseEntity.ok(service.addImage(id, image));
+    }
+
+    @DeleteMapping("/{id}/images/{index}")
+    @PreAuthorize("hasAnyRole('SHOPKEEPER', 'ADMIN_USER', 'ADMIN_ROOT')")
+    public ResponseEntity<ProductModel> removeImage(
+            @PathVariable Integer id,
+            @PathVariable int index) {
+        return ResponseEntity.ok(service.removeImage(id, index));
     }
 
     @GetMapping

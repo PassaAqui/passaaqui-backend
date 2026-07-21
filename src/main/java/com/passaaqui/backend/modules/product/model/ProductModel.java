@@ -14,6 +14,8 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -38,19 +40,22 @@ public class ProductModel {
     @Column(nullable = false)
     private Integer stock = 0;
 
-    private String image;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "image_name")
+    private List<String> images = new ArrayList<>();
 
     @Transient
-    @JsonProperty("image")
-    private String imageUrl;
+    @JsonProperty("images")
+    private List<String> imageUrls;
 
     private Double averageRating;
 
     private Integer ratingsCount;
 
     @JsonIgnore
-    public String getImage() {
-        return image;
+    public List<String> getImages() {
+        return images;
     }
 
     @Version

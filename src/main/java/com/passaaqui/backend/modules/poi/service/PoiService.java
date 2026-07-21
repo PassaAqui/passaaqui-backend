@@ -114,7 +114,12 @@ public class PoiService {
         List<ProductDTO> products = Collections.emptyList();
         if (poi.getType() == PoiType.STORE) {
             products = productRepository.findByPoiId(id).stream()
-                .map(p -> ProductDTO.from(p, p.getImage() != null ? storageService.getFileUrl(p.getImage()) : null))
+                .map(p -> {
+                    List<String> urls = p.getImages().stream()
+                        .map(storageService::getFileUrl)
+                        .toList();
+                    return ProductDTO.from(p, urls);
+                })
                 .toList();
         }
 

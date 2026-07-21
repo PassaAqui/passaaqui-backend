@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -73,9 +74,11 @@ public class CategoryService {
         CategoryModel category = findById(id);
         Page<ProductModel> products = productRepository.findByCategoryId(id, pageable);
         for (ProductModel product : products) {
-            if (product.getImage() != null) {
-                product.setImageUrl(storageService.getFileUrl(product.getImage()));
+            List<String> urls = new ArrayList<>();
+            for (String imageName : product.getImages()) {
+                urls.add(storageService.getFileUrl(imageName));
             }
+            product.setImageUrls(urls);
         }
         return CategoryFeedDTO.from(category, products);
     }
