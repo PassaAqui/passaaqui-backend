@@ -58,7 +58,8 @@ public class PoiCheckinService {
 
         CheckinResponseDTO response = xpCalculationService.calculate(
                 userId, poiId, "turistico",
-                distanceKm, (int) recentVisits, lastCheckin
+                distanceKm, (int) recentVisits, lastCheckin,
+                poi.getXpReward()
         );
 
         PoiVisitModel visit = new PoiVisitModel();

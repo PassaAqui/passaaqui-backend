@@ -22,7 +22,8 @@ public class XpCalculationService {
             String poiType,
             double distanceKm,
             int recentVisits,
-            LocalDateTime lastUserCheckin
+            LocalDateTime lastUserCheckin,
+            Integer fixedXpReward
     ) {
         boolean antiFarmingActive = false;
         boolean invalidGps = false;
@@ -47,15 +48,21 @@ public class XpCalculationService {
             return new CheckinResponseDTO(0, null, new AppliedRules(antiFarmingActive, invalidGps), blockReason);
         }
 
-        double displacementFactor = distanceKm * DISPLACEMENT_FACTOR;
-        double invisibilityFactor = (double) INVISIBILITY_BASE / (recentVisits + 1);
-        double rawXp = displacementFactor * invisibilityFactor;
-        int finalXp = (int) Math.round(rawXp);
+        int finalXp;
 
-        if (finalXp < 0) finalXp = 0;
+        if (fixedXpReward != null) {
+            finalXp = fixedXpReward;
+        } else {
+            double displacementFactor = distanceKm * DISPLACEMENT_FACTOR;
+            double invisibilityFactor = (double) INVISIBILITY_BASE / (recentVisits + 1);
+            double rawXp = displacementFactor * invisibilityFactor;
+            finalXp = (int) Math.round(rawXp);
+            if (finalXp < 0) finalXp = 0;
 
-        Calculation calculation = new Calculation(distanceKm, displacementFactor, recentVisits, invisibilityFactor, rawXp, finalXp);
+            Calculation calculation = new Calculation(distanceKm, displacementFactor, recentVisits, invisibilityFactor, rawXp, finalXp);
+            return new CheckinResponseDTO(finalXp, calculation, new AppliedRules(false, false), null);
+        }
 
-        return new CheckinResponseDTO(finalXp, calculation, new AppliedRules(false, false), null);
+        return new CheckinResponseDTO(finalXp, null, new AppliedRules(false, false), null);
     }
 }

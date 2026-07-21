@@ -60,7 +60,6 @@ public class PoiService {
         poi.setName(dto.name());
         poi.setDescription(dto.description());
         poi.setType(dto.type());
-        poi.setXpReward(dto.type() == PoiType.STORE ? null : dto.xpReward());
         poi.setLatitude(dto.latitude());
         poi.setLongitude(dto.longitude());
         poi.setMinLatitude(dto.minLatitude());
@@ -115,7 +114,12 @@ public class PoiService {
         List<ProductDTO> products = Collections.emptyList();
         if (poi.getType() == PoiType.STORE) {
             products = productRepository.findByPoiId(id).stream()
-                .map(p -> ProductDTO.from(p, p.getImage() != null ? storageService.getFileUrl(p.getImage()) : null))
+                .map(p -> {
+                    List<String> urls = p.getImages().stream()
+                        .map(storageService::getFileUrl)
+                        .toList();
+                    return ProductDTO.from(p, urls);
+                })
                 .toList();
         }
 
@@ -149,6 +153,13 @@ public class PoiService {
     public void delete(Integer id) {
         PoiModel poi = findById(id);
         repository.delete(poi);
+    }
+
+    @Transactional
+    public PoiModel setXpReward(Integer id, Integer xpReward) {
+        PoiModel poi = findById(id);
+        poi.setXpReward(xpReward);
+        return repository.save(poi);
     }
 
     @Transactional

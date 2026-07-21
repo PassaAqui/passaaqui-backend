@@ -7,6 +7,7 @@ import com.passaaqui.backend.modules.poi.dto.CreatePoiDTO;
 import com.passaaqui.backend.modules.poi.dto.PoiDetailDTO;
 import com.passaaqui.backend.modules.poi.dto.PoiNearbyDTO;
 import com.passaaqui.backend.modules.poi.dto.UpdatePoiDTO;
+import com.passaaqui.backend.modules.poi.dto.UpdatePoiXpRewardDTO;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.poi.service.PoiCheckinService;
@@ -122,6 +123,18 @@ public class PoiController {
             updated.setImageUrl(storageService.getFileUrl(updated.getImage()));
         }
         return ResponseEntity.ok(updated);
+    }
+
+    @PutMapping("/{id}/xp-reward")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'ADMIN_ROOT')")
+    public ResponseEntity<PoiModel> updateXpReward(
+            @PathVariable Integer id,
+            @RequestBody @Valid UpdatePoiXpRewardDTO dto) {
+        PoiModel poi = service.setXpReward(id, dto.xpReward());
+        if (poi.getImage() != null) {
+            poi.setImageUrl(storageService.getFileUrl(poi.getImage()));
+        }
+        return ResponseEntity.ok(poi);
     }
 
     @PostMapping("/{poiId}/checkin")

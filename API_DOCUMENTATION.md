@@ -128,6 +128,7 @@ http://localhost:8080/api
 - [`DELETE /api/pois/{id}`](#delete-appoisid)
 - [`POST /api/pois/{id}/image`](#post-appoisidimage) `🔒 SHOPKEEPER`
 - [`POST /api/pois/{id}/image/admin`](#post-appoisidimageadmin) `🔒 ADMIN`
+- [`PUT /api/pois/{id}/xp-reward`](#put-appoisidxp-reward) `🔒 ADMIN`
 - [`POST /api/pois/{poiId}/checkin`](#post-appoispoidcheckin)
 - [`POST /api/pois/{poiId}/ratings`](#post-appoispoidratings)
 - [`GET /api/pois/{poiId}/ratings`](#get-appoispoidratings)
@@ -148,7 +149,8 @@ http://localhost:8080/api
 - [`GET /api/products/{id}`](#get-apiproductsid)
 - [`PUT /api/products/{id}`](#put-apiproductsid)
 - [`DELETE /api/products/{id}`](#delete-apiproductsid)
-- [`POST /api/products/{id}/image`](#post-apiproductsidimage) `🔒 SHOPKEEPER`
+- [`POST /api/products/{id}/images`](#post-apiproductsidimages) `🔒 SHOPKEEPER / ADMIN`
+- [`DELETE /api/products/{id}/images/{index}`](#delete-apiproductsidimagesindex) `🔒 SHOPKEEPER / ADMIN`
 
 ### 🛒 Pedidos (Orders)
 - [`POST /api/orders/checkout`](#post-apiorderscheckout)
@@ -598,9 +600,17 @@ Nenhuma (público)
 
 | Nome | Obrigatório | Descrição |
 |---|---|---|
-| Content-Type | Sim | `application/json` |
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `multipart/form-data` |
 
-#### Request Body
+#### Request Body (multipart/form-data)
+
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| data | String (JSON) | Sim | JSON com os campos abaixo |
+| image | File | Não | Arquivo de imagem da loja (POI) |
+
+**Campos do JSON `data`:**
 
 | Campo | Tipo | Obrigatório | Validação |
 |---|---|---|---|
@@ -624,24 +634,27 @@ Nenhuma (público)
 
 > O sistema cria automaticamente um **POI do tipo STORE** vinculado ao lojista no momento do registro.
 
-**Exemplo:**
+**Exemplo de requisição com `curl`:**
 
-```json
-{
+```bash
+curl -X POST http://localhost:8080/api/auth/register/shopkeeper \
+  -H "Authorization: Bearer <token>" \
+  -F 'data={
   "email": "lojista@email.com",
   "name": "Maria Lojista",
   "password": "Senha@123",
   "confirm_password": "Senha@123",
   "documentId": "11222333000181",
-  "companyName": "Maria's Comércio",
+  "companyName": "Marias Comercio",
   "description": "Loja de artesanato local",
   "categoryId": 1,
-  "poiName": "Maria's Comércio",
+  "poiName": "Marias Comercio",
   "poiDescription": "Loja de artesanato local",
   "latitude": -23.5505,
   "longitude": -46.6333,
   "cityId": 1
-}
+};type=application/json' \
+  -F "image=@loja.jpg"
 ```
 
 #### Response 201 (Created)
@@ -2740,11 +2753,73 @@ Todos os campos opcionais.
 
 ---
 
+### PUT /api/pois/{id}/xp-reward
+
+#### Descrição
+
+Define um **XP fixo** para o POI. Quando um XP fixo é definido, o check-in nesse POI sempre concederá esse valor, ignorando o cálculo dinâmico (distância, visitas recentes, etc.). Para voltar ao cálculo dinâmico, defina `xpReward` como `null` via `PUT /api/pois/{id}`.
+
+#### Controller
+
+`PoiController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `application/json` |
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do POI |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| xpReward | Integer | Sim | `>= 0` |
+
+**Exemplo:**
+```json
+{
+  "xpReward": 50
+}
+```
+
+#### Response 200 (OK)
+
+Retorna o `PoiModel` atualizado com o campo `xp_reward` definido.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | `xpReward` inválido (negativo, nulo) |
+| 401 | Token ausente ou inválido |
+| 403 | Role não é ADMIN |
+| 404 | POI não encontrado |
+
+---
+
 ### POST /api/pois/{poiId}/checkin
 
 #### Descrição
 
-Realiza o **check-in** de um turista em um POI do tipo **ponto turístico**. O sistema calcula o XP com base na **fórmula oficial**:
+Realiza o **check-in** de um turista em um POI do tipo **ponto turístico**. O cálculo do XP segue esta ordem de precedência:
+
+1. **XP fixo:** se o admin definiu um `xpReward` no POI (via `PUT /api/pois/{id}/xp-reward`), este valor é concedido diretamente
+2. **Cálculo dinâmico:** caso contrário, aplica a **fórmula oficial**:
 
 ```
 XP = (distancia_km * 2.5) * (100 / (visitas_recentes + 1))
@@ -3052,7 +3127,7 @@ Cria um novo produto associado a um lojista e uma categoria.
   "price": 49.90,
   "maxXp": 31,
   "stock": 100,
-  "image": null,
+  "images": [],
   "shopkeeper": {
     "id": 2,
     "name": "Maria Lojista",
@@ -3292,11 +3367,11 @@ Remove um produto.
 
 ---
 
-### POST /api/products/{id}/image
+### POST /api/products/{id}/images
 
 #### Descrição
 
-Faz upload de imagem para um produto. Apenas o **lojista proprietário** do produto pode enviar a imagem.
+Adiciona uma imagem ao produto (mínimo 1, máximo 4 imagens por produto). Se o produto já tiver 4 imagens, retorna erro.
 
 #### Controller
 
@@ -3308,7 +3383,7 @@ Faz upload de imagem para um produto. Apenas o **lojista proprietário** do prod
 
 #### Permissões
 
-Apenas `SHOPKEEPER`
+`SHOPKEEPER`, `ADMIN_USER` ou `ADMIN_ROOT`
 
 #### Headers
 
@@ -3331,14 +3406,61 @@ Apenas `SHOPKEEPER`
 
 #### Response 200 (OK)
 
-Retorna o `ProductModel` atualizado com o campo `image` contendo a URL pública.
+Retorna o `ProductModel` atualizado com o campo `images` contendo a lista de URLs públicas.
 
 #### Possíveis Erros
 
 | Status | Motivo |
 |---|---|
+| 400 | Produto já possui 4 imagens (máximo atingido) |
 | 401 | Token ausente ou inválido |
-| 403 | Role não é SHOPKEEPER |
+| 403 | Role não autorizada |
+| 404 | Produto não encontrado |
+
+---
+
+### DELETE /api/products/{id}/images/{index}
+
+#### Descrição
+
+Remove uma imagem do produto pelo seu índice (0-based). O arquivo é excluído do storage.
+
+#### Controller
+
+`ProductController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`SHOPKEEPER`, `ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do produto |
+| `index` | Integer | Índice da imagem a remover (0-based) |
+
+#### Response 200 (OK)
+
+Retorna o `ProductModel` atualizado com a lista de imagens restante.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Índice inválido (fora do range) |
+| 401 | Token ausente ou inválido |
+| 403 | Role não autorizada |
 | 404 | Produto não encontrado |
 
 ---

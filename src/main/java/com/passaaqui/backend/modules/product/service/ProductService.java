@@ -13,6 +13,7 @@ import com.passaaqui.backend.modules.product.model.ProductModel;
 import com.passaaqui.backend.modules.product.repository.ProductRepository;
 import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
 import com.passaaqui.backend.modules.shopkeeper.repository.ShopkeeperRepository;
+import com.passaaqui.backend.infra.exception.InvalidRequestException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -22,6 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -87,7 +89,7 @@ public class ProductService {
     public ProductModel findById(Integer id) {
         ProductModel product = repository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
-        enrichImageUrl(product);
+        enrichImageUrls(product);
         return product;
     }
 
@@ -142,31 +144,54 @@ public class ProductService {
 
     public List<ProductModel> findAll() {
         List<ProductModel> products = repository.findAll();
-        products.forEach(this::enrichImageUrl);
+        products.forEach(this::enrichImageUrls);
         return products;
     }
 
     public List<ProductModel> getRecentProducts() {
         List<ProductModel> products = repository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 50)).getContent();
-        products.forEach(this::enrichImageUrl);
+        products.forEach(this::enrichImageUrls);
         return products;
     }
 
     @Transactional
-    public ProductModel updateImage(Integer id, MultipartFile image) {
-        ProductModel product = findById(id);
-        if (image != null && !image.isEmpty()) {
-            String imageName = storageService.uploadFile(image, "products");
-            product.setImage(imageName);
+    public ProductModel addImage(Integer id, MultipartFile image) {
+        ProductModel product = repository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        if (product.getImages().size() >= 4) {
+            throw new InvalidRequestException("Maximum of 4 images per product");
         }
+
+        String imageName = storageService.uploadFile(image, "products");
+        product.getImages().add(imageName);
         ProductModel saved = repository.save(product);
-        enrichImageUrl(saved);
+        enrichImageUrls(saved);
         return saved;
     }
 
-    private void enrichImageUrl(ProductModel product) {
-        if (product.getImage() != null) {
-            product.setImageUrl(storageService.getFileUrl(product.getImage()));
+    @Transactional
+    public ProductModel removeImage(Integer id, int index) {
+        ProductModel product = repository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        List<String> images = product.getImages();
+        if (index < 0 || index >= images.size()) {
+            throw new InvalidRequestException("Invalid image index");
         }
+
+        String removedImage = images.remove(index);
+        storageService.deleteFile(removedImage);
+        ProductModel saved = repository.save(product);
+        enrichImageUrls(saved);
+        return saved;
+    }
+
+    private void enrichImageUrls(ProductModel product) {
+        List<String> urls = new ArrayList<>();
+        for (String imageName : product.getImages()) {
+            urls.add(storageService.getFileUrl(imageName));
+        }
+        product.setImageUrls(urls);
     }
 }
