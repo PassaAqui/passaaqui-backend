@@ -60,7 +60,6 @@ public class PoiService {
         poi.setName(dto.name());
         poi.setDescription(dto.description());
         poi.setType(dto.type());
-        poi.setXpReward(dto.type() == PoiType.STORE ? null : dto.xpReward());
         poi.setLatitude(dto.latitude());
         poi.setLongitude(dto.longitude());
         poi.setMinLatitude(dto.minLatitude());
@@ -149,6 +148,13 @@ public class PoiService {
     public void delete(Integer id) {
         PoiModel poi = findById(id);
         repository.delete(poi);
+    }
+
+    @Transactional
+    public PoiModel setXpReward(Integer id, Integer xpReward) {
+        PoiModel poi = findById(id);
+        poi.setXpReward(xpReward);
+        return repository.save(poi);
     }
 
     @Transactional

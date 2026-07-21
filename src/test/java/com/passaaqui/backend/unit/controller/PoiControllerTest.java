@@ -62,7 +62,7 @@ class PoiControllerTest {
 
     @Test
     void create_shouldReturn200() throws Exception {
-        CreatePoiDTO dto = new CreatePoiDTO("Test POI", "A nice place", 50, PoiType.TOURIST_POINT, -23.5, -46.6, null, null, null, null, 1);
+        CreatePoiDTO dto = new CreatePoiDTO("Test POI", "A nice place", PoiType.TOURIST_POINT, -23.5, -46.6, null, null, null, null, 1);
         PoiModel poi = new PoiModel();
         poi.setId(1);
         poi.setName("Test POI");
@@ -81,7 +81,7 @@ class PoiControllerTest {
 
     @Test
     void create_shouldReturn200WithImage() throws Exception {
-        CreatePoiDTO dto = new CreatePoiDTO("Test POI", "A nice place", 50, PoiType.TOURIST_POINT, -23.5, -46.6, null, null, null, null, 1);
+        CreatePoiDTO dto = new CreatePoiDTO("Test POI", "A nice place", PoiType.TOURIST_POINT, -23.5, -46.6, null, null, null, null, 1);
         PoiModel poi = new PoiModel();
         poi.setId(1);
         poi.setName("Test POI");
@@ -102,7 +102,7 @@ class PoiControllerTest {
 
     @Test
     void create_shouldReturn400WhenInvalid() throws Exception {
-        CreatePoiDTO dto = new CreatePoiDTO("", null, null, PoiType.TOURIST_POINT, null, null, null, null, null, null, null);
+        CreatePoiDTO dto = new CreatePoiDTO("", null, PoiType.TOURIST_POINT, null, null, null, null, null, null, null);
 
         MockMultipartFile dataPart = new MockMultipartFile("data", "data", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(dto));
 
