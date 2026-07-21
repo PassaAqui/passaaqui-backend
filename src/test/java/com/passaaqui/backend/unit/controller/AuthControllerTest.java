@@ -19,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -84,11 +85,12 @@ class AuthControllerTest {
         shopkeeper.setEmail("shop@test.com");
         shopkeeper.setName("Shop");
 
-        when(service.registerAccountShopkeeper(any(RegisterShopkeeperDTO.class))).thenReturn(shopkeeper);
+        when(service.registerAccountShopkeeper(any(RegisterShopkeeperDTO.class), any())).thenReturn(shopkeeper);
 
-        mockMvc.perform(post("/api/auth/register/shopkeeper")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+        MockMultipartFile dataPart = new MockMultipartFile("data", "data", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(dto));
+
+        mockMvc.perform(multipart("/api/auth/register/shopkeeper")
+                        .file(dataPart))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(2));
     }
@@ -97,9 +99,10 @@ class AuthControllerTest {
     void registerAccountShopkeeper_shouldReturn400WhenInvalid() throws Exception {
         RegisterShopkeeperDTO dto = new RegisterShopkeeperDTO("bad", "", "", "", "", "", "", null, "", "", null, null, null, null, null, null, null);
 
-        mockMvc.perform(post("/api/auth/register/shopkeeper")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+        MockMultipartFile dataPart = new MockMultipartFile("data", "data", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(dto));
+
+        mockMvc.perform(multipart("/api/auth/register/shopkeeper")
+                        .file(dataPart))
                 .andExpect(status().isBadRequest());
     }
 

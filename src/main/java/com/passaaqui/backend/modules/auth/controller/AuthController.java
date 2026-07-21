@@ -1,16 +1,20 @@
 package com.passaaqui.backend.modules.auth.controller;
 
+import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.auth.dto.LoginDTO;
 import com.passaaqui.backend.modules.auth.dto.RegisterShopkeeperDTO;
 import com.passaaqui.backend.modules.auth.dto.RegisterTouristDTO;
 import com.passaaqui.backend.modules.tourist.model.TouristModel;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.modules.auth.service.AuthService;
@@ -26,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthController {
 
     private final AuthService service;
+    private final StorageService storageService;
 
     @PostMapping("/register/tourist")
     public ResponseEntity<TouristModel> registerAccountTourist(@RequestBody @Valid RegisterTouristDTO dto) {
@@ -34,9 +39,11 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(newTourist);
     }
 
-    @PostMapping("/register/shopkeeper")
-    public ResponseEntity<ShopkeeperModel> registerAccountShopkeeper(@RequestBody @Valid RegisterShopkeeperDTO dto) {
-        ShopkeeperModel newShopkeeper = service.registerAccountShopkeeper(dto);
+    @PostMapping(value = "/register/shopkeeper", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ShopkeeperModel> registerAccountShopkeeper(
+            @RequestPart("data") @Valid RegisterShopkeeperDTO dto,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        ShopkeeperModel newShopkeeper = service.registerAccountShopkeeper(dto, image);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(newShopkeeper);
     }

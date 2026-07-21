@@ -2,6 +2,7 @@ package com.passaaqui.backend.modules.shopkeeper.service;
 
 import java.util.List;
 
+import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.category.model.CategoryModel;
 import com.passaaqui.backend.modules.category.repository.CategoryRepository;
 import com.passaaqui.backend.modules.city.model.CityModel;
@@ -13,6 +14,7 @@ import com.passaaqui.backend.modules.shopkeeper.repository.ShopkeeperRepository;
 import com.passaaqui.backend.modules.user.model.enums.UserRole;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.passaaqui.backend.infra.exception.ConflictException;
 import com.passaaqui.backend.infra.exception.InvalidRequestException;
@@ -31,11 +33,13 @@ public class ShopkeeperService {
     private final PoiRepository poiRepository;
     private final CityRepository cityRepository;
     private final PasswordEncoder passwordEncoder;
+    private final StorageService storageService;
 
     @Transactional
     public ShopkeeperModel createUser(String email, String name, String password, String documentId, String companyName, String description, Integer categoryId,
                                       String poiName, String poiDescription, Double latitude, Double longitude,
-                                      Double minLatitude, Double maxLatitude, Double minLongitude, Double maxLongitude, Integer cityId) {
+                                      Double minLatitude, Double maxLatitude, Double minLongitude, Double maxLongitude, Integer cityId,
+                                      MultipartFile image) {
         if (repository.existsByEmail(email))
             throw new ConflictException("There is already a user with this account.");
 
@@ -69,6 +73,11 @@ public class ShopkeeperService {
         poi.setMinLongitude(minLongitude);
         poi.setMaxLongitude(maxLongitude);
         poi.setCity(city);
+
+        if (image != null && !image.isEmpty()) {
+            String imageName = storageService.uploadFile(image, "pois");
+            poi.setImage(imageName);
+        }
 
         poi.setShopkeeper(newShopkeeper);
         poiRepository.save(poi);
