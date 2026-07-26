@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.passaaqui.backend.infra.exception.ConflictException;
 import com.passaaqui.backend.infra.exception.InvalidRequestException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
+import com.passaaqui.backend.modules.shopkeeper.dto.ShopkeeperProfileDTO;
 import com.passaaqui.backend.modules.shopkeeper.dto.UpdateShopkeeperDTO;
 import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
 import jakarta.transaction.Transactional;
@@ -92,6 +93,13 @@ public class ShopkeeperService {
     public ShopkeeperModel findById(Integer id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Shopkeeper not found"));
+    }
+
+    public ShopkeeperProfileDTO findProfileById(Integer id) {
+        ShopkeeperModel shopkeeper = findById(id);
+        PoiModel poi = poiRepository.findByShopkeeperId(id)
+                .orElseThrow(() -> new ResourceNotFoundException("POI not found for this shopkeeper"));
+        return ShopkeeperProfileDTO.from(shopkeeper, poi);
     }
 
     public ShopkeeperModel findByIdOrEmail(String identifier) {

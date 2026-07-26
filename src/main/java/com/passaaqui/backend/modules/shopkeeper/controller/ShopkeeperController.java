@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.passaaqui.backend.modules.shopkeeper.dto.ShopkeeperProfileDTO;
 import com.passaaqui.backend.modules.shopkeeper.dto.UpdateShopkeeperDTO;
 import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
 import com.passaaqui.backend.modules.shopkeeper.service.ShopkeeperService;
@@ -32,10 +33,10 @@ public class ShopkeeperController {
 
     @GetMapping("/me")
     @PreAuthorize("hasRole('SHOPKEEPER')")
-    public ResponseEntity<ShopkeeperModel> me() {
+    public ResponseEntity<ShopkeeperProfileDTO> me() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Integer userId = Integer.parseInt(authentication.getPrincipal().toString());
-        return ResponseEntity.ok(service.findById(userId));
+        return ResponseEntity.ok(service.findProfileById(userId));
     }
 
     @GetMapping("/{identifier}")

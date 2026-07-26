@@ -1609,6 +1609,18 @@ Apenas `SHOPKEEPER`
     "id": 1,
     "name": "Alimentação",
     "description": "Restaurantes, lanchonetes e food trucks"
+  },
+  "poi": {
+    "id": 10,
+    "name": "Store POI",
+    "description": null,
+    "type": "STORE",
+    "latitude": -23.5,
+    "longitude": -46.6,
+    "city": {
+      "id": 1,
+      "name": "São Paulo"
+    }
   }
 }
 ```
@@ -1620,6 +1632,7 @@ Apenas `SHOPKEEPER`
 | 401 | Token ausente ou inválido |
 | 403 | Role não é SHOPKEEPER |
 | 404 | Lojista não encontrado |
+| 404 | POI não encontrado para este lojista |
 
 ---
 
