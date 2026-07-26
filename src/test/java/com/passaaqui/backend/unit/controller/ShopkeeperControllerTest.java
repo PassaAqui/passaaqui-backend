@@ -5,6 +5,10 @@ import com.passaaqui.backend.infra.exception.GlobalExceptionHandler;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.infra.exception.InvalidRequestException;
 import com.passaaqui.backend.modules.shopkeeper.controller.ShopkeeperController;
+import com.passaaqui.backend.modules.category.model.CategoryModel;
+import com.passaaqui.backend.modules.poi.model.PoiModel;
+import com.passaaqui.backend.modules.poi.model.enums.PoiType;
+import com.passaaqui.backend.modules.shopkeeper.dto.ShopkeeperProfileDTO;
 import com.passaaqui.backend.modules.shopkeeper.dto.UpdateShopkeeperDTO;
 import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
 import com.passaaqui.backend.modules.shopkeeper.service.ShopkeeperService;
@@ -61,15 +65,30 @@ class ShopkeeperControllerTest {
         shopkeeper.setEmail("shop@test.com");
         shopkeeper.setName("Shop");
 
+        CategoryModel category = new CategoryModel();
+        category.setId(1);
+
+        PoiModel poi = new PoiModel();
+        poi.setId(10);
+        poi.setName("Store POI");
+        poi.setType(PoiType.STORE);
+        poi.setLatitude(-23.5);
+        poi.setLongitude(-46.6);
+
+        ShopkeeperProfileDTO profile = ShopkeeperProfileDTO.from(shopkeeper, poi);
+
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("1", null, null));
 
-        when(service.findById(1)).thenReturn(shopkeeper);
+        when(service.findProfileById(1)).thenReturn(profile);
 
         mockMvc.perform(get("/api/shopkeepers/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.email").value("shop@test.com"));
+                .andExpect(jsonPath("$.email").value("shop@test.com"))
+                .andExpect(jsonPath("$.poi.id").value(10))
+                .andExpect(jsonPath("$.poi.name").value("Store POI"))
+                .andExpect(jsonPath("$.poi.type").value("STORE"));
     }
 
     @Test
@@ -77,7 +96,18 @@ class ShopkeeperControllerTest {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("999", null, null));
 
-        when(service.findById(999)).thenThrow(new ResourceNotFoundException("Shopkeeper not found"));
+        when(service.findProfileById(999)).thenThrow(new ResourceNotFoundException("Shopkeeper not found"));
+
+        mockMvc.perform(get("/api/shopkeepers/me"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void me_shouldReturn404WhenPoiNotFound() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("1", null, null));
+
+        when(service.findProfileById(1)).thenThrow(new ResourceNotFoundException("POI not found for this shopkeeper"));
 
         mockMvc.perform(get("/api/shopkeepers/me"))
                 .andExpect(status().isNotFound());
