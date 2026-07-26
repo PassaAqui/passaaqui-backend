@@ -6,6 +6,8 @@ import com.passaaqui.backend.infra.exception.ConflictException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.modules.order.dto.CheckoutRequestDTO;
 import com.passaaqui.backend.modules.order.dto.OrderResponseDTO;
+import com.passaaqui.backend.modules.order.dto.ShopkeeperOrderDTO;
+import com.passaaqui.backend.modules.order.dto.UpdateOrderStatusDTO;
 import com.passaaqui.backend.modules.order.model.OrderModel;
 import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
 import com.passaaqui.backend.modules.order.repository.OrderRepository;
@@ -26,8 +28,11 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Comparator;
-import java.util.List;
+import java.security.SecureRandom;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.*;
 import java.util.stream.Stream;
 
 @Service
@@ -99,6 +104,7 @@ public class OrderService {
                 .quantity(1)
                 .totalAmount(totalAmount)
                 .status(OrderStatus.PENDING)
+                .code(generateOrderCode())
                 .build();
 
         order = orderRepository.save(order);
@@ -236,6 +242,97 @@ public class OrderService {
                         order.getPickupCode()
                 ))
                 .toList();
+    }
+
+    public List<ShopkeeperOrderDTO> getShopkeeperOrdersByStatus(OrderStatus status) {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        ShopkeeperModel shopkeeper = shopkeeperRepository.findById(Integer.parseInt(userId))
+                .orElseThrow(() -> new ResourceNotFoundException("Shopkeeper not found"));
+
+        List<OrderModel> orders;
+        if (status != null) {
+            orders = orderRepository.findByShopkeeper_IdAndStatusOrderByCreatedAtDesc(shopkeeper.getId(), status);
+        } else {
+            orders = orderRepository.findByShopkeeper_IdOrderByCreatedAtDesc(shopkeeper.getId());
+        }
+
+        return orders.stream().map(ShopkeeperOrderDTO::from).toList();
+    }
+
+    @Transactional
+    public ShopkeeperOrderDTO updateOrderStatus(UUID orderId, UpdateOrderStatusDTO dto) {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        ShopkeeperModel shopkeeper = shopkeeperRepository.findById(Integer.parseInt(userId))
+                .orElseThrow(() -> new ResourceNotFoundException("Shopkeeper not found"));
+
+        OrderModel order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (!order.getShopkeeper().getId().equals(shopkeeper.getId())) {
+            throw new com.passaaqui.backend.infra.exception.ForbiddenException("This order does not belong to you");
+        }
+
+        order.setStatus(dto.status());
+        order = orderRepository.save(order);
+
+        return ShopkeeperOrderDTO.from(order);
+    }
+
+    public List<ShopkeeperOrderDTO> getRecentOrders(Integer shopkeeperId, int limit) {
+        return orderRepository.findTop5ByShopkeeper_IdOrderByCreatedAtDesc(shopkeeperId)
+                .stream()
+                .map(ShopkeeperOrderDTO::from)
+                .toList();
+    }
+
+    public long countOrdersToday(Integer shopkeeperId) {
+        LocalDate today = LocalDate.now();
+        return orderRepository.countByShopkeeper_IdAndCreatedAtBetween(shopkeeperId,
+                today.atStartOfDay(), today.atTime(LocalTime.MAX));
+    }
+
+    public BigDecimal revenueToday(Integer shopkeeperId) {
+        LocalDate today = LocalDate.now();
+        List<OrderModel> orders = orderRepository.findByShopkeeper_IdOrderByCreatedAtDesc(shopkeeperId);
+        return orders.stream()
+                .filter(o -> o.getStatus() == OrderStatus.COMPLETED && o.getCreatedAt().toLocalDate().equals(today))
+                .map(OrderModel::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public long countPendingOrders(Integer shopkeeperId) {
+        return orderRepository.findByShopkeeper_IdAndStatus(shopkeeperId, OrderStatus.PENDING).size();
+    }
+
+    public List<BigDecimal> weeklySales(Integer shopkeeperId) {
+        LocalDate today = LocalDate.now();
+        LocalDate monday = today.with(java.time.DayOfWeek.MONDAY);
+        LocalDate sunday = today.with(java.time.DayOfWeek.SUNDAY);
+
+        Map<Integer, BigDecimal> results = orderRepository.findByShopkeeper_IdOrderByCreatedAtDesc(shopkeeperId)
+                .stream()
+                .filter(o -> !o.getCreatedAt().toLocalDate().isBefore(monday) && !o.getCreatedAt().toLocalDate().isAfter(sunday))
+                .filter(o -> o.getStatus() == OrderStatus.COMPLETED || o.getStatus() == OrderStatus.PAID)
+                .collect(java.util.stream.Collectors.groupingBy(
+                    o -> o.getCreatedAt().getDayOfWeek().getValue(),
+                    java.util.stream.Collectors.reducing(BigDecimal.ZERO, OrderModel::getTotalAmount, BigDecimal::add)
+                ));
+
+        List<BigDecimal> weeklySales = new ArrayList<>();
+        for (int day = 1; day <= 7; day++) {
+            weeklySales.add(results.getOrDefault(day, BigDecimal.ZERO));
+        }
+        return weeklySales;
+    }
+
+    public String generateOrderCode() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(5);
+        for (int i = 0; i < 5; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return "#" + sb.toString();
     }
 
     public OrderResponseDTO getMyCurrentOrder() {

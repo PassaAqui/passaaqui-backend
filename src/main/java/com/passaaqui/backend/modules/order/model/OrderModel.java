@@ -48,6 +48,9 @@ public class OrderModel {
     @Column(nullable = false)
     private OrderStatus status;
 
+    @Column(length = 10)
+    private String code;
+
     @Column(length = 6)
     private String redemptionCode;
 

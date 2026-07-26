@@ -1,6 +1,8 @@
 package com.passaaqui.backend.modules.product.controller;
 
+import com.passaaqui.backend.modules.product.dto.CatalogMetricsDTO;
 import com.passaaqui.backend.modules.product.dto.CreateProductDTO;
+import com.passaaqui.backend.modules.product.dto.ShopkeeperProductDTO;
 import com.passaaqui.backend.modules.product.dto.UpdateProductDTO;
 import com.passaaqui.backend.modules.product.model.ProductModel;
 import com.passaaqui.backend.modules.product.service.ProductService;
@@ -9,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -69,5 +72,26 @@ public class ProductController {
     @GetMapping("/{id}")
     public ResponseEntity<ProductModel> findById(@PathVariable Integer id) {
         return ResponseEntity.ok(service.findById(id));
+    }
+
+    @GetMapping("/shopkeeper")
+    @PreAuthorize("hasRole('SHOPKEEPER')")
+    public ResponseEntity<List<ShopkeeperProductDTO>> getShopkeeperProducts(
+            @RequestParam(required = false, defaultValue = "false") boolean inStock) {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        Integer shopkeeperId = Integer.parseInt(userId);
+        List<ProductModel> products = inStock
+            ? service.findByShopkeeperWithStock(shopkeeperId)
+            : service.findByShopkeeper(shopkeeperId);
+        List<ShopkeeperProductDTO> dtos = products.stream().map(ShopkeeperProductDTO::from).toList();
+        return ResponseEntity.ok(dtos);
+    }
+
+    @GetMapping("/shopkeeper/metrics")
+    @PreAuthorize("hasRole('SHOPKEEPER')")
+    public ResponseEntity<CatalogMetricsDTO> getCatalogMetrics() {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        Integer shopkeeperId = Integer.parseInt(userId);
+        return ResponseEntity.ok(service.getCatalogMetrics(shopkeeperId));
     }
 }

@@ -73,6 +73,12 @@ public class ProductModel {
     @JoinColumn(nullable = false)
     private PoiModel poi;
 
+    @Column(nullable = false)
+    private Boolean active = true;
+
+    @Column(nullable = false)
+    private Boolean highlight = false;
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;

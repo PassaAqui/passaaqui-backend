@@ -6,7 +6,9 @@ import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.infra.exception.ConflictException;
 import com.passaaqui.backend.modules.order.controller.OrderController;
 import com.passaaqui.backend.modules.order.dto.CheckoutRequestDTO;
+import com.passaaqui.backend.modules.order.dto.OrderItemDTO;
 import com.passaaqui.backend.modules.order.dto.OrderResponseDTO;
+import com.passaaqui.backend.modules.order.dto.ShopkeeperOrderDTO;
 import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
 import com.passaaqui.backend.modules.order.service.OrderService;
 import org.junit.jupiter.api.BeforeEach;
@@ -128,23 +130,23 @@ class OrderControllerTest {
     @Test
     void getShopkeeperOrders_shouldReturn200() throws Exception {
         UUID orderId = UUID.randomUUID();
-        OrderResponseDTO response = new OrderResponseDTO(
-                orderId, 1, "Product", 2, "Shop", 1,
-                BigDecimal.TEN, BigDecimal.TEN, OrderStatus.PAID,
-                "tx-123", LocalDateTime.now(), null, null, null, "CODE123"
+        ShopkeeperOrderDTO response = new ShopkeeperOrderDTO(
+                orderId, "John Doe", LocalDateTime.now(), OrderStatus.PAID,
+                "#ABC12", BigDecimal.TEN, List.of(new OrderItemDTO("Product", 1))
         );
 
-        when(orderService.getShopkeeperOrders()).thenReturn(List.of(response));
+        when(orderService.getShopkeeperOrdersByStatus(any())).thenReturn(List.of(response));
 
         mockMvc.perform(get("/api/orders/shopkeeper"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(orderId.toString()))
-                .andExpect(jsonPath("$[0].pickupCode").value("CODE123"));
+                .andExpect(jsonPath("$[0].code").value("#ABC12"))
+                .andExpect(jsonPath("$[0].items[0].name").value("Product"));
     }
 
     @Test
     void getShopkeeperOrders_shouldReturn200EmptyList() throws Exception {
-        when(orderService.getShopkeeperOrders()).thenReturn(List.of());
+        when(orderService.getShopkeeperOrdersByStatus(any())).thenReturn(List.of());
 
         mockMvc.perform(get("/api/orders/shopkeeper"))
                 .andExpect(status().isOk())

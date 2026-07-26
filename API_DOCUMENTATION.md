@@ -142,11 +142,16 @@ http://localhost:8080/api
 - [`POST /api/route/location`](#post-apiroutelocation)
 - [`DELETE /api/route/current`](#delete-apiroutecurrent)
 
+### 📊 Dashboard
+- [`GET /api/dashboard`](#get-apidashboard) `🔒 SHOPKEEPER`
+
 ### 🛒 Produtos
 - [`POST /api/products`](#post-apiproducts)
 - [`GET /api/products`](#get-apiproducts)
 - [`GET /api/products/recent`](#get-apiproductsrecent)
 - [`GET /api/products/{id}`](#get-apiproductsid)
+- [`GET /api/products/shopkeeper`](#get-apiproductsshopkeeper) `🔒 SHOPKEEPER`
+- [`GET /api/products/shopkeeper/metrics`](#get-apiproductsshopkeepermetrics) `🔒 SHOPKEEPER`
 - [`PUT /api/products/{id}`](#put-apiproductsid)
 - [`DELETE /api/products/{id}`](#delete-apiproductsid)
 - [`POST /api/products/{id}/images`](#post-apiproductsidimages) `🔒 SHOPKEEPER / ADMIN`
@@ -154,7 +159,8 @@ http://localhost:8080/api
 
 ### 🛒 Pedidos (Orders)
 - [`POST /api/orders/checkout`](#post-apiorderscheckout)
-- [`GET /api/orders/shopkeeper`](#get-apiordersshopkeeper)
+- [`GET /api/orders/shopkeeper?status=`](#get-apiordersshopkeeper)
+- [`PUT /api/orders/{id}/status`](#put-apiordersidstatus)
 - [`GET /api/orders/shopkeeper/history`](#get-apiordersshopkeeperhistory)
 - [`GET /api/orders/my-current`](#get-apiordersmy-current)
 - [`GET /api/orders/my-history`](#get-apiordersmyhistory)
@@ -3070,6 +3076,104 @@ Lista **todas as avaliações** de um POI específico.
 
 ## 🛒 Produtos
 
+### GET /api/products/shopkeeper
+
+#### Descrição
+
+Lista **todos os produtos do lojista autenticado**. Opcionalmente filtra apenas produtos com estoque disponível (`stock > 0`).
+
+#### Controller
+
+`ProductController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `SHOPKEEPER`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+
+#### Query Params
+
+| Parâmetro | Tipo | Padrão | Obrigatório | Descrição |
+|---|---|---|---|---|
+| `inStock` | Boolean | `false` | Não | Se `true`, retorna apenas produtos com `stock > 0` |
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Artesanato Local",
+    "price": 49.90,
+    "image": "http://storage.com/produto.jpg",
+    "active": true,
+    "highlight": false,
+    "category": "Alimentação"
+  }
+]
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é SHOPKEEPER |
+
+---
+
+### GET /api/products/shopkeeper/metrics
+
+#### Descrição
+
+Retorna os **contadores do catálogo** do lojista autenticado: total de produtos, produtos ativos e produtos em destaque.
+
+#### Controller
+
+`ProductController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `SHOPKEEPER`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+
+#### Response 200 (OK)
+
+```json
+{
+  "total_products": 15,
+  "active_products": 12,
+  "highlight_products": 3
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é SHOPKEEPER |
+
+---
+
 ### POST /api/products
 
 #### Descrição
@@ -3093,12 +3197,14 @@ Cria um novo produto associado a um lojista e uma categoria.
 #### Request Body
 
 | Campo | Tipo | Obrigatório | Validação |
-|---|---|---|---|
+|---|---|---|---|---|
 | name | String | Sim | Não vazio |
 | description | String | Não | — |
 | price | Double | Não | `>= 0` |
 | maxXp | Integer | Não | XP máximo (calculado automaticamente se não informado) |
 | stock | Integer | Não | `>= 0` (padrão: 0) |
+| active | Boolean | Não | Indica se o produto está ativo (padrão: `true`) |
+| highlight | Boolean | Não | Indica se o produto está em destaque (padrão: `false`) |
 | shopkeeperId | Integer | Sim | ID de lojista existente |
 | categoryId | Integer | Sim | ID de categoria existente |
 | poiId | Integer | Sim | ID de POI do tipo `STORE` existente (deve pertencer ao lojista) |
@@ -3111,6 +3217,8 @@ Cria um novo produto associado a um lojista e uma categoria.
   "description": "Peça feita à mão",
   "price": 49.90,
   "stock": 100,
+  "active": true,
+  "highlight": false,
   "shopkeeperId": 2,
   "categoryId": 1,
   "poiId": 1
@@ -3128,6 +3236,10 @@ Cria um novo produto associado a um lojista e uma categoria.
   "maxXp": 31,
   "stock": 100,
   "images": [],
+  "active": true,
+  "highlight": false,
+  "category": "Alimentação",
+  "image": null,
   "shopkeeper": {
     "id": 2,
     "name": "Maria Lojista",
@@ -3187,9 +3299,13 @@ Lista **todos os produtos** cadastrados.
     "price": 49.90,
     "maxXp": 31,
     "stock": 100,
-    "image": "http://storage.com/produto.jpg",
+    "images": [],
     "averageRating": 4.5,
     "ratingsCount": 12,
+    "active": true,
+    "highlight": false,
+    "category": "Alimentação",
+    "image": "http://storage.com/produto.jpg",
     "shopkeeper": { "id": 2, "name": "Maria Lojista" },
     "category": { "id": 1, "name": "Alimentação" },
     "createdAt": "2026-05-24T15:00:00",
@@ -3229,9 +3345,13 @@ Lista os **50 produtos mais recentes** cadastrados (ordenados por `createdAt` de
     "price": 49.90,
     "maxXp": 31,
     "stock": 100,
-    "image": "http://storage.com/produto.jpg",
+    "images": [],
     "averageRating": 4.5,
     "ratingsCount": 12,
+    "active": true,
+    "highlight": false,
+    "category": "Alimentação",
+    "image": "http://storage.com/produto.jpg",
     "shopkeeper": { "id": 2, "name": "Maria Lojista" },
     "category": { "id": 1, "name": "Alimentação" },
     "createdAt": "2026-05-24T15:00:00",
@@ -3276,9 +3396,13 @@ Retorna um produto por ID.
   "price": 49.90,
   "maxXp": 31,
   "stock": 100,
-  "image": "http://storage.com/produto.jpg",
+  "images": [],
   "averageRating": 4.5,
   "ratingsCount": 12,
+  "active": true,
+  "highlight": false,
+  "category": "Alimentação",
+  "image": "http://storage.com/produto.jpg",
   "shopkeeper": { "id": 2, "name": "Maria Lojista" },
   "category": { "id": 1, "name": "Alimentação" },
   "createdAt": "2026-05-24T15:00:00",
@@ -3323,6 +3447,8 @@ Todos os campos opcionais.
 | price | Double | — |
 | xpCost | Integer | — |
 | stock | Integer | `>= 0` |
+| active | Boolean | — |
+| highlight | Boolean | — |
 | shopkeeperId | Integer | Deve existir |
 | categoryId | Integer | Deve existir |
 | poiId | Integer | Deve existir |
@@ -3332,7 +3458,8 @@ Todos os campos opcionais.
 ```json
 {
   "price": 39.90,
-  "xpCost": 5,
+  "active": true,
+  "highlight": true,
   "stock": 200
 }
 ```
@@ -3556,6 +3683,78 @@ Retorna a lista de avaliações de um produto.
 
 ---
 
+## 📊 Dashboard
+
+### GET /api/dashboard
+
+#### Descrição
+
+Retorna os dados agregados para a tela inicial do lojista: cards de métricas, vendas da semana e pedidos recentes.
+
+#### Controller
+
+`DashboardController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `SHOPKEEPER`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+
+#### Response 200 (OK)
+
+```json
+{
+  "orders_today": 12,
+  "revenue_today": 598.80,
+  "active_products": 15,
+  "pending_orders": 3,
+  "weekly_sales": [
+    { "day": "Segunda", "total": 120.00 },
+    { "day": "Terça", "total": 85.50 },
+    { "day": "Quarta", "total": 200.00 },
+    { "day": "Quinta", "total": 0.00 },
+    { "day": "Sexta", "total": 340.00 },
+    { "day": "Sábado", "total": 450.00 },
+    { "day": "Domingo", "total": 0.00 }
+  ],
+  "recent_orders": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "customer_name": "João Turista",
+      "created_at": "2026-06-22T10:00:00",
+      "status": "PENDING",
+      "code": "#A3F92",
+      "total": 49.90,
+      "items": [
+        {
+          "name": "Artesanato Local",
+          "quantity": 1
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é SHOPKEEPER |
+| 404 | Lojista não encontrado |
+
+---
+
 ## 🛒 Pedidos (Orders)
 
 ### POST /api/orders/checkout
@@ -3638,7 +3837,7 @@ Apenas `TOURIST`
 
 #### Descrição
 
-Lista todos os pedidos **PAID** do lojista autenticado, contendo o `pickupCode` para retirada.
+Lista os pedidos do lojista autenticado. Aceita filtro opcional por status. Retorna o payload simplificado para a tela de gestão de pedidos.
 
 #### Controller
 
@@ -3658,26 +3857,29 @@ Apenas `SHOPKEEPER`
 |---|---|---|
 | Authorization | Sim | `Bearer <access_token>` |
 
+#### Query Params
+
+| Parâmetro | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `status` | String (enum) | Não | Filtro por status: `PENDING`, `PREPARING` ou `COMPLETED` |
+
 #### Response 200 (OK)
 
 ```json
 [
   {
     "id": "550e8400-e29b-41d4-a716-446655440000",
-    "productId": 1,
-    "productName": "Artesanato Local",
-    "shopkeeperId": 2,
-    "shopkeeperName": "Maria's Comércio",
-    "quantity": 1,
-    "unitPrice": 49.90,
-    "totalAmount": 49.90,
-    "status": "PAID",
-    "transactionId": "abc123",
-    "createdAt": "2026-06-22T10:00:00",
-    "pix": "00020126580014BR.GOV.BCB.PIX0136...",
-    "qrCodeBase64": "iVBORw0KGgo...",
-    "pixExpiresAt": "2026-06-22T10:15:00",
-    "pickupCode": "A7X9K2"
+    "customer_name": "João Turista",
+    "created_at": "2026-06-22T10:00:00",
+    "status": "PENDING",
+    "code": "#A3F92",
+    "total": 49.90,
+    "items": [
+      {
+        "name": "Artesanato Local",
+        "quantity": 1
+      }
+    ]
   }
 ]
 ```
@@ -3688,7 +3890,81 @@ Apenas `SHOPKEEPER`
 |---|---|
 | 401 | Token ausente ou inválido |
 | 403 | Role não é SHOPKEEPER |
-| 404 | Lojista não encontrado |
+
+---
+
+### PUT /api/orders/{id}/status
+
+#### Descrição
+
+Atualiza o status de um pedido específico. Apenas o lojista proprietário do pedido pode alterá-lo.
+
+#### Controller
+
+`OrderController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `SHOPKEEPER`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `application/json` |
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | UUID | ID do pedido |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| status | String (enum) | Sim | `PENDING`, `PREPARING`, `COMPLETED`, etc. |
+
+**Exemplo:**
+
+```json
+{
+  "status": "PREPARING"
+}
+```
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "customer_name": "João Turista",
+  "created_at": "2026-06-22T10:00:00",
+  "status": "PREPARING",
+  "code": "#A3F92",
+  "total": 49.90,
+  "items": [
+    {
+      "name": "Artesanato Local",
+      "quantity": 1
+    }
+  ]
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Status inválido |
+| 401 | Token ausente ou inválido |
+| 403 | Role não é SHOPKEEPER ou pedido não pertence ao lojista |
+| 404 | Pedido não encontrado |
 
 ---
 
@@ -3952,7 +4228,7 @@ host:localhost:8080
 ### 📊 Resumo de Endpoints
 
 | Módulo | Endpoints | Públicos | Autenticados | Admin | Role Específica |
-|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|
 | Auth | 5 | 5 | — | — | — |
 | Users | 2 | — | — | 2 | ADMIN_USER/ROOT |
 | Admin | 6 | — | — | 6 | ADMIN_ROOT |
@@ -3964,7 +4240,8 @@ host:localhost:8080
 | POI Ratings | 2 | — | 1 | — | TOURIST |
 | Direction | 1 | — | — | — | TOURIST |
 | Route | 4 | — | — | — | TOURIST |
-| Products | 6 | — | 3 | — | SHOPKEEPER |
-| Orders | 5 | — | — | — | TOURIST / SHOPKEEPER |
+| Products | 8 | — | 3 | — | SHOPKEEPER |
+| Orders | 6 | — | — | — | TOURIST / SHOPKEEPER |
+| Dashboard | 1 | — | — | — | SHOPKEEPER |
 | WebSocket (STOMP) | 1 | — | — | — | TOURIST / SHOPKEEPER |
-| **Total** | **57** | **5** | **10** | **29** | **14** |
+| **Total** | **63** | **5** | **10** | **29** | **19** |

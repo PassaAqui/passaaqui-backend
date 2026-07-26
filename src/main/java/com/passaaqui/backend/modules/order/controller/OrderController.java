@@ -2,8 +2,12 @@ package com.passaaqui.backend.modules.order.controller;
 
 import com.passaaqui.backend.modules.order.dto.CheckoutRequestDTO;
 import com.passaaqui.backend.modules.order.dto.OrderResponseDTO;
+import com.passaaqui.backend.modules.order.dto.ShopkeeperOrderDTO;
+import com.passaaqui.backend.modules.order.dto.UpdateOrderStatusDTO;
+import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
 import com.passaaqui.backend.modules.order.service.OrderService;
 import java.util.List;
+import java.util.UUID;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,14 +29,23 @@ public class OrderController {
 
     @GetMapping("/shopkeeper")
     @PreAuthorize("hasRole('SHOPKEEPER')")
-    public ResponseEntity<List<OrderResponseDTO>> getShopkeeperOrders() {
-        return ResponseEntity.ok(orderService.getShopkeeperOrders());
+    public ResponseEntity<List<ShopkeeperOrderDTO>> getShopkeeperOrders(
+            @RequestParam(required = false) OrderStatus status) {
+        return ResponseEntity.ok(orderService.getShopkeeperOrdersByStatus(status));
     }
 
     @GetMapping("/shopkeeper/history")
     @PreAuthorize("hasRole('SHOPKEEPER')")
     public ResponseEntity<List<OrderResponseDTO>> getShopkeeperHistory() {
         return ResponseEntity.ok(orderService.getShopkeeperHistory());
+    }
+
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('SHOPKEEPER')")
+    public ResponseEntity<ShopkeeperOrderDTO> updateOrderStatus(
+            @PathVariable UUID id,
+            @RequestBody @Valid UpdateOrderStatusDTO dto) {
+        return ResponseEntity.ok(orderService.updateOrderStatus(id, dto));
     }
 
     @GetMapping("/my-history")

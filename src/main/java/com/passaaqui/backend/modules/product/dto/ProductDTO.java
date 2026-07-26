@@ -16,7 +16,11 @@ public record ProductDTO(
     @JsonProperty("average_rating") Double averageRating,
     @JsonProperty("ratings_count") Integer ratingsCount,
     @JsonProperty("shopkeeper_id") Integer shopkeeperId,
-    @JsonProperty("category_id") Integer categoryId
+    @JsonProperty("category_id") Integer categoryId,
+    Boolean active,
+    Boolean highlight,
+    String category,
+    String image
 ) {
     public static ProductDTO from(ProductModel product, List<String> imageUrls) {
         return new ProductDTO(
@@ -24,7 +28,10 @@ public record ProductDTO(
             product.getPrice(), product.getMaxXp(), product.getStock(),
             imageUrls,
             product.getAverageRating(), product.getRatingsCount(),
-            product.getShopkeeper().getId(), product.getCategory().getId()
+            product.getShopkeeper().getId(), product.getCategory().getId(),
+            product.getActive(), product.getHighlight(),
+            product.getCategory().getName(),
+            imageUrls != null && !imageUrls.isEmpty() ? imageUrls.get(0) : null
         );
     }
 }
