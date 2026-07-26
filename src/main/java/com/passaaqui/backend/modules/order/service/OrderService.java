@@ -293,9 +293,9 @@ public class OrderService {
 
     public BigDecimal revenueToday(Integer shopkeeperId) {
         LocalDate today = LocalDate.now();
-        List<OrderModel> orders = orderRepository.findByShopkeeper_IdAndStatusOrderByCreatedAtDesc(shopkeeperId, OrderStatus.COMPLETED);
+        List<OrderModel> orders = orderRepository.findByShopkeeper_IdOrderByCreatedAtDesc(shopkeeperId);
         return orders.stream()
-                .filter(o -> o.getCreatedAt().toLocalDate().equals(today))
+                .filter(o -> o.getStatus() == OrderStatus.COMPLETED && o.getCreatedAt().toLocalDate().equals(today))
                 .map(OrderModel::getTotalAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
@@ -309,7 +309,7 @@ public class OrderService {
         LocalDate monday = today.with(java.time.DayOfWeek.MONDAY);
         LocalDate sunday = today.with(java.time.DayOfWeek.SUNDAY);
 
-        Map<Integer, BigDecimal> results = orderRepository.findByShopkeeper_IdAndStatusOrderByCreatedAtDesc(shopkeeperId)
+        Map<Integer, BigDecimal> results = orderRepository.findByShopkeeper_IdOrderByCreatedAtDesc(shopkeeperId)
                 .stream()
                 .filter(o -> !o.getCreatedAt().toLocalDate().isBefore(monday) && !o.getCreatedAt().toLocalDate().isAfter(sunday))
                 .filter(o -> o.getStatus() == OrderStatus.COMPLETED || o.getStatus() == OrderStatus.PAID)
