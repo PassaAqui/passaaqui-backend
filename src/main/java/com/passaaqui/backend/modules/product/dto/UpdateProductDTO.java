@@ -8,5 +8,7 @@ public record UpdateProductDTO(
     Integer stock,
     Integer shopkeeperId,
     Integer poiId,
-    Integer categoryId
+    Integer categoryId,
+    Boolean active,
+    Boolean highlight
 ) {}

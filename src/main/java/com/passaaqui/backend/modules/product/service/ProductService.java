@@ -7,6 +7,7 @@ import com.passaaqui.backend.modules.category.model.CategoryModel;
 import com.passaaqui.backend.modules.category.repository.CategoryRepository;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.poi.repository.PoiRepository;
+import com.passaaqui.backend.modules.product.dto.CatalogMetricsDTO;
 import com.passaaqui.backend.modules.product.dto.CreateProductDTO;
 import com.passaaqui.backend.modules.product.dto.UpdateProductDTO;
 import com.passaaqui.backend.modules.product.model.ProductModel;
@@ -69,6 +70,8 @@ public class ProductService {
         product.setPoi(poi);
         product.setCategory(category);
         product.setStock(dto.stock() != null ? dto.stock() : 0);
+        product.setActive(dto.active() != null ? dto.active() : true);
+        product.setHighlight(dto.highlight() != null ? dto.highlight() : false);
 
         return repository.save(product);
     }
@@ -133,6 +136,9 @@ public class ProductService {
             product.setPoi(poi);
         }
 
+        if (dto.active() != null) product.setActive(dto.active());
+        if (dto.highlight() != null) product.setHighlight(dto.highlight());
+
         return repository.save(product);
     }
 
@@ -152,6 +158,26 @@ public class ProductService {
         List<ProductModel> products = repository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 50)).getContent();
         products.forEach(this::enrichImageUrls);
         return products;
+    }
+
+    public List<ProductModel> findByShopkeeper(Integer shopkeeperId) {
+        List<ProductModel> products = repository.findByShopkeeperId(shopkeeperId);
+        products.forEach(this::enrichImageUrls);
+        return products;
+    }
+
+    public List<ProductModel> findByShopkeeperWithStock(Integer shopkeeperId) {
+        List<ProductModel> products = repository.findByShopkeeperIdAndStockGreaterThan(shopkeeperId, 0);
+        products.forEach(this::enrichImageUrls);
+        return products;
+    }
+
+    public CatalogMetricsDTO getCatalogMetrics(Integer shopkeeperId) {
+        return new CatalogMetricsDTO(
+            repository.countByShopkeeperId(shopkeeperId),
+            repository.countByShopkeeperIdAndActiveTrue(shopkeeperId),
+            repository.countByShopkeeperIdAndHighlightTrue(shopkeeperId)
+        );
     }
 
     @Transactional

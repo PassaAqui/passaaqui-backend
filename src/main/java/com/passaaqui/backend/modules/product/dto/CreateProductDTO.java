@@ -25,5 +25,9 @@ public record CreateProductDTO(
     Integer poiId,
 
     @NotNull
-    Integer categoryId
+    Integer categoryId,
+
+    Boolean active,
+
+    Boolean highlight
 ) {}

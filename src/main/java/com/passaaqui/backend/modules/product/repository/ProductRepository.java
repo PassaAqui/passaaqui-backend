@@ -14,4 +14,14 @@ public interface ProductRepository extends JpaRepository<ProductModel, Integer> 
     List<ProductModel> findByPoiId(Integer poiId);
 
     Page<ProductModel> findByCategoryId(Integer categoryId, Pageable pageable);
+
+    List<ProductModel> findByShopkeeperId(Integer shopkeeperId);
+
+    List<ProductModel> findByShopkeeperIdAndStockGreaterThan(Integer shopkeeperId, Integer stock);
+
+    long countByShopkeeperId(Integer shopkeeperId);
+
+    long countByShopkeeperIdAndActiveTrue(Integer shopkeeperId);
+
+    long countByShopkeeperIdAndHighlightTrue(Integer shopkeeperId);
 }
