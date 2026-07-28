@@ -74,6 +74,12 @@ public class ProductController {
         return ResponseEntity.ok(service.findById(id));
     }
 
+    @GetMapping("/{id}/details")
+    @PreAuthorize("hasAnyRole('TOURIST', 'SHOPKEEPER', 'ADMIN_USER', 'ADMIN_ROOT')")
+    public ResponseEntity<ProductModel> findByIdWithAccessCheck(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.findByIdWithAccessCheck(id));
+    }
+
     @GetMapping("/shopkeeper")
     @PreAuthorize("hasRole('SHOPKEEPER')")
     public ResponseEntity<List<ShopkeeperProductDTO>> getShopkeeperProducts(

@@ -1,6 +1,7 @@
 package com.passaaqui.backend.unit.service;
 
 import com.passaaqui.backend.infra.exception.ConflictException;
+import com.passaaqui.backend.infra.exception.ForbiddenException;
 import com.passaaqui.backend.infra.exception.InvalidRequestException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.infra.integration.abacatepay.AbacateClient;
@@ -314,5 +315,33 @@ class OrderServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> orderService.getMyCurrentOrder());
+    }
+
+    @Test
+    void findById_shouldReturnOrder() {
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        var result = orderService.findById(order.getId());
+
+        assertNotNull(result);
+        assertEquals(order.getId(), result.id());
+    }
+
+    @Test
+    void findById_shouldThrow_whenOrderNotFound() {
+        UUID randomId = UUID.randomUUID();
+        when(orderRepository.findById(randomId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> orderService.findById(randomId));
+    }
+
+    @Test
+    void findById_shouldThrow_whenUserNotParticipant() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        when(auth.getPrincipal()).thenReturn("999");
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThrows(ForbiddenException.class, () -> orderService.findById(order.getId()));
     }
 }

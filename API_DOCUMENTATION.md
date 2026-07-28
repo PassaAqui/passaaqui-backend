@@ -150,6 +150,7 @@ http://localhost:8080/api
 - [`GET /api/products`](#get-apiproducts)
 - [`GET /api/products/recent`](#get-apiproductsrecent)
 - [`GET /api/products/{id}`](#get-apiproductsid)
+- [`GET /api/products/{id}/details`](#get-apiproductsiddetails) `🔒 TOURIST / SHOPKEEPER`
 - [`GET /api/products/shopkeeper`](#get-apiproductsshopkeeper) `🔒 SHOPKEEPER`
 - [`GET /api/products/shopkeeper/metrics`](#get-apiproductsshopkeepermetrics) `🔒 SHOPKEEPER`
 - [`PUT /api/products/{id}`](#put-apiproductsid)
@@ -164,6 +165,7 @@ http://localhost:8080/api
 - [`GET /api/orders/shopkeeper/history`](#get-apiordersshopkeeperhistory)
 - [`GET /api/orders/my-current`](#get-apiordersmy-current)
 - [`GET /api/orders/my-history`](#get-apiordersmyhistory)
+- [`GET /api/orders/{id}`](#get-apiordersid)
 
 ## 🧭 Direções (Rotas)
 
@@ -3429,7 +3431,7 @@ Retorna um produto por ID.
 
 #### Descrição
 
-Atualiza um produto.
+Atualiza um produto. Lojistas podem editar todas as informações, exceto `maxXp` (apenas administradores podem definir o valor de desconto máximo).
 
 #### Controller
 
@@ -3453,18 +3455,18 @@ Atualiza um produto.
 
 Todos os campos opcionais.
 
-| Campo | Tipo | Validação |
-|---|---|---|
-| name | String | — |
-| description | String | — |
-| price | Double | — |
-| xpCost | Integer | — |
-| stock | Integer | `>= 0` |
-| active | Boolean | — |
-| highlight | Boolean | — |
-| shopkeeperId | Integer | Deve existir |
-| categoryId | Integer | Deve existir |
-| poiId | Integer | Deve existir |
+| Campo | Tipo | Validação | Observação |
+|---|---|---|---|
+| name | String | — | |
+| description | String | — | |
+| price | Double | — | |
+| maxXp | Integer | — | Apenas `ADMIN_USER/ROOT` podem definir |
+| stock | Integer | `>= 0` | |
+| active | Boolean | — | |
+| highlight | Boolean | — | |
+| shopkeeperId | Integer | Deve existir | |
+| categoryId | Integer | Deve existir | |
+| poiId | Integer | Deve existir | |
 
 **Exemplo:**
 
@@ -3696,6 +3698,69 @@ Retorna a lista de avaliações de um produto.
 
 ---
 
+### GET /api/products/{id}/details
+
+#### Descrição
+
+Retorna os detalhes de um produto. Apenas o **lojista proprietário** do produto ou um **turista que já comprou** o produto podem acessar.
+
+#### Controller
+
+`ProductController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`TOURIST` (apenas se já comprou o produto), `SHOPKEEPER` (apenas se é o dono), `ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do produto |
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "name": "Artesanato Local",
+  "description": "Peça feita à mão",
+  "price": 49.90,
+  "maxXp": 31,
+  "stock": 100,
+  "images": [],
+  "averageRating": 4.5,
+  "ratingsCount": 12,
+  "active": true,
+  "highlight": false,
+  "image": "http://storage.com/produto.jpg",
+  "shopkeeper": { "id": 2, "name": "Maria Lojista" },
+  "category": { "id": 1, "name": "Alimentação" },
+  "createdAt": "2026-05-24T15:00:00",
+  "updatedAt": "2026-05-24T15:00:00"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Usuário não tem permissão para acessar este produto |
+| 404 | Produto não encontrado |
+
+---
+
 ## 📊 Dashboard
 
 ### GET /api/dashboard
@@ -3887,6 +3952,8 @@ Apenas `SHOPKEEPER`
     "status": "PENDING",
     "code": "#A3F92",
     "total": 49.90,
+    "cash_discount": 0,
+    "product_image": null,
     "items": [
       {
         "name": "Artesanato Local",
@@ -3961,6 +4028,8 @@ Apenas `SHOPKEEPER`
   "status": "PREPARING",
   "code": "#A3F92",
   "total": 49.90,
+  "cash_discount": 2.00,
+  "product_image": "http://storage.com/produto.jpg",
   "items": [
     {
       "name": "Artesanato Local",
@@ -4153,6 +4222,68 @@ Apenas `TOURIST`
 
 ---
 
+### GET /api/orders/{id}
+
+#### Descrição
+
+Retorna os detalhes de um pedido específico. Apenas o **turista que criou o pedido** ou o **lojista proprietário** podem acessar.
+
+#### Controller
+
+`OrderController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`TOURIST` (apenas o dono do pedido), `SHOPKEEPER` (apenas o dono dos produtos), `ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | UUID | ID do pedido |
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "productId": 1,
+  "productName": "Artesanato Local",
+  "shopkeeperId": 2,
+  "shopkeeperName": "Maria's Comércio",
+  "quantity": 1,
+  "unitPrice": 49.90,
+  "totalAmount": 49.90,
+  "status": "AWAITING_PAYMENT",
+  "transactionId": "abc123",
+  "createdAt": "2026-06-22T10:00:00",
+  "pix": "00020126580014BR.GOV.BCB.PIX0136...",
+  "qrCodeBase64": "iVBORw0KGgo...",
+  "pixExpiresAt": "2026-06-22T10:15:00",
+  "pickupCode": null
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Usuário não tem permissão para acessar este pedido |
+| 404 | Pedido não encontrado |
+
+---
+
 ## 🔌 WebSocket (STOMP)
 
 ### ws://host/ws
@@ -4253,8 +4384,7 @@ host:localhost:8080
 | POI Ratings | 2 | — | 1 | — | TOURIST |
 | Direction | 1 | — | — | — | TOURIST |
 | Route | 4 | — | — | — | TOURIST |
-| Products | 8 | — | 3 | — | SHOPKEEPER |
-| Orders | 6 | — | — | — | TOURIST / SHOPKEEPER |
-| Dashboard | 1 | — | — | — | SHOPKEEPER |
+| Products | 9 | — | 4 | — | SHOPKEEPER / TOURIST |
+| Orders | 7 | — | 1 | — | TOURIST / SHOPKEEPER |
 | WebSocket (STOMP) | 1 | — | — | — | TOURIST / SHOPKEEPER |
-| **Total** | **63** | **5** | **10** | **29** | **19** |
+| **Total** | **65** | **5** | **11** | **29** | **20** |

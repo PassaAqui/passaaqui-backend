@@ -1,7 +1,9 @@
 package com.passaaqui.backend.modules.order.service;
 
+import com.passaaqui.backend.infra.exception.ForbiddenException;
 import com.passaaqui.backend.infra.exception.InvalidRequestException;
 import com.passaaqui.backend.infra.integration.abacatepay.AbacateClient;
+import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.infra.exception.ConflictException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.modules.order.dto.CheckoutRequestDTO;
@@ -44,6 +46,7 @@ public class OrderService {
     private final ShopkeeperRepository shopkeeperRepository;
     private final TouristRepository touristRepository;
     private final AbacateClient abacateClient;
+    private final StorageService storageService;
 
     @Value("${xp.conversion-factor}")
     private int xpConversionFactor;
@@ -79,6 +82,7 @@ public class OrderService {
 
         BigDecimal unitPrice = BigDecimal.valueOf(product.getPrice());
         BigDecimal totalAmount = unitPrice;
+        BigDecimal cashDiscount = BigDecimal.ZERO;
 
         if (request.xpToUse() != null && request.xpToUse() > 0) {
             if (request.xpToUse() > tourist.getCurrentXP()) {
@@ -89,9 +93,9 @@ public class OrderService {
                 throw new InvalidRequestException("Este produto permite no máximo " + product.getMaxXp() + " XP de desconto.");
             }
 
-            BigDecimal discountAmount = calculateDiscount(request.xpToUse(), unitPrice, product.getMaxXp());
+            cashDiscount = calculateDiscount(request.xpToUse(), unitPrice, product.getMaxXp());
 
-            totalAmount = unitPrice.subtract(discountAmount).max(BigDecimal.ZERO);
+            totalAmount = unitPrice.subtract(cashDiscount).max(BigDecimal.ZERO);
 
             tourist.setCurrentXP(tourist.getCurrentXP() - request.xpToUse());
             touristRepository.save(tourist);
@@ -103,6 +107,7 @@ public class OrderService {
                 .product(product)
                 .quantity(1)
                 .totalAmount(totalAmount)
+                .cashDiscount(cashDiscount)
                 .status(OrderStatus.PENDING)
                 .code(generateOrderCode())
                 .build();
@@ -275,7 +280,10 @@ public class OrderService {
         order.setStatus(dto.status());
         order = orderRepository.save(order);
 
-        return ShopkeeperOrderDTO.from(order);
+        String productImage = order.getProduct().getImages().isEmpty() ? null
+                : storageService.getFileUrl(order.getProduct().getImages().get(0));
+
+        return ShopkeeperOrderDTO.from(order, productImage);
     }
 
     public List<ShopkeeperOrderDTO> getRecentOrders(Integer shopkeeperId, int limit) {
@@ -333,6 +341,46 @@ public class OrderService {
             sb.append(chars.charAt(random.nextInt(chars.length())));
         }
         return "#" + sb.toString();
+    }
+
+    public OrderResponseDTO findById(UUID id) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        String userId = auth.getPrincipal().toString();
+
+        OrderModel order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        var authorities = auth.getAuthorities();
+        boolean isAdmin = authorities != null && authorities.stream()
+                .anyMatch(a -> a.getAuthority().startsWith("ROLE_ADMIN"));
+
+        if (!isAdmin) {
+            Integer currentUserId = Integer.parseInt(userId);
+            boolean isTourist = order.getTourist().getId().equals(currentUserId);
+            boolean isShopkeeper = order.getShopkeeper().getId().equals(currentUserId);
+
+            if (!isTourist && !isShopkeeper) {
+                throw new ForbiddenException("Você não tem permissão para acessar este pedido");
+            }
+        }
+
+        return new OrderResponseDTO(
+                order.getId(),
+                order.getProduct().getId(),
+                order.getProduct().getName(),
+                order.getShopkeeper().getId(),
+                order.getShopkeeper().getCompanyName(),
+                order.getQuantity(),
+                BigDecimal.valueOf(order.getProduct().getPrice()),
+                order.getTotalAmount(),
+                order.getStatus(),
+                order.getTransactionId(),
+                order.getCreatedAt(),
+                order.getPix(),
+                order.getQrCodeUrl(),
+                order.getPixExpiresAt(),
+                order.getPickupCode()
+        );
     }
 
     public OrderResponseDTO getMyCurrentOrder() {
