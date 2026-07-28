@@ -57,7 +57,9 @@ public class OrderController {
     @GetMapping("/my-current")
     @PreAuthorize("hasRole('TOURIST')")
     public ResponseEntity<OrderResponseDTO> getMyCurrentOrder() {
-        return ResponseEntity.ok(orderService.getMyCurrentOrder());
+        return orderService.getMyCurrentOrder()
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 
     @GetMapping("/{id}")

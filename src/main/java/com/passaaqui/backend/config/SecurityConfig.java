@@ -53,6 +53,14 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
 
+                        .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "/api/pois/**").permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "/api/products/*/ratings").permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "/api/pois/*/ratings").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))

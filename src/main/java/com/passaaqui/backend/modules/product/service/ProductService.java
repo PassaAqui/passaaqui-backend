@@ -122,7 +122,7 @@ public class ProductService {
         boolean isTourist = authorities != null && authorities.stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_TOURIST"));
 
-        if (isTourist && orderRepository.existsByTourist_IdAndProduct_Id(currentUserId, id)) {
+        if (isTourist && Boolean.TRUE.equals(product.getActive())) {
             return product;
         }
 

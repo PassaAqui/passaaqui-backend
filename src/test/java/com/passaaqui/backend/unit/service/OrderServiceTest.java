@@ -259,8 +259,8 @@ class OrderServiceTest {
 
         var result = orderService.getMyCurrentOrder();
 
-        assertNotNull(result);
-        assertEquals(order.getId(), result.id());
+        assertTrue(result.isPresent());
+        assertEquals(order.getId(), result.get().id());
     }
 
     @Test
@@ -309,12 +309,14 @@ class OrderServiceTest {
     }
 
     @Test
-    void getMyCurrentOrder_shouldThrow_whenNoPaidOrder() {
+    void getMyCurrentOrder_shouldReturnEmpty_whenNoPaidOrder() {
         when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.findTopByTourist_IdAndStatusOrderByCreatedAtDesc(1, OrderStatus.PAID))
                 .thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> orderService.getMyCurrentOrder());
+        var result = orderService.getMyCurrentOrder();
+
+        assertTrue(result.isEmpty());
     }
 
     @Test
