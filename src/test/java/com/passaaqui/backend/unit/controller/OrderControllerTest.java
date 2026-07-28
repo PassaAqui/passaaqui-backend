@@ -24,6 +24,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -163,7 +164,7 @@ class OrderControllerTest {
                 "tx-123", LocalDateTime.now(), null, null, null, "CODE456"
         );
 
-        when(orderService.getMyCurrentOrder()).thenReturn(response);
+        when(orderService.getMyCurrentOrder()).thenReturn(Optional.of(response));
 
         mockMvc.perform(get("/api/orders/my-current"))
                 .andExpect(status().isOk())
@@ -172,12 +173,11 @@ class OrderControllerTest {
     }
 
     @Test
-    void getMyCurrentOrder_shouldReturn404WhenNoPaidOrder() throws Exception {
-        when(orderService.getMyCurrentOrder())
-                .thenThrow(new ResourceNotFoundException("No paid order found"));
+    void getMyCurrentOrder_shouldReturn204WhenNoPaidOrder() throws Exception {
+        when(orderService.getMyCurrentOrder()).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/orders/my-current"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNoContent());
     }
 
     @Test

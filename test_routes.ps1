@@ -113,7 +113,7 @@ if ($r.Status -eq 201) {
             "GET:/api/products/1/details",
             "GET:/api/orders/my-history",
             "GET:/api/orders/my-current",
-            "GET:/api/orders/1"
+            "GET:/api/orders/00000000-0000-0000-0000-000000000000"
         )
 
         foreach ($ep in $touristEndpoints) {
@@ -132,7 +132,7 @@ if ($r.Status -eq 201) {
         Log "  Status: $($r3.Status) | $($r3.Body)"
 
         Log "POST /api/orders/checkout"
-        $r3 = Curl-Json -Method POST -Path "/api/orders/checkout" -Token $token -Body '{ "items": [{"productId": 1, "quantity": 1}], "latitude": -23.5505, "longitude": -46.6333, "paymentMethod": "CREDIT_CARD", "poiId": 1 }'
+        $r3 = Curl-Json -Method POST -Path "/api/orders/checkout" -Token $token -Body '{ "productId": 1, "xpToUse": 0 }'
         Log "  Status: $($r3.Status) | $($r3.Body)"
 
         Log "GET /api/auth/logout"

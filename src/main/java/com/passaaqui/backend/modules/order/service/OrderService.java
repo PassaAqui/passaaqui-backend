@@ -383,30 +383,28 @@ public class OrderService {
         );
     }
 
-    public OrderResponseDTO getMyCurrentOrder() {
+    public Optional<OrderResponseDTO> getMyCurrentOrder() {
         String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         TouristModel tourist = touristRepository.findById(Integer.parseInt(userId))
                 .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
 
-        OrderModel order = orderRepository.findTopByTourist_IdAndStatusOrderByCreatedAtDesc(tourist.getId(), OrderStatus.PAID)
-                .orElseThrow(() -> new ResourceNotFoundException("No paid order found"));
-
-        return new OrderResponseDTO(
-                order.getId(),
-                order.getProduct().getId(),
-                order.getProduct().getName(),
-                order.getShopkeeper().getId(),
-                order.getShopkeeper().getCompanyName(),
-                order.getQuantity(),
-                BigDecimal.valueOf(order.getProduct().getPrice()),
-                order.getTotalAmount(),
-                order.getStatus(),
-                order.getTransactionId(),
-                order.getCreatedAt(),
-                order.getPix(),
-                order.getQrCodeUrl(),
-                order.getPixExpiresAt(),
-                order.getPickupCode()
-        );
+        return orderRepository.findTopByTourist_IdAndStatusOrderByCreatedAtDesc(tourist.getId(), OrderStatus.PAID)
+                .map(order -> new OrderResponseDTO(
+                        order.getId(),
+                        order.getProduct().getId(),
+                        order.getProduct().getName(),
+                        order.getShopkeeper().getId(),
+                        order.getShopkeeper().getCompanyName(),
+                        order.getQuantity(),
+                        BigDecimal.valueOf(order.getProduct().getPrice()),
+                        order.getTotalAmount(),
+                        order.getStatus(),
+                        order.getTransactionId(),
+                        order.getCreatedAt(),
+                        order.getPix(),
+                        order.getQrCodeUrl(),
+                        order.getPixExpiresAt(),
+                        order.getPickupCode()
+                ));
     }
 }
