@@ -3431,7 +3431,7 @@ Retorna um produto por ID.
 
 #### Descrição
 
-Atualiza um produto.
+Atualiza um produto. Lojistas podem editar todas as informações, exceto `maxXp` (apenas administradores podem definir o valor de desconto máximo).
 
 #### Controller
 
@@ -3455,18 +3455,18 @@ Atualiza um produto.
 
 Todos os campos opcionais.
 
-| Campo | Tipo | Validação |
-|---|---|---|
-| name | String | — |
-| description | String | — |
-| price | Double | — |
-| xpCost | Integer | — |
-| stock | Integer | `>= 0` |
-| active | Boolean | — |
-| highlight | Boolean | — |
-| shopkeeperId | Integer | Deve existir |
-| categoryId | Integer | Deve existir |
-| poiId | Integer | Deve existir |
+| Campo | Tipo | Validação | Observação |
+|---|---|---|---|
+| name | String | — | |
+| description | String | — | |
+| price | Double | — | |
+| maxXp | Integer | — | Apenas `ADMIN_USER/ROOT` podem definir |
+| stock | Integer | `>= 0` | |
+| active | Boolean | — | |
+| highlight | Boolean | — | |
+| shopkeeperId | Integer | Deve existir | |
+| categoryId | Integer | Deve existir | |
+| poiId | Integer | Deve existir | |
 
 **Exemplo:**
 
@@ -3952,6 +3952,8 @@ Apenas `SHOPKEEPER`
     "status": "PENDING",
     "code": "#A3F92",
     "total": 49.90,
+    "cash_discount": 0,
+    "product_image": null,
     "items": [
       {
         "name": "Artesanato Local",
@@ -4026,6 +4028,8 @@ Apenas `SHOPKEEPER`
   "status": "PREPARING",
   "code": "#A3F92",
   "total": 49.90,
+  "cash_discount": 2.00,
+  "product_image": "http://storage.com/produto.jpg",
   "items": [
     {
       "name": "Artesanato Local",

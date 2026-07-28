@@ -137,7 +137,11 @@ public class ProductService {
         if (dto.description() != null && !dto.description().isBlank()) product.setDescription(dto.description());
         if (dto.price() != null) product.setPrice(dto.price());
 
-        if (dto.maxXp() != null) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth.getAuthorities() != null && auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().startsWith("ROLE_ADMIN"));
+
+        if (isAdmin && dto.maxXp() != null) {
             product.setMaxXp(dto.maxXp());
         } else if (dto.price() != null || dto.categoryId() != null) {
             CategoryModel category = dto.categoryId() != null

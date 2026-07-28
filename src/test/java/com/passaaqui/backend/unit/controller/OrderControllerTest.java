@@ -132,7 +132,7 @@ class OrderControllerTest {
         UUID orderId = UUID.randomUUID();
         ShopkeeperOrderDTO response = new ShopkeeperOrderDTO(
                 orderId, "John Doe", LocalDateTime.now(), OrderStatus.PAID,
-                "#ABC12", BigDecimal.TEN, List.of(new OrderItemDTO("Product", 1))
+                "#ABC12", BigDecimal.TEN, BigDecimal.ZERO, null, List.of(new OrderItemDTO("Product", 1))
         );
 
         when(orderService.getShopkeeperOrdersByStatus(any())).thenReturn(List.of(response));

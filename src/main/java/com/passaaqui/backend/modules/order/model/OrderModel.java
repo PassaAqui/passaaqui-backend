@@ -44,6 +44,10 @@ public class OrderModel {
     @Column(nullable = false)
     private BigDecimal totalAmount;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private BigDecimal cashDiscount = BigDecimal.ZERO;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status;

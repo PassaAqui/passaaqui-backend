@@ -16,6 +16,8 @@ public record ShopkeeperOrderDTO(
     OrderStatus status,
     String code,
     BigDecimal total,
+    @JsonProperty("cash_discount") BigDecimal cashDiscount,
+    @JsonProperty("product_image") String productImage,
     List<OrderItemDTO> items
 ) {
     public static ShopkeeperOrderDTO from(OrderModel order) {
@@ -26,7 +28,23 @@ public record ShopkeeperOrderDTO(
             order.getStatus(),
             order.getCode(),
             order.getTotalAmount(),
-            List.of(new OrderItemDTO(order.getProduct().getName(), order.getQuantity()))
-        );
+            order.getCashDiscount(),
+            null,
+            List.of(new OrderItemDTO(order.getProduct().getName(), order.getQuantity())
+        ));
+    }
+
+    public static ShopkeeperOrderDTO from(OrderModel order, String productImage) {
+        return new ShopkeeperOrderDTO(
+            order.getId(),
+            order.getTourist().getName(),
+            order.getCreatedAt(),
+            order.getStatus(),
+            order.getCode(),
+            order.getTotalAmount(),
+            order.getCashDiscount(),
+            productImage,
+            List.of(new OrderItemDTO(order.getProduct().getName(), order.getQuantity())
+        ));
     }
 }
