@@ -1,5 +1,6 @@
 package com.passaaqui.backend.modules.order.service;
 
+import com.passaaqui.backend.infra.exception.ForbiddenException;
 import com.passaaqui.backend.infra.exception.InvalidRequestException;
 import com.passaaqui.backend.infra.integration.abacatepay.AbacateClient;
 import com.passaaqui.backend.infra.exception.ConflictException;
@@ -333,6 +334,46 @@ public class OrderService {
             sb.append(chars.charAt(random.nextInt(chars.length())));
         }
         return "#" + sb.toString();
+    }
+
+    public OrderResponseDTO findById(UUID id) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        String userId = auth.getPrincipal().toString();
+
+        OrderModel order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        var authorities = auth.getAuthorities();
+        boolean isAdmin = authorities != null && authorities.stream()
+                .anyMatch(a -> a.getAuthority().startsWith("ROLE_ADMIN"));
+
+        if (!isAdmin) {
+            Integer currentUserId = Integer.parseInt(userId);
+            boolean isTourist = order.getTourist().getId().equals(currentUserId);
+            boolean isShopkeeper = order.getShopkeeper().getId().equals(currentUserId);
+
+            if (!isTourist && !isShopkeeper) {
+                throw new ForbiddenException("Você não tem permissão para acessar este pedido");
+            }
+        }
+
+        return new OrderResponseDTO(
+                order.getId(),
+                order.getProduct().getId(),
+                order.getProduct().getName(),
+                order.getShopkeeper().getId(),
+                order.getShopkeeper().getCompanyName(),
+                order.getQuantity(),
+                BigDecimal.valueOf(order.getProduct().getPrice()),
+                order.getTotalAmount(),
+                order.getStatus(),
+                order.getTransactionId(),
+                order.getCreatedAt(),
+                order.getPix(),
+                order.getQrCodeUrl(),
+                order.getPixExpiresAt(),
+                order.getPickupCode()
+        );
     }
 
     public OrderResponseDTO getMyCurrentOrder() {

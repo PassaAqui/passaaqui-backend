@@ -59,4 +59,10 @@ public class OrderController {
     public ResponseEntity<OrderResponseDTO> getMyCurrentOrder() {
         return ResponseEntity.ok(orderService.getMyCurrentOrder());
     }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TOURIST', 'SHOPKEEPER', 'ADMIN_USER', 'ADMIN_ROOT')")
+    public ResponseEntity<OrderResponseDTO> findById(@PathVariable UUID id) {
+        return ResponseEntity.ok(orderService.findById(id));
+    }
 }

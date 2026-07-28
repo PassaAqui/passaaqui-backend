@@ -5,6 +5,7 @@ import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.category.model.CategoryModel;
 import com.passaaqui.backend.modules.category.repository.CategoryRepository;
+import com.passaaqui.backend.modules.order.repository.OrderRepository;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.poi.repository.PoiRepository;
 import com.passaaqui.backend.modules.product.dto.CatalogMetricsDTO;
@@ -35,6 +36,7 @@ public class ProductService {
     private final ShopkeeperRepository shopkeeperRepository;
     private final CategoryRepository categoryRepository;
     private final PoiRepository poiRepository;
+    private final OrderRepository orderRepository;
     private final XpCalculationStrategy xpCalculationStrategy;
     private final StorageService storageService;
 
@@ -94,6 +96,37 @@ public class ProductService {
             .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
         enrichImageUrls(product);
         return product;
+    }
+
+    public ProductModel findByIdWithAccessCheck(Integer id) {
+        ProductModel product = findById(id);
+
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        String userId = auth.getPrincipal().toString();
+        var authorities = auth.getAuthorities();
+
+        boolean isAdmin = authorities != null && authorities.stream()
+                .anyMatch(a -> a.getAuthority().startsWith("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            return product;
+        }
+
+        Integer currentUserId = Integer.parseInt(userId);
+        boolean isShopkeeper = product.getShopkeeper().getId().equals(currentUserId);
+
+        if (isShopkeeper) {
+            return product;
+        }
+
+        boolean isTourist = authorities != null && authorities.stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_TOURIST"));
+
+        if (isTourist && orderRepository.existsByTourist_IdAndProduct_Id(currentUserId, id)) {
+            return product;
+        }
+
+        throw new ForbiddenException("Você não tem permissão para acessar este produto");
     }
 
     @Transactional

@@ -204,4 +204,27 @@ class ProductControllerTest {
         mockMvc.perform(get("/api/products/999"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void findByIdWithAccessCheck_shouldReturn200() throws Exception {
+        ProductModel product = new ProductModel();
+        product.setId(1);
+        product.setName("Protected Product");
+
+        when(service.findByIdWithAccessCheck(1)).thenReturn(product);
+
+        mockMvc.perform(get("/api/products/1/details"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Protected Product"));
+    }
+
+    @Test
+    void findByIdWithAccessCheck_shouldReturn404WhenNotFound() throws Exception {
+        when(service.findByIdWithAccessCheck(999))
+                .thenThrow(new ResourceNotFoundException("Product not found"));
+
+        mockMvc.perform(get("/api/products/999/details"))
+                .andExpect(status().isNotFound());
+    }
 }

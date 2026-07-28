@@ -32,4 +32,6 @@ public interface OrderRepository extends JpaRepository<OrderModel, UUID> {
     long countByShopkeeper_IdAndStatusAndCreatedAtBetween(Integer shopkeeperId, OrderStatus status, LocalDateTime start, LocalDateTime end);
 
     long countByShopkeeper_IdAndCreatedAtBetween(Integer shopkeeperId, LocalDateTime start, LocalDateTime end);
+
+    boolean existsByTourist_IdAndProduct_Id(Integer touristId, Integer productId);
 }

@@ -214,4 +214,31 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$[0].id").value(orderId.toString()))
                 .andExpect(jsonPath("$[0].status").value("AWAITING_PAYMENT"));
     }
+
+    @Test
+    void findById_shouldReturn200() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        OrderResponseDTO response = new OrderResponseDTO(
+                orderId, 1, "Product", 2, "Shop", 1,
+                BigDecimal.TEN, BigDecimal.TEN, OrderStatus.PAID,
+                "tx-123", LocalDateTime.now(), null, null, null, "CODE789"
+        );
+
+        when(orderService.findById(orderId)).thenReturn(response);
+
+        mockMvc.perform(get("/api/orders/" + orderId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(orderId.toString()))
+                .andExpect(jsonPath("$.status").value("PAID"))
+                .andExpect(jsonPath("$.pickupCode").value("CODE789"));
+    }
+
+    @Test
+    void findById_shouldReturn404WhenNotFound() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        when(orderService.findById(orderId)).thenThrow(new ResourceNotFoundException("Order not found"));
+
+        mockMvc.perform(get("/api/orders/" + orderId))
+                .andExpect(status().isNotFound());
+    }
 }
