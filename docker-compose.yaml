@@ -1,0 +1,97 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: passaaqui_postgres
+    restart: always
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: passaaqui
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: passaaqui_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: passaaqui_minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: root
+      MINIO_ROOT_PASSWORD: root@123
+      MINIO_SERVER_URL: http://localhost:9000
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  backend:
+    build: .
+    container_name: passaaqui_backend
+    restart: always
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/passaaqui
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+      JWT_SECRET: WIT7xsOCEKXtRi3mQA1ZMsOc5wMODgTXimEvVbbNBNm
+
+      MINIO_URL: http://minio:9000
+      MINIO_URL_EXTERNAL: http://localhost:9000
+      MINIO_ACCESS_KEY: root
+      MINIO_SECRET_KEY: root@123
+      MINIO_BUCKET_NAME: passaaqui-bucket
+
+      ABACATEPAY_API_KEY: abc_dev_qKYZEFLXu4PEcKPAFtH4Tkt2
+      ABACATEPAY_WEBHOOK_SECRET: testes
+
+      OPENROUTESERVICE_API_KEY: eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImZlNjc1ZDlmZTFmZDRmMjA5NWEyZmY2YTFhNGE2ZGE4IiwiaCI6Im11cm11cjY0In0=
+
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
+      JAVA_TOOL_OPTIONS: "-Djava.net.preferIPv4Stack=true -Dio.netty.noNative=true -Dio.netty.transport.noNative=true"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  minio_data:
+  redis_data:

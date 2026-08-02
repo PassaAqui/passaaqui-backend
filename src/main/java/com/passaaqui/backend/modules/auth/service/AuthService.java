@@ -111,7 +111,9 @@ public class AuthService {
 
         String password_hash = passwordEncoder.encode(dto.password());
 
-        return shopkeeperService.createUser(dto.email(), dto.name(), password_hash, dto.documentId(), dto.companyName());
+        return shopkeeperService.createUser(dto.email(), dto.name(), password_hash, dto.documentId(), dto.companyName(), dto.description(), dto.categoryId(),
+            dto.poiName(), dto.poiDescription(), dto.latitude(), dto.longitude(),
+            dto.minLatitude(), dto.maxLatitude(), dto.minLongitude(), dto.maxLongitude(), dto.cityId());
     }
 
     public JWTObject loginAccount(String email, String password, String userAgent, String ipAddress) {
@@ -141,11 +143,12 @@ public class AuthService {
     public JWTObject refreshToken(String refreshToken, String userAgent, String ipAddress) {
         String deviceId;
         try {
+            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
             var claims = Jwts.parser()
-                    .setSigningKey(jwtSecret)
+                    .verifyWith(key)
                     .build()
-                    .parseClaimsJws(refreshToken)
-                    .getBody();
+                    .parseSignedClaims(refreshToken)
+                    .getPayload();
             deviceId = claims.get("deviceId", String.class);
         } catch (Exception e) {
             throw new InvalidRequestException("Invalid or expired refresh token.");
@@ -180,11 +183,12 @@ public class AuthService {
     public void logout(String refreshToken) {
         String deviceId = null;
         try {
+            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
             var claims = Jwts.parser()
-                    .setSigningKey(jwtSecret)
+                    .verifyWith(key)
                     .build()
-                    .parseClaimsJws(refreshToken)
-                    .getBody();
+                    .parseSignedClaims(refreshToken)
+                    .getPayload();
             deviceId = claims.get("deviceId", String.class);
         } catch (ExpiredJwtException e) {
             deviceId = e.getClaims().get("deviceId", String.class);
