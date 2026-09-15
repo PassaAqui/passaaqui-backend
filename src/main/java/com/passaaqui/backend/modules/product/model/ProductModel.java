@@ -18,6 +18,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(
+    name = "tb_products",
+    indexes = {
+        @Index(name = "idx_products_shopkeeper_id", columnList = "shopkeeper_id"),
+        @Index(name = "idx_products_category_id", columnList = "category_id")
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor
