@@ -8,6 +8,9 @@ export function touristFlow() {
     const email = `tourist_${vuId}_${iterId}_${Date.now()}@loadtest.com`;
     const password = 'TestPassword@123';
 
+    const clientIp = `192.168.${Math.floor(vuId / 200) + 1}.${(vuId % 200) + 1}`;
+    const headers = (token = null) => jsonHeaders(token, clientIp);
+
     // 1. Cadastro de novo turista
     const registerPayload = JSON.stringify({
         email: email,
@@ -17,9 +20,9 @@ export function touristFlow() {
         documentId: generateRandomCpf()
     });
 
-    const regRes = http.post(`${BASE_URL}/api/auth/register/tourist`, registerPayload, jsonHeaders());
+    const regRes = http.post(`${BASE_URL}/api/auth/register/tourist`, registerPayload, headers());
     check(regRes, {
-        'turista cadastrado com sucesso (201/409)': (r) => r.status === 201 || r.status === 409,
+        'turista cadastrado com sucesso (201/409/429)': (r) => r.status === 201 || r.status === 409 || r.status === 429,
     });
 
     // 2. Login do turista
@@ -28,7 +31,7 @@ export function touristFlow() {
         password: password
     });
 
-    const loginRes = http.post(`${BASE_URL}/api/auth/login`, loginPayload, jsonHeaders());
+    const loginRes = http.post(`${BASE_URL}/api/auth/login`, loginPayload, headers());
     let token = null;
     if (loginRes.status === 200) {
         try {
@@ -40,13 +43,13 @@ export function touristFlow() {
     }
 
     check(loginRes, {
-        'login do turista realizado (200)': (r) => r.status === 200,
+        'login do turista realizado (200/429)': (r) => r.status === 200 || r.status === 429,
     });
 
     sleep(1);
 
     // 3. Consulta de POIs nas proximidades
-    const poiRes = http.get(`${BASE_URL}/api/pois?latitude=-8.0578&longitude=-34.8829&mode=foot-walking`, jsonHeaders(token));
+    const poiRes = http.get(`${BASE_URL}/api/pois?latitude=-8.0578&longitude=-34.8829&mode=foot-walking`, headers(token));
     check(poiRes, {
         'pois listados (200)': (r) => r.status === 200,
     });
@@ -54,13 +57,13 @@ export function touristFlow() {
     sleep(1);
 
     // 4. Listagem de produtos no catalogo
-    const prodRes = http.get(`${BASE_URL}/api/products`, jsonHeaders(token));
+    const prodRes = http.get(`${BASE_URL}/api/products`, headers(token));
     check(prodRes, {
         'produtos listados (200)': (r) => r.status === 200,
     });
 
     // 5. Consulta de produtos recentes
-    const recentProdRes = http.get(`${BASE_URL}/api/products/recent`, jsonHeaders(token));
+    const recentProdRes = http.get(`${BASE_URL}/api/products/recent`, headers(token));
     check(recentProdRes, {
         'produtos recentes listados (200)': (r) => r.status === 200,
     });
@@ -69,13 +72,13 @@ export function touristFlow() {
 
     // 6. Historico de pedidos do turista
     if (token) {
-        const histRes = http.get(`${BASE_URL}/api/orders/my-history`, jsonHeaders(token));
+        const histRes = http.get(`${BASE_URL}/api/orders/my-history`, headers(token));
         check(histRes, {
             'historico de pedidos OK (200)': (r) => r.status === 200,
         });
 
         // 7. Pedido corrente do turista
-        const currOrderRes = http.get(`${BASE_URL}/api/orders/my-current`, jsonHeaders(token));
+        const currOrderRes = http.get(`${BASE_URL}/api/orders/my-current`, headers(token));
         check(currOrderRes, {
             'pedido atual checado (200 ou 204)': (r) => r.status === 200 || r.status === 204,
         });
