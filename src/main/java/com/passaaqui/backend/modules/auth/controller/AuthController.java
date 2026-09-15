@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
+import com.passaaqui.backend.infra.ratelimit.RateLimitTier;
+import com.passaaqui.backend.infra.ratelimit.RateLimited;
 import com.passaaqui.backend.modules.auth.service.AuthService;
 import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
 import com.passaaqui.backend.shared.objects.JWTObject;
@@ -27,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@RateLimited(RateLimitTier.AUTH)
 public class AuthController {
 
     private final AuthService service;

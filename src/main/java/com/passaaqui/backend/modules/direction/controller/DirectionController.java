@@ -1,5 +1,7 @@
 package com.passaaqui.backend.modules.direction.controller;
 
+import com.passaaqui.backend.infra.ratelimit.RateLimitTier;
+import com.passaaqui.backend.infra.ratelimit.RateLimited;
 import com.passaaqui.backend.modules.direction.dto.DirectionRequestDTO;
 import com.passaaqui.backend.modules.direction.service.DirectionService;
 import jakarta.validation.Valid;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/direction")
 @PreAuthorize("hasAnyRole('TOURIST')")
 @RequiredArgsConstructor
+@RateLimited(RateLimitTier.DIRECTIONS)
 public class DirectionController {
 
     private final DirectionService service;
