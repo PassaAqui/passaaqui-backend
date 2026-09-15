@@ -24,9 +24,9 @@ public class RateLimitRedisConfig {
             @Value("${spring.data.redis.timeout:2000}") int timeout
     ) {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
-        poolConfig.setMaxTotal(32);
-        poolConfig.setMaxIdle(16);
-        poolConfig.setMinIdle(4);
+        poolConfig.setMaxTotal(128);
+        poolConfig.setMaxIdle(64);
+        poolConfig.setMinIdle(16);
 
         if (password != null && !password.isBlank()) {
             return new JedisPool(poolConfig, host, port, timeout, password);
