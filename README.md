@@ -56,6 +56,26 @@ Para uma saída mais legível com sumário detalhado por classe de teste:
 | Unitários | `src/test/java/.../unit/` | Testes isolados com Mockito |
 | Integração | `src/test/java/.../integration/` | Testes com banco H2 (`@DataJpaTest`) |
 | Security | `src/test/java/.../security/` | Testes de segurança (`@SpringBootTest`) |
+| Carga / Performance | `k6/` | Testes de carga com k6 (200 e 1000 VUs) |
+
+### Testes de Carga e Performance (k6)
+
+O projeto conta com uma suíte de testes de estresse com [k6](./k6/README.md) simulando fluxos concorrentes reais de turistas e comerciantes (autenticação JWT, consultas geoespaciais, pedidos, catálogo e dashboards).
+
+#### Principais Métricas Obtidas (Benchmark Oficial):
+
+| Métrica Principal | 200 Usuários Simultâneos | 1000 Usuários Simultâneos | Avaliação |
+| :--- | :--- | :--- | :--- |
+| **VUs Concorrentes** | 200 (100 turistas + 100 lojistas) | **1.000** (500 turistas + 500 lojistas) | **100% Sustentado** |
+| **Total de Requisições** | 17.844 reqs | **85.335 reqs** | **Escalabilidade 4.7x** |
+| **Throughput Médio** | 164,17 reqs/s | **785,05 reqs/s** | **Excelente vazão** |
+| **Latência Mediana (p50)** | 141,54 ms | **2,83 ms** | **Praticamente instantâneo** |
+| **Latência p(90)** | 825,13 ms | **72,10 ms** | **Sub-100ms** |
+| **Latência p(95)** | 1,10 s | **1,61 s** | **Aprovado** |
+| **Taxa de Sucesso (Checks)** | 99,99% | **98,74%** (84.263/85.335) | **Altíssima consistência** |
+| **Erros 500 / Quedas** | **0** | **0** | **100% Estabilidade** |
+
+> Para mais detalhes e instruções de execução dos testes de carga, consulte a [documentação do k6](./k6/README.md).
 
 > [!WARNING]
 > ATENÇÃO: é preciso ter o Java 21 e o Maven instalados em sua máquina
