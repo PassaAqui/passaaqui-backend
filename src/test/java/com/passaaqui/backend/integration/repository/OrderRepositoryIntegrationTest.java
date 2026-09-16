@@ -196,4 +196,26 @@ class OrderRepositoryIntegrationTest {
 
         assertTrue(found.isEmpty());
     }
+
+    @Test
+    void shouldFindByIdForUpdate() {
+        var order = createOrder(OrderStatus.PENDING);
+
+        var found = orderRepository.findByIdForUpdate(order.getId());
+
+        assertTrue(found.isPresent());
+        assertEquals(order.getId(), found.get().getId());
+    }
+
+    @Test
+    void shouldFindByTransactionIdForUpdate() {
+        var order = createOrder(OrderStatus.AWAITING_PAYMENT);
+        order.setTransactionId("tx_lock_123");
+        em.persistAndFlush(order);
+
+        var found = orderRepository.findByTransactionIdForUpdate("tx_lock_123");
+
+        assertTrue(found.isPresent());
+        assertEquals(order.getId(), found.get().getId());
+    }
 }

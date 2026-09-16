@@ -12,6 +12,8 @@ import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.poi.service.PoiCheckinService;
 import com.passaaqui.backend.modules.poi.service.PoiService;
+import com.passaaqui.backend.infra.ratelimit.RateLimitTier;
+import com.passaaqui.backend.infra.ratelimit.RateLimited;
 import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
 import com.passaaqui.backend.modules.shopkeeper.service.ShopkeeperService;
 import jakarta.validation.Valid;
@@ -139,6 +141,7 @@ public class PoiController {
 
     @PostMapping("/{poiId}/checkin")
     @PreAuthorize("hasRole('TOURIST')")
+    @RateLimited(RateLimitTier.CHECKIN)
     public ResponseEntity<CheckinResponseDTO> checkin(
             @PathVariable Integer poiId,
             @RequestBody @Valid CheckinRequestDTO request) {

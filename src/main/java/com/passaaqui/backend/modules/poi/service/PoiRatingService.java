@@ -24,7 +24,7 @@ public class PoiRatingService {
 
     @Transactional
     public PoiRatingModel rate(Integer poiId, Integer userId, CreatePoiRatingDTO dto) {
-        PoiModel poi = poiRepository.findById(poiId)
+        PoiModel poi = poiRepository.findByIdForUpdate(poiId)
                 .orElseThrow(() -> new ResourceNotFoundException("POI not found"));
 
         UserModel user = touristRepository.findById(userId)

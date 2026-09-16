@@ -15,7 +15,12 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "poi_visit_model")
+@Table(
+    name = "poi_visit_model",
+    indexes = {
+        @Index(name = "idx_poi_visits_user_poi", columnList = "user_id, poi_id")
+    }
+)
 public class PoiVisitModel {
 
     @Id

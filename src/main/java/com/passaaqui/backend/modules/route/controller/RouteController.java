@@ -1,5 +1,7 @@
 package com.passaaqui.backend.modules.route.controller;
 
+import com.passaaqui.backend.infra.ratelimit.RateLimitTier;
+import com.passaaqui.backend.infra.ratelimit.RateLimited;
 import com.passaaqui.backend.modules.route.dto.LocationDTO;
 import com.passaaqui.backend.modules.route.dto.RouteSessionDTO;
 import com.passaaqui.backend.modules.route.dto.StartRouteDTO;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/route")
 @RequiredArgsConstructor
+@RateLimited(RateLimitTier.DIRECTIONS)
 public class RouteController {
 
     private final RouteService routeService;

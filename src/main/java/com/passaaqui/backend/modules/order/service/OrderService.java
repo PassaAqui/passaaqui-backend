@@ -63,14 +63,14 @@ public class OrderService {
     @Transactional
     public OrderResponseDTO checkout(CheckoutRequestDTO request) {
         String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
-        TouristModel tourist = touristRepository.findById(Integer.parseInt(userId))
+        TouristModel tourist = touristRepository.findByIdForUpdate(Integer.parseInt(userId))
                 .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
 
         if (orderRepository.existsByTourist_IdAndStatusNotIn(tourist.getId(), List.of(OrderStatus.COMPLETED, OrderStatus.CANCELED))) {
             throw new ConflictException("Você já possui um pedido ativo. Finalize-o antes de comprar outro.");
         }
 
-        ProductModel product = productRepository.findById(request.productId())
+        ProductModel product = productRepository.findByIdForUpdate(request.productId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + request.productId()));
 
         if (product.getStock() < 1) {
@@ -270,20 +270,36 @@ public class OrderService {
         ShopkeeperModel shopkeeper = shopkeeperRepository.findById(Integer.parseInt(userId))
                 .orElseThrow(() -> new ResourceNotFoundException("Shopkeeper not found"));
 
-        OrderModel order = orderRepository.findById(orderId)
+        OrderModel order = orderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         if (!order.getShopkeeper().getId().equals(shopkeeper.getId())) {
             throw new com.passaaqui.backend.infra.exception.ForbiddenException("This order does not belong to you");
         }
 
+        OrderStatus previousStatus = order.getStatus();
         order.setStatus(dto.status());
+
+        if (dto.status() == OrderStatus.CANCELED && previousStatus != OrderStatus.CANCELED && previousStatus != OrderStatus.COMPLETED) {
+            restoreStock(order);
+        }
+
         order = orderRepository.save(order);
 
         String productImage = order.getProduct().getImages().isEmpty() ? null
                 : storageService.getFileUrl(order.getProduct().getImages().get(0));
 
         return ShopkeeperOrderDTO.from(order, productImage);
+    }
+
+    private void restoreStock(OrderModel order) {
+        if (order.getProduct() == null || order.getProduct().getId() == null) {
+            return;
+        }
+        ProductModel product = productRepository.findByIdForUpdate(order.getProduct().getId())
+                .orElse(order.getProduct());
+        product.setStock(product.getStock() + (order.getQuantity() != null ? order.getQuantity() : 1));
+        productRepository.save(product);
     }
 
     public List<ShopkeeperOrderDTO> getRecentOrders(Integer shopkeeperId, int limit) {
