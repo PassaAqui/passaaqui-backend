@@ -2922,7 +2922,7 @@ Apenas `TOURIST`
     "anti_farming_active": true,
     "invalid_gps": false
   },
-  "block_reason": "Active cooldown (30 days)."
+  "block_reason": "Cooldown ativo (30 dias)."
 }
 ```
 
@@ -2935,7 +2935,7 @@ Apenas `TOURIST`
     "anti_farming_active": false,
     "invalid_gps": true
   },
-  "block_reason": "Insufficient displacement detected."
+  "block_reason": "Deslocamento insuficiente detectado."
 }
 ```
 

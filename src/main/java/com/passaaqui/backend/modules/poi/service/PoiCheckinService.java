@@ -36,7 +36,7 @@ public class PoiCheckinService {
         if (poi.getType() != PoiType.TOURIST_POINT) {
             return new CheckinResponseDTO(0, null,
                     new AppliedRules(false, false),
-                    "POI is not a tourist point");
+                    "POI não é do tipo turístico");
         }
 
         TouristModel tourist = touristRepository.findByIdForUpdate(userId)

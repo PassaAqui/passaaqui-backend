@@ -30,18 +30,18 @@ public class XpCalculationService {
         String blockReason = null;
 
         if (!"tourist".equalsIgnoreCase(poiType) && !"turistico".equalsIgnoreCase(poiType)) {
-            return new CheckinResponseDTO(0, null, new AppliedRules(false, false), "POI is not a tourist point");
+            return new CheckinResponseDTO(0, null, new AppliedRules(false, false), "POI não é do tipo turístico");
         }
 
         if (lastUserCheckin != null
                 && ChronoUnit.DAYS.between(lastUserCheckin, LocalDateTime.now()) < COOLDOWN_DAYS) {
             antiFarmingActive = true;
-            blockReason = "Active cooldown (30 days).";
+            blockReason = "Cooldown ativo (30 dias).";
         }
 
         if (distanceKm < MIN_DISTANCE_KM) {
             invalidGps = true;
-            blockReason = "Insufficient displacement detected.";
+            blockReason = "Deslocamento insuficiente detectado.";
         }
 
         if (antiFarmingActive || invalidGps) {

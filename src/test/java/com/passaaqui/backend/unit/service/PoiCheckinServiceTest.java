@@ -63,7 +63,7 @@ class PoiCheckinServiceTest {
     @Test
     void checkin_shouldAcquirePessimisticLockOnTourist_andGrantXp() {
         var request = new CheckinRequestDTO(0.05);
-        var calculationResponse = new CheckinResponseDTO(50, null, new AppliedRules(true, false), "Check-in successful");
+        var calculationResponse = new CheckinResponseDTO(50, null, new AppliedRules(true, false), "Check-in realizado com sucesso");
 
         when(poiRepository.findById(1)).thenReturn(Optional.of(poi));
         when(touristRepository.findByIdForUpdate(10)).thenReturn(Optional.of(tourist));
@@ -93,7 +93,7 @@ class PoiCheckinServiceTest {
 
         assertNotNull(response);
         assertEquals(0, response.xpGranted());
-        assertEquals("POI is not a tourist point", response.blockReason());
+        assertEquals("POI não é do tipo turístico", response.blockReason());
         verify(touristRepository, never()).findByIdForUpdate(anyInt());
         verify(touristRepository, never()).save(any());
         verify(poiVisitRepository, never()).save(any());
