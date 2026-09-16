@@ -1,7 +1,9 @@
 package com.passaaqui.backend.modules.poi.repository;
 
 import com.passaaqui.backend.modules.poi.model.PoiModel;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -9,6 +11,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PoiRepository extends JpaRepository<PoiModel, Integer> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM PoiModel p WHERE p.id = :id")
+    Optional<PoiModel> findByIdForUpdate(@Param("id") Integer id);
+
     Optional<PoiModel> findByShopkeeperId(Integer shopkeeperId);
 
     @Query("SELECT p FROM PoiModel p WHERE p.latitude IS NOT NULL AND p.longitude IS NOT NULL " +

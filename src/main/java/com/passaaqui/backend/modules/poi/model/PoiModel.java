@@ -83,4 +83,7 @@ public class PoiModel {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @Version
+    private Integer version;
 }

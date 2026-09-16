@@ -84,4 +84,7 @@ public class OrderModel {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @Version
+    private Integer version;
 }

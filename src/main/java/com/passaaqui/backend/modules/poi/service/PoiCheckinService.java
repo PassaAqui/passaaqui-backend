@@ -11,8 +11,6 @@ import com.passaaqui.backend.modules.poi.repository.PoiRepository;
 import com.passaaqui.backend.modules.poi.repository.PoiVisitRepository;
 import com.passaaqui.backend.modules.tourist.model.TouristModel;
 import com.passaaqui.backend.modules.tourist.repository.TouristRepository;
-import com.passaaqui.backend.modules.user.model.UserModel;
-import com.passaaqui.backend.modules.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,7 +25,6 @@ public class PoiCheckinService {
 
     private final PoiRepository poiRepository;
     private final PoiVisitRepository poiVisitRepository;
-    private final UserRepository userRepository;
     private final TouristRepository touristRepository;
     private final XpCalculationService xpCalculationService;
 
@@ -42,8 +39,8 @@ public class PoiCheckinService {
                     "POI não é do tipo turístico");
         }
 
-        UserModel user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        TouristModel tourist = touristRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
 
         double distanceKm = request.distanceKm() != null ? request.distanceKm() : 0.0;
 
@@ -64,15 +61,14 @@ public class PoiCheckinService {
 
         PoiVisitModel visit = new PoiVisitModel();
         visit.setPoi(poi);
-        visit.setUser(user);
+        visit.setUser(tourist);
         visit.setDistanceKm(distanceKm);
         visit.setXpEarned(response.xpGranted());
         poiVisitRepository.save(visit);
 
         if (response.xpGranted() > 0) {
-            TouristModel tourist = touristRepository.findById(userId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
-            tourist.setCurrentXP(tourist.getCurrentXP() + response.xpGranted());
+            int currentXp = tourist.getCurrentXP() != null ? tourist.getCurrentXP() : 0;
+            tourist.setCurrentXP(currentXp + response.xpGranted());
             touristRepository.save(tourist);
         }
 
