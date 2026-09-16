@@ -36,7 +36,7 @@ public class PoiCheckinService {
         if (poi.getType() != PoiType.TOURIST_POINT) {
             return new CheckinResponseDTO(0, null,
                     new AppliedRules(false, false),
-                    "POI não é do tipo turístico");
+                    "POI is not a tourist point");
         }
 
         TouristModel tourist = touristRepository.findByIdForUpdate(userId)
@@ -54,7 +54,7 @@ public class PoiCheckinService {
                 .orElse(null);
 
         CheckinResponseDTO response = xpCalculationService.calculate(
-                userId, poiId, "turistico",
+                userId, poiId, "tourist",
                 distanceKm, (int) recentVisits, lastCheckin,
                 poi.getXpReward()
         );

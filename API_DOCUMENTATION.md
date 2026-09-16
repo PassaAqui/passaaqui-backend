@@ -2843,12 +2843,12 @@ Realiza o **check-in** de um turista em um POI do tipo **ponto turístico**. O c
 2. **Cálculo dinâmico:** caso contrário, aplica a **fórmula oficial**:
 
 ```
-XP = (distancia_km * 2.5) * (100 / (visitas_recentes + 1))
+XP = (distance_km * 2.5) * (100 / (recent_visits + 1))
 ```
 
 **Regras aplicadas:**
 - **Anti-farming:** mesmo usuário não pode check-in no mesmo POI dentro de 30 dias
-- **Deslocamento mínimo:** `distanciaKm` deve ser >= 0.1 km (caso contrário, tratado como GPS inválido)
+- **Deslocamento mínimo:** `distanceKm` deve ser >= 0.1 km (caso contrário, tratado como GPS inválido)
 - **Invisibilidade:** POIs com mais visitas recentes rendem menos XP
 - **Arredondamento:** o XP final é arredondado para o inteiro mais próximo
 
@@ -2894,20 +2894,20 @@ Apenas `TOURIST`
 
 ```json
 {
-  "xp_concedido": 750,
-  "calculo": {
-    "distancia_km": 3.0,
-    "fator_deslocamento": 7.5,
-    "visitas_recentes": 0,
-    "fator_invisibilidade": 100.0,
-    "xp_bruto": 750.0,
-    "xp_final": 750
+  "xp_granted": 750,
+  "calculation": {
+    "distance_km": 3.0,
+    "displacement_factor": 7.5,
+    "recent_visits": 0,
+    "invisibility_factor": 100.0,
+    "raw_xp": 750.0,
+    "final_xp": 750
   },
-  "regras_aplicadas": {
-    "anti_farming_ativo": false,
-    "gps_invalido": false
+  "applied_rules": {
+    "anti_farming_active": false,
+    "invalid_gps": false
   },
-  "motivo_bloqueio": null
+  "block_reason": null
 }
 ```
 
@@ -2916,26 +2916,26 @@ Apenas `TOURIST`
 **Cooldown ativo:**
 ```json
 {
-  "xp_concedido": 0,
-  "calculo": null,
-  "regras_aplicadas": {
-    "anti_farming_ativo": true,
-    "gps_invalido": false
+  "xp_granted": 0,
+  "calculation": null,
+  "applied_rules": {
+    "anti_farming_active": true,
+    "invalid_gps": false
   },
-  "motivo_bloqueio": "Cooldown ativo (30 dias)."
+  "block_reason": "Active cooldown (30 days)."
 }
 ```
 
 **GPS inválido:**
 ```json
 {
-  "xp_concedido": 0,
-  "calculo": null,
-  "regras_aplicadas": {
-    "anti_farming_ativo": false,
-    "gps_invalido": true
+  "xp_granted": 0,
+  "calculation": null,
+  "applied_rules": {
+    "anti_farming_active": false,
+    "invalid_gps": true
   },
-  "motivo_bloqueio": "Deslocamento insuficiente detectado."
+  "block_reason": "Insufficient displacement detected."
 }
 ```
 

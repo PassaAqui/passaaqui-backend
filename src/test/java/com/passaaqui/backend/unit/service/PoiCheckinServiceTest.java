@@ -63,13 +63,13 @@ class PoiCheckinServiceTest {
     @Test
     void checkin_shouldAcquirePessimisticLockOnTourist_andGrantXp() {
         var request = new CheckinRequestDTO(0.05);
-        var calculationResponse = new CheckinResponseDTO(50, null, new AppliedRules(true, false), "Check-in realizado com sucesso");
+        var calculationResponse = new CheckinResponseDTO(50, null, new AppliedRules(true, false), "Check-in successful");
 
         when(poiRepository.findById(1)).thenReturn(Optional.of(poi));
         when(touristRepository.findByIdForUpdate(10)).thenReturn(Optional.of(tourist));
         when(poiVisitRepository.countByPoiIdAndVisitedAtAfterAndUserIdNot(eq(1), any(), eq(10))).thenReturn(0L);
         when(poiVisitRepository.findFirstByPoiIdAndUserIdOrderByVisitedAtDesc(1, 10)).thenReturn(Optional.empty());
-        when(xpCalculationService.calculate(eq(10), eq(1), eq("turistico"), eq(0.05), eq(0), isNull(), eq(50)))
+        when(xpCalculationService.calculate(eq(10), eq(1), eq("tourist"), eq(0.05), eq(0), isNull(), eq(50)))
                 .thenReturn(calculationResponse);
 
         var response = poiCheckinService.checkin(1, 10, request);
@@ -93,7 +93,7 @@ class PoiCheckinServiceTest {
 
         assertNotNull(response);
         assertEquals(0, response.xpGranted());
-        assertEquals("POI não é do tipo turístico", response.blockReason());
+        assertEquals("POI is not a tourist point", response.blockReason());
         verify(touristRepository, never()).findByIdForUpdate(anyInt());
         verify(touristRepository, never()).save(any());
         verify(poiVisitRepository, never()).save(any());
@@ -114,5 +114,28 @@ class PoiCheckinServiceTest {
         when(touristRepository.findByIdForUpdate(10)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> poiCheckinService.checkin(1, 10, request));
+    }
+
+    @Test
+    void checkinResponseDTO_shouldSerializeWithEnglishJsonProperties() throws Exception {
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var calculation = new CheckinResponseDTO.Calculation(3.0, 7.5, 0, 100.0, 750.0, 750);
+        var rules = new CheckinResponseDTO.AppliedRules(false, false);
+        var dto = new CheckinResponseDTO(750, calculation, rules, null);
+
+        String json = mapper.writeValueAsString(dto);
+
+        assertTrue(json.contains("\"xp_granted\":750"));
+        assertTrue(json.contains("\"calculation\":{"));
+        assertTrue(json.contains("\"distance_km\":3.0"));
+        assertTrue(json.contains("\"displacement_factor\":7.5"));
+        assertTrue(json.contains("\"recent_visits\":0"));
+        assertTrue(json.contains("\"invisibility_factor\":100.0"));
+        assertTrue(json.contains("\"raw_xp\":750.0"));
+        assertTrue(json.contains("\"final_xp\":750"));
+        assertTrue(json.contains("\"applied_rules\":{"));
+        assertTrue(json.contains("\"anti_farming_active\":false"));
+        assertTrue(json.contains("\"invalid_gps\":false"));
+        assertTrue(json.contains("\"block_reason\":null"));
     }
 }
