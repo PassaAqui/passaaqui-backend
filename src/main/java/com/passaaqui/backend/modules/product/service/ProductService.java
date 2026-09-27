@@ -60,6 +60,10 @@ public class ProductService {
             throw new ForbiddenException("You can only create products for your own POI");
         }
 
+        if (dto.price() == null || dto.price() < 5.0) {
+            throw new InvalidRequestException("Product price must be at least 5.00");
+        }
+
         ProductModel product = new ProductModel();
         product.setName(dto.name());
         product.setDescription(dto.description());
@@ -135,7 +139,12 @@ public class ProductService {
 
         if (dto.name() != null && !dto.name().isBlank()) product.setName(dto.name());
         if (dto.description() != null && !dto.description().isBlank()) product.setDescription(dto.description());
-        if (dto.price() != null) product.setPrice(dto.price());
+        if (dto.price() != null) {
+            if (dto.price() < 5.0) {
+                throw new InvalidRequestException("Product price must be at least 5.00");
+            }
+            product.setPrice(dto.price());
+        }
 
         var auth = SecurityContextHolder.getContext().getAuthentication();
         boolean isAdmin = auth.getAuthorities() != null && auth.getAuthorities().stream()

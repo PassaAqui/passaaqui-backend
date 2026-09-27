@@ -76,6 +76,26 @@ class ProductControllerTest {
     }
 
     @Test
+    void create_shouldReturn400WhenPriceBelowMinimum() throws Exception {
+        CreateProductDTO dto = new CreateProductDTO("Product", "Desc", 4.99, 10, 5, 1, 1, 1, true, false);
+
+        mockMvc.perform(post("/api/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void update_shouldReturn400WhenPriceBelowMinimum() throws Exception {
+        UpdateProductDTO dto = new UpdateProductDTO(null, null, 3.50, null, null, null, null, null, null, null);
+
+        mockMvc.perform(put("/api/products/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void create_shouldReturn404WhenShopkeeperNotFound() throws Exception {
         CreateProductDTO dto = new CreateProductDTO("Product", "Desc", 10.0, null, null, 999, 1, 1, null, null);
         when(service.create(any(CreateProductDTO.class)))

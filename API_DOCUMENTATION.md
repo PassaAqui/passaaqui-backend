@@ -3408,7 +3408,7 @@ Cria um novo produto associado a um lojista e uma categoria.
 |---|---|---|---|---|
 | name | String | Sim | Não vazio |
 | description | String | Não | — |
-| price | Double | Não | `>= 0` |
+| price | Double | Sim | `>= 5.00` (preço mínimo obrigatório de R$ 5,00) |
 | maxXp | Integer | Não | XP máximo (calculado automaticamente se não informado) |
 | stock | Integer | Não | `>= 0` (padrão: 0) |
 | active | Boolean | Não | Indica se o produto está ativo (padrão: `true`) |
@@ -3652,7 +3652,7 @@ Todos os campos opcionais.
 |---|---|---|---|
 | name | String | — | |
 | description | String | — | |
-| price | Double | — | |
+| price | Double | `>= 5.00` | Se informado, deve ser no mínimo R$ 5,00 |
 | maxXp | Integer | — | Apenas `ADMIN_USER/ROOT` podem definir |
 | stock | Integer | `>= 0` | |
 | active | Boolean | — | |
