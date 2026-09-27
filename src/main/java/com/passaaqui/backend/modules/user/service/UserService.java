@@ -58,4 +58,12 @@ public class UserService {
 
         return userRepository.save(user);
     }
+
+    @Transactional
+    public UserModel updateTheme(Integer id, com.passaaqui.backend.modules.user.model.enums.ThemePreference theme) {
+        UserModel user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        user.setTheme(theme);
+        return userRepository.save(user);
+    }
 }

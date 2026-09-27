@@ -39,6 +39,20 @@ public class TouristController {
         return ResponseEntity.ok(service.findById(userId));
     }
 
+    @GetMapping("/me/travel-history")
+    @PreAuthorize("hasRole('TOURIST')")
+    public ResponseEntity<List<com.passaaqui.backend.modules.poi.dto.PoiTravelHistoryDTO>> myTravelHistory() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.parseInt(authentication.getPrincipal().toString());
+        return ResponseEntity.ok(service.getPoiTravelHistory(userId));
+    }
+
+    @GetMapping("/{identifier}/travel-history")
+    public ResponseEntity<List<com.passaaqui.backend.modules.poi.dto.PoiTravelHistoryDTO>> travelHistoryByIdentifier(@PathVariable String identifier) {
+        TouristModel tourist = service.findByIdOrEmail(identifier);
+        return ResponseEntity.ok(service.getPoiTravelHistory(tourist.getId()));
+    }
+
     @GetMapping("/{identifier}")
     public ResponseEntity<TouristModel> findByIdentifier(@PathVariable String identifier) {
         return ResponseEntity.ok(service.findByIdOrEmail(identifier));

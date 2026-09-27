@@ -197,4 +197,48 @@ class TouristControllerTest {
         mockMvc.perform(delete("/api/tourists/999"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void myTravelHistory_shouldReturn200() throws Exception {
+        com.passaaqui.backend.modules.poi.dto.PoiTravelHistoryDTO historyItem =
+                new com.passaaqui.backend.modules.poi.dto.PoiTravelHistoryDTO(
+                        1, 10, "Cristo Redentor", "Monumento", "http://image.url",
+                        com.passaaqui.backend.modules.poi.model.enums.PoiType.TOURIST_POINT, "Rio de Janeiro", 50, 1.2, java.time.LocalDateTime.now()
+                );
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("1", null, null));
+
+        when(service.getPoiTravelHistory(1)).thenReturn(List.of(historyItem));
+
+        mockMvc.perform(get("/api/tourists/me/travel-history"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].visit_id").value(1))
+                .andExpect(jsonPath("$[0].poi_id").value(10))
+                .andExpect(jsonPath("$[0].poi_name").value("Cristo Redentor"))
+                .andExpect(jsonPath("$[0].city_name").value("Rio de Janeiro"))
+                .andExpect(jsonPath("$[0].xp_earned").value(50));
+    }
+
+    @Test
+    void travelHistoryByIdentifier_shouldReturn200() throws Exception {
+        TouristModel tourist = new TouristModel();
+        tourist.setId(5);
+        tourist.setEmail("tourist5@test.com");
+
+        com.passaaqui.backend.modules.poi.dto.PoiTravelHistoryDTO historyItem =
+                new com.passaaqui.backend.modules.poi.dto.PoiTravelHistoryDTO(
+                        2, 12, "Praia de Boa Viagem", "Praia", "http://image2.url",
+                        com.passaaqui.backend.modules.poi.model.enums.PoiType.TOURIST_POINT, "Recife", 30, 0.5, java.time.LocalDateTime.now()
+                );
+
+        when(service.findByIdOrEmail("5")).thenReturn(tourist);
+        when(service.getPoiTravelHistory(5)).thenReturn(List.of(historyItem));
+
+        mockMvc.perform(get("/api/tourists/5/travel-history"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].visit_id").value(2))
+                .andExpect(jsonPath("$[0].poi_name").value("Praia de Boa Viagem"))
+                .andExpect(jsonPath("$[0].city_name").value("Recife"));
+    }
 }

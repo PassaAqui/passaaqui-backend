@@ -53,6 +53,10 @@ public abstract class UserModel {
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<AuthModel> authSessions;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private com.passaaqui.backend.modules.user.model.enums.ThemePreference theme = com.passaaqui.backend.modules.user.model.enums.ThemePreference.LIGHT;
+
     private String image;
 
     @Transient
