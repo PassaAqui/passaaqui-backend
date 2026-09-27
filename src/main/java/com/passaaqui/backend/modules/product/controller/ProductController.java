@@ -32,7 +32,7 @@ public class ProductController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('SHOPKEEPER', 'ADMIN_USER', 'ADMIN_ROOT')")
-    public ResponseEntity<ProductModel> update(@PathVariable Integer id, @RequestBody UpdateProductDTO dto) {
+    public ResponseEntity<ProductModel> update(@PathVariable Integer id, @RequestBody @Valid UpdateProductDTO dto) {
         return ResponseEntity.ok(service.update(id, dto));
     }
 
