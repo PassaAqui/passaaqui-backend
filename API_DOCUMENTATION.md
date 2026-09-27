@@ -158,6 +158,15 @@ http://localhost:8080/api
 - [`POST /api/products/{id}/images`](#post-apiproductsidimages) `🔒 SHOPKEEPER / ADMIN`
 - [`DELETE /api/products/{id}/images/{index}`](#delete-apiproductsidimagesindex) `🔒 SHOPKEEPER / ADMIN`
 
+### 🏆 Conquistas (Achievements)
+- [`POST /api/achievements`](#post-apiachievements) `🔒 ADMIN`
+- [`PUT /api/achievements/{id}`](#put-apiachievementsid) `🔒 ADMIN`
+- [`DELETE /api/achievements/{id}`](#delete-apiachievementsid) `🔒 ADMIN`
+- [`GET /api/achievements`](#get-apiachievements)
+- [`GET /api/achievements/{id}`](#get-apiachievementsid)
+- [`GET /api/achievements/my`](#get-apiachievementsmy) `🔒 TOURIST`
+- [`POST /api/achievements/{id}/unlock`](#post-apiachievementsidunlock) `🔒 ADMIN / TOURIST`
+
 ### 🛒 Pedidos (Orders)
 - [`POST /api/orders/checkout`](#post-apiorderscheckout)
 - [`GET /api/orders/shopkeeper?status=`](#get-apiordersshopkeeper)
@@ -3791,6 +3800,277 @@ Retorna os detalhes de um produto. Apenas o **lojista proprietário** do produto
 
 ---
 
+## 🏆 Conquistas (Achievements)
+
+### POST /api/achievements
+
+#### Descrição
+
+Cria uma nova conquista no sistema. Permite upload de imagem via MinIO e associação com uma das categorias existentes (`categoryId`).
+
+#### Controller
+
+`AchievementController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER`, `ADMIN_ROOT`
+
+#### Content-Type
+
+`multipart/form-data`
+
+#### Form Data
+
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `data` | JSON (Part) | Sim | Objeto contendo os dados da conquista |
+| `photo` | File (Part) | Não | Foto/ícone da conquista |
+
+**Formato do JSON `data` (`CreateAchievementDTO`):**
+```json
+{
+  "name": "Tapioca real",
+  "description": "Colete para colar",
+  "xp_reward": 50,
+  "category_id": 1
+}
+```
+
+#### Response 201 (Created)
+
+```json
+{
+  "achievement_id": 1,
+  "name": "Tapioca real",
+  "description": "Colete para colar",
+  "photo_url": "http://localhost:9000/passaaqui-bucket/achievements/uuid-photo.jpg",
+  "xp_reward": 50,
+  "category_id": 1,
+  "category_name": "Gastronomia",
+  "unlocked": false,
+  "unlocked_at": null
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Dados de validação inválidos (nome ausente ou em branco) |
+| 401 | Token ausente ou inválido |
+| 403 | Role não autorizada |
+| 404 | Categoria não encontrada |
+| 409 | Já existe conquista com este nome |
+
+---
+
+### PUT /api/achievements/{id}
+
+#### Descrição
+
+Atualiza os dados de uma conquista existente e substitui a foto no MinIO se enviada.
+
+#### Controller
+
+`AchievementController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER`, `ADMIN_ROOT`
+
+#### Content-Type
+
+`multipart/form-data`
+
+#### Form Data
+
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `data` | JSON (Part) | Sim | Objeto `UpdateAchievementDTO` com os campos a atualizar |
+| `photo` | File (Part) | Não | Nova foto da conquista (substitui a anterior) |
+
+#### Response 200 (OK)
+
+Retorna `AchievementResponseDTO` atualizado.
+
+---
+
+### DELETE /api/achievements/{id}
+
+#### Descrição
+
+Exclui uma conquista do sistema, remove sua imagem no MinIO e desvincula as conquistas obtidas pelos usuários.
+
+#### Controller
+
+`AchievementController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER`, `ADMIN_ROOT`
+
+#### Response 204 (No Content)
+
+---
+
+### GET /api/achievements
+
+#### Descrição
+
+Lista todas as conquistas do sistema, com suporte a filtro por categoria (`category_id`). Se a requisição for feita por um usuário autenticado (ou com token Bearer), cada conquista incluirá o status `unlocked: true/false` e a data de desbloqueio `unlocked_at`, permitindo que o aplicativo renderize tanto os cards desbloqueados quanto os bloqueados na tela.
+
+#### Controller
+
+`AchievementController`
+
+#### Autenticação
+
+Pública / Opcional (se autenticado, calcula o status `unlocked` para o turista autenticado).
+
+#### Query Params
+
+| Parâmetro | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `category_id` | Integer | Não | Filtrar por ID de categoria (ex: Gastronomia, Cultura) |
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "achievement_id": 1,
+    "name": "Rio Timbó",
+    "description": "Visite o ponto turístico Rio Timbó",
+    "photo_url": "http://localhost:9000/passaaqui-bucket/achievements/rio-timbo.jpg",
+    "xp_reward": 100,
+    "category_id": 2,
+    "category_name": "Cultura",
+    "unlocked": true,
+    "unlocked_at": "2026-09-20T14:30:00"
+  },
+  {
+    "achievement_id": 2,
+    "name": "Tapioca real",
+    "description": "Colete para colar",
+    "photo_url": "http://localhost:9000/passaaqui-bucket/achievements/tapioca.jpg",
+    "xp_reward": 50,
+    "category_id": 1,
+    "category_name": "Gastronomia",
+    "unlocked": false,
+    "unlocked_at": null
+  }
+]
+```
+
+---
+
+### GET /api/achievements/{id}
+
+#### Descrição
+
+Retorna os detalhes de uma conquista específica pelo seu ID. Se autenticado, indica se o usuário já a desbloqueou.
+
+#### Controller
+
+`AchievementController`
+
+#### Response 200 (OK)
+
+Retorna o objeto `AchievementResponseDTO`.
+
+---
+
+### GET /api/achievements/my
+
+#### Descrição
+
+Retorna a lista **apenas das conquistas desbloqueadas** do turista autenticado.
+
+#### Controller
+
+`AchievementController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "achievement_id": 1,
+    "name": "Rio Timbó",
+    "description": "Visite o ponto turístico Rio Timbó",
+    "photo_url": "http://localhost:9000/passaaqui-bucket/achievements/rio-timbo.jpg",
+    "xp_reward": 100,
+    "category_id": 2,
+    "category_name": "Cultura",
+    "unlocked": true,
+    "unlocked_at": "2026-09-20T14:30:00"
+  }
+]
+```
+
+---
+
+### POST /api/achievements/{id}/unlock
+
+#### Descrição
+
+Desbloqueia uma conquista para um usuário. Turistas desbloqueiam para si mesmos. Administradores podem passar o corpo `{"tourist_id": 123}` para conceder a conquista a um turista específico. Caso a conquista conceda `xp_reward`, o saldo de XP do turista é incrementado automaticamente.
+
+#### Controller
+
+`AchievementController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER`, `ADMIN_ROOT`, `TOURIST`
+
+#### Request Body (Opcional para admin)
+
+```json
+{
+  "tourist_id": 10
+}
+```
+
+#### Response 200 (OK)
+
+Retorna `AchievementResponseDTO` com `unlocked: true` e a data `unlocked_at`.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 404 | Conquista ou turista não encontrado |
+| 409 | Usuário já possui esta conquista desbloqueada |
+
+---
+
 ## 📊 Dashboard
 
 ### GET /api/dashboard
@@ -4484,6 +4764,7 @@ host:localhost:8080
 | Direction | 1 | — | — | — | TOURIST |
 | Route | 4 | — | — | — | TOURIST |
 | Products | 9 | — | 4 | — | SHOPKEEPER / TOURIST |
+| Achievements | 7 | — | 2 | 3 | TOURIST / ADMIN |
 | Orders | 7 | — | 1 | — | TOURIST / SHOPKEEPER |
 | WebSocket (STOMP) | 1 | — | — | — | TOURIST / SHOPKEEPER |
-| **Total** | **65** | **5** | **11** | **29** | **20** |
+| **Total** | **72** | **5** | **13** | **32** | **22** |
