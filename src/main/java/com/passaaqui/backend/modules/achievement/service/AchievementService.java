@@ -31,6 +31,7 @@ public class AchievementService {
     private final UserAchievementRepository userAchievementRepository;
     private final TouristRepository touristRepository;
     private final CategoryRepository categoryRepository;
+    private final com.passaaqui.backend.modules.poi.repository.PoiRepository poiRepository;
     private final StorageService storageService;
 
     @Transactional
@@ -43,11 +44,18 @@ public class AchievementService {
         achievement.setName(dto.name());
         achievement.setDescription(dto.description());
         achievement.setXpReward(dto.xpReward());
+        achievement.setLocation(dto.location());
 
         if (dto.categoryId() != null) {
             CategoryModel category = categoryRepository.findById(dto.categoryId())
                     .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
             achievement.setCategory(category);
+        }
+
+        if (dto.poiId() != null) {
+            com.passaaqui.backend.modules.poi.model.PoiModel poi = poiRepository.findById(dto.poiId())
+                    .orElseThrow(() -> new ResourceNotFoundException("POI not found"));
+            achievement.setPoi(poi);
         }
 
         if (photo != null && !photo.isEmpty()) {
@@ -57,7 +65,7 @@ public class AchievementService {
 
         achievement = achievementRepository.save(achievement);
 
-        return toResponseDTO(achievement, false, null);
+        return toResponseDTO(achievement, null);
     }
 
     @Transactional
@@ -82,10 +90,20 @@ public class AchievementService {
             achievement.setXpReward(dto.xpReward());
         }
 
+        if (dto.location() != null) {
+            achievement.setLocation(dto.location());
+        }
+
         if (dto.categoryId() != null) {
             CategoryModel category = categoryRepository.findById(dto.categoryId())
                     .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
             achievement.setCategory(category);
+        }
+
+        if (dto.poiId() != null) {
+            com.passaaqui.backend.modules.poi.model.PoiModel poi = poiRepository.findById(dto.poiId())
+                    .orElseThrow(() -> new ResourceNotFoundException("POI not found"));
+            achievement.setPoi(poi);
         }
 
         if (photo != null && !photo.isEmpty()) {
@@ -98,7 +116,7 @@ public class AchievementService {
 
         achievement = achievementRepository.save(achievement);
 
-        return toResponseDTO(achievement, false, null);
+        return toResponseDTO(achievement, null);
     }
 
     @Transactional
@@ -120,12 +138,10 @@ public class AchievementService {
 
         if (userId != null) {
             var userAchievement = userAchievementRepository.findByUserIdAndAchievementId(userId, id);
-            boolean unlocked = userAchievement.isPresent();
-            var unlockedAt = userAchievement.map(UserAchievementModel::getUnlockedAt).orElse(null);
-            return toResponseDTO(achievement, unlocked, unlockedAt);
+            return toResponseDTO(achievement, userAchievement.orElse(null));
         }
 
-        return toResponseDTO(achievement, false, null);
+        return toResponseDTO(achievement, null);
     }
 
     public List<AchievementResponseDTO> listAll(Integer userId, Integer categoryId) {
@@ -142,17 +158,12 @@ public class AchievementService {
                     .collect(Collectors.toMap(ua -> ua.getAchievement().getId(), ua -> ua, (a, b) -> a));
 
             return achievements.stream()
-                    .map(achievement -> {
-                        UserAchievementModel ua = userMap.get(achievement.getId());
-                        boolean unlocked = ua != null;
-                        var unlockedAt = ua != null ? ua.getUnlockedAt() : null;
-                        return toResponseDTO(achievement, unlocked, unlockedAt);
-                    })
+                    .map(achievement -> toResponseDTO(achievement, userMap.get(achievement.getId())))
                     .toList();
         }
 
         return achievements.stream()
-                .map(achievement -> toResponseDTO(achievement, false, null))
+                .map(achievement -> toResponseDTO(achievement, null))
                 .toList();
     }
 
@@ -163,12 +174,12 @@ public class AchievementService {
 
         return userAchievementRepository.findByUserId(userId)
                 .stream()
-                .map(ua -> toResponseDTO(ua.getAchievement(), true, ua.getUnlockedAt()))
+                .map(ua -> toResponseDTO(ua.getAchievement(), ua))
                 .toList();
     }
 
     @Transactional
-    public AchievementResponseDTO unlock(Integer achievementId, Integer targetUserId) {
+    public AchievementResponseDTO unlock(Integer achievementId, Integer targetUserId, String location, Integer poiId) {
         AchievementModel achievement = achievementRepository.findById(achievementId)
                 .orElseThrow(() -> new ResourceNotFoundException("Achievement not found"));
 
@@ -179,9 +190,24 @@ public class AchievementService {
             throw new ConflictException("Achievement already unlocked by this user");
         }
 
+        com.passaaqui.backend.modules.poi.model.PoiModel poi = null;
+        if (poiId != null) {
+            poi = poiRepository.findById(poiId)
+                    .orElseThrow(() -> new ResourceNotFoundException("POI not found"));
+        } else if (achievement.getPoi() != null) {
+            poi = achievement.getPoi();
+        }
+
+        String effectiveLocation = location != null && !location.isBlank() ? location : achievement.getLocation();
+        if (effectiveLocation == null && poi != null) {
+            effectiveLocation = poi.getName();
+        }
+
         UserAchievementModel userAchievement = UserAchievementModel.builder()
                 .user(tourist)
                 .achievement(achievement)
+                .location(effectiveLocation)
+                .poi(poi)
                 .build();
 
         userAchievement = userAchievementRepository.save(userAchievement);
@@ -192,13 +218,36 @@ public class AchievementService {
             touristRepository.save(tourist);
         }
 
-        return toResponseDTO(achievement, true, userAchievement.getUnlockedAt());
+        return toResponseDTO(achievement, userAchievement);
     }
 
-    private AchievementResponseDTO toResponseDTO(AchievementModel achievement, boolean unlocked, java.time.LocalDateTime unlockedAt) {
+    private AchievementResponseDTO toResponseDTO(AchievementModel achievement, UserAchievementModel userAchievement) {
         String photoUrl = null;
         if (achievement.getImage() != null && !achievement.getImage().isBlank()) {
             photoUrl = storageService.getFileUrl(achievement.getImage());
+        }
+
+        boolean unlocked = userAchievement != null;
+        java.time.LocalDateTime unlockedAt = userAchievement != null ? userAchievement.getUnlockedAt() : null;
+
+        String location = null;
+        Integer poiId = null;
+        String poiName = null;
+
+        if (userAchievement != null) {
+            location = userAchievement.getLocation();
+            if (userAchievement.getPoi() != null) {
+                poiId = userAchievement.getPoi().getId();
+                poiName = userAchievement.getPoi().getName();
+            }
+        }
+
+        if (location == null) {
+            location = achievement.getLocation();
+        }
+        if (poiId == null && achievement.getPoi() != null) {
+            poiId = achievement.getPoi().getId();
+            poiName = achievement.getPoi().getName();
         }
 
         return new AchievementResponseDTO(
@@ -209,6 +258,9 @@ public class AchievementService {
                 achievement.getXpReward(),
                 achievement.getCategory() != null ? achievement.getCategory().getId() : null,
                 achievement.getCategory() != null ? achievement.getCategory().getName() : null,
+                location,
+                poiId,
+                poiName,
                 unlocked,
                 unlockedAt
         );

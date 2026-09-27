@@ -3852,6 +3852,9 @@ Cria uma nova conquista no sistema. Permite upload de imagem via MinIO e associa
   "xp_reward": 50,
   "category_id": 1,
   "category_name": "Gastronomia",
+  "location": "Mercado São José",
+  "poi_id": 5,
+  "poi_name": "Mercado São José",
   "unlocked": false,
   "unlocked_at": null
 }
@@ -3930,7 +3933,7 @@ Exclui uma conquista do sistema, remove sua imagem no MinIO e desvincula as conq
 
 #### Descrição
 
-Lista todas as conquistas do sistema, com suporte a filtro por categoria (`category_id`). Se a requisição for feita por um usuário autenticado (ou com token Bearer), cada conquista incluirá o status `unlocked: true/false` e a data de desbloqueio `unlocked_at`, permitindo que o aplicativo renderize tanto os cards desbloqueados quanto os bloqueados na tela.
+Lista todas as conquistas do sistema, com suporte a filtro por categoria (`category_id`). Se a requisição for feita por um usuário autenticado (ou com token Bearer), cada conquista incluirá o status `unlocked: true/false`, a data de desbloqueio `unlocked_at`, e o local/POI onde foi obtida (`location`, `poi_id`, `poi_name`), permitindo que o aplicativo renderize os detalhes completos do modal e dos cards.
 
 #### Controller
 
@@ -3953,13 +3956,16 @@ Pública / Opcional (se autenticado, calcula o status `unlocked` para o turista 
   {
     "achievement_id": 1,
     "name": "Rio Timbó",
-    "description": "Visite o ponto turístico Rio Timbó",
+    "description": "Uma iguaria digna da realeza, feita com a goma mais pura de Pernambuco e recheio de tradição.",
     "photo_url": "http://localhost:9000/passaaqui-bucket/achievements/rio-timbo.jpg",
     "xp_reward": 100,
     "category_id": 2,
     "category_name": "Cultura",
+    "location": "Mercado São José",
+    "poi_id": 5,
+    "poi_name": "Mercado São José",
     "unlocked": true,
-    "unlocked_at": "2026-09-20T14:30:00"
+    "unlocked_at": "2026-01-01T10:00:00"
   },
   {
     "achievement_id": 2,
@@ -3969,6 +3975,9 @@ Pública / Opcional (se autenticado, calcula o status `unlocked` para o turista 
     "xp_reward": 50,
     "category_id": 1,
     "category_name": "Gastronomia",
+    "location": null,
+    "poi_id": null,
+    "poi_name": null,
     "unlocked": false,
     "unlocked_at": null
   }
@@ -3981,7 +3990,7 @@ Pública / Opcional (se autenticado, calcula o status `unlocked` para o turista 
 
 #### Descrição
 
-Retorna os detalhes de uma conquista específica pelo seu ID. Se autenticado, indica se o usuário já a desbloqueou.
+Retorna os detalhes de uma conquista específica pelo seu ID. Se autenticado, indica se o usuário já a desbloqueou, com `location`, `poi_id`, `poi_name`, `unlocked_at`.
 
 #### Controller
 
@@ -3997,7 +4006,7 @@ Retorna o objeto `AchievementResponseDTO`.
 
 #### Descrição
 
-Retorna a lista **apenas das conquistas desbloqueadas** do turista autenticado.
+Retorna a lista **apenas das conquistas desbloqueadas** do turista autenticado contendo nome, imagem, descrição, local em que obteve a conquista e data de obtenção.
 
 #### Controller
 
@@ -4018,13 +4027,16 @@ Apenas `TOURIST`
   {
     "achievement_id": 1,
     "name": "Rio Timbó",
-    "description": "Visite o ponto turístico Rio Timbó",
+    "description": "Uma iguaria digna da realeza, feita com a goma mais pura de Pernambuco e recheio de tradição.",
     "photo_url": "http://localhost:9000/passaaqui-bucket/achievements/rio-timbo.jpg",
     "xp_reward": 100,
     "category_id": 2,
     "category_name": "Cultura",
+    "location": "Mercado São José",
+    "poi_id": 5,
+    "poi_name": "Mercado São José",
     "unlocked": true,
-    "unlocked_at": "2026-09-20T14:30:00"
+    "unlocked_at": "2026-01-01T10:00:00"
   }
 ]
 ```
@@ -4035,7 +4047,7 @@ Apenas `TOURIST`
 
 #### Descrição
 
-Desbloqueia uma conquista para um usuário. Turistas desbloqueiam para si mesmos. Administradores podem passar o corpo `{"tourist_id": 123}` para conceder a conquista a um turista específico. Caso a conquista conceda `xp_reward`, o saldo de XP do turista é incrementado automaticamente.
+Desbloqueia uma conquista para um usuário. Turistas desbloqueiam para si mesmos. Administradores podem passar o corpo com `tourist_id`. Permite também registrar o local (`location`) e o ponto de interesse (`poi_id`) onde a conquista foi obtida. Caso a conquista conceda `xp_reward`, o saldo de XP do turista é incrementado automaticamente.
 
 #### Controller
 
@@ -4049,17 +4061,19 @@ Desbloqueia uma conquista para um usuário. Turistas desbloqueiam para si mesmos
 
 `ADMIN_USER`, `ADMIN_ROOT`, `TOURIST`
 
-#### Request Body (Opcional para admin)
+#### Request Body (Opcional)
 
 ```json
 {
-  "tourist_id": 10
+  "tourist_id": 10,
+  "location": "Mercado São José",
+  "poi_id": 5
 }
 ```
 
 #### Response 200 (OK)
 
-Retorna `AchievementResponseDTO` com `unlocked: true` e a data `unlocked_at`.
+Retorna `AchievementResponseDTO` com `unlocked: true`, `location`, `poi_id`, `poi_name` e a data `unlocked_at`.
 
 #### Possíveis Erros
 

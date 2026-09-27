@@ -47,6 +47,9 @@ class AchievementServiceTest {
     private CategoryRepository categoryRepository;
 
     @Mock
+    private com.passaaqui.backend.modules.poi.repository.PoiRepository poiRepository;
+
+    @Mock
     private StorageService storageService;
 
     @InjectMocks
@@ -54,6 +57,7 @@ class AchievementServiceTest {
 
     private AchievementModel achievement;
     private CategoryModel category;
+    private com.passaaqui.backend.modules.poi.model.PoiModel poi;
     private TouristModel tourist;
     private MockMultipartFile photo;
 
@@ -63,11 +67,17 @@ class AchievementServiceTest {
         category.setId(1);
         category.setName("Gastronomia");
 
+        poi = new com.passaaqui.backend.modules.poi.model.PoiModel();
+        poi.setId(5);
+        poi.setName("Mercado São José");
+
         achievement = new AchievementModel();
         achievement.setId(1);
         achievement.setName("Tapioca real");
         achievement.setDescription("Colete para colar");
         achievement.setCategory(category);
+        achievement.setPoi(poi);
+        achievement.setLocation("Mercado São José");
         achievement.setXpReward(50);
         achievement.setImage("tapioca.jpg");
 
@@ -80,10 +90,11 @@ class AchievementServiceTest {
 
     @Test
     void create_shouldCreateAchievement_whenValidInput() {
-        CreateAchievementDTO dto = new CreateAchievementDTO("Tapioca real", "Colete para colar", 50, 1);
+        CreateAchievementDTO dto = new CreateAchievementDTO("Tapioca real", "Colete para colar", 50, 1, "Mercado São José", 5);
 
         when(achievementRepository.existsByNameIgnoreCase("Tapioca real")).thenReturn(false);
         when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
+        when(poiRepository.findById(5)).thenReturn(Optional.of(poi));
         when(storageService.uploadFile(eq(photo), eq("achievements"))).thenReturn("tapioca.jpg");
         when(achievementRepository.save(any(AchievementModel.class))).thenAnswer(i -> {
             AchievementModel m = i.getArgument(0);
@@ -97,6 +108,9 @@ class AchievementServiceTest {
         assertNotNull(result);
         assertEquals("Tapioca real", result.name());
         assertEquals("Colete para colar", result.description());
+        assertEquals("Mercado São José", result.location());
+        assertEquals(5, result.poiId());
+        assertEquals("Mercado São José", result.poiName());
         assertEquals(50, result.xpReward());
         assertEquals("Gastronomia", result.categoryName());
         assertEquals("http://storage/tapioca.jpg", result.photoUrl());
@@ -105,7 +119,7 @@ class AchievementServiceTest {
 
     @Test
     void create_shouldThrowConflict_whenNameAlreadyExists() {
-        CreateAchievementDTO dto = new CreateAchievementDTO("Tapioca real", "Colete para colar", 50, 1);
+        CreateAchievementDTO dto = new CreateAchievementDTO("Tapioca real", "Colete para colar", 50, 1, "Mercado São José", 5);
         when(achievementRepository.existsByNameIgnoreCase("Tapioca real")).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> achievementService.create(dto, photo));
@@ -113,11 +127,12 @@ class AchievementServiceTest {
 
     @Test
     void update_shouldUpdateAchievement_whenValid() {
-        UpdateAchievementDTO dto = new UpdateAchievementDTO("Tapioca Real Atualizada", "Nova descrição", 100, 1);
+        UpdateAchievementDTO dto = new UpdateAchievementDTO("Tapioca Real Atualizada", "Nova descrição", 100, 1, "Recife Antigo", 5);
 
         when(achievementRepository.findById(1)).thenReturn(Optional.of(achievement));
         when(achievementRepository.findByNameIgnoreCase("Tapioca Real Atualizada")).thenReturn(Optional.empty());
         when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
+        when(poiRepository.findById(5)).thenReturn(Optional.of(poi));
         when(storageService.uploadFile(eq(photo), eq("achievements"))).thenReturn("nova-foto.jpg");
         when(achievementRepository.save(any(AchievementModel.class))).thenAnswer(i -> i.getArgument(0));
         when(storageService.getFileUrl("nova-foto.jpg")).thenReturn("http://storage/nova-foto.jpg");
@@ -126,6 +141,7 @@ class AchievementServiceTest {
 
         assertNotNull(result);
         assertEquals("Tapioca Real Atualizada", result.name());
+        assertEquals("Recife Antigo", result.location());
         assertEquals(100, result.xpReward());
         verify(storageService).deleteFile("tapioca.jpg");
     }
@@ -147,6 +163,8 @@ class AchievementServiceTest {
                 .id(1)
                 .user(tourist)
                 .achievement(achievement)
+                .location("Mercado São José")
+                .poi(poi)
                 .unlockedAt(LocalDateTime.of(2026, 4, 1, 12, 0))
                 .build();
 
@@ -158,6 +176,9 @@ class AchievementServiceTest {
 
         assertEquals(1, list.size());
         assertTrue(list.get(0).unlocked());
+        assertEquals("Mercado São José", list.get(0).location());
+        assertEquals(5, list.get(0).poiId());
+        assertEquals("Mercado São José", list.get(0).poiName());
         assertEquals(LocalDateTime.of(2026, 4, 1, 12, 0), list.get(0).unlockedAt());
     }
 
@@ -165,6 +186,7 @@ class AchievementServiceTest {
     void unlock_shouldUnlockAchievementAndAddXpToTourist() {
         when(achievementRepository.findById(1)).thenReturn(Optional.of(achievement));
         when(touristRepository.findById(10)).thenReturn(Optional.of(tourist));
+        when(poiRepository.findById(5)).thenReturn(Optional.of(poi));
         when(userAchievementRepository.existsByUserIdAndAchievementId(10, 1)).thenReturn(false);
         when(userAchievementRepository.save(any(UserAchievementModel.class))).thenAnswer(i -> {
             UserAchievementModel m = i.getArgument(0);
@@ -172,9 +194,11 @@ class AchievementServiceTest {
             return m;
         });
 
-        AchievementResponseDTO result = achievementService.unlock(1, 10);
+        AchievementResponseDTO result = achievementService.unlock(1, 10, "Mercado São José", 5);
 
         assertTrue(result.unlocked());
+        assertEquals("Mercado São José", result.location());
+        assertEquals(5, result.poiId());
         assertEquals(150, tourist.getCurrentXP());
         verify(touristRepository).save(tourist);
     }
@@ -185,6 +209,6 @@ class AchievementServiceTest {
         when(touristRepository.findById(10)).thenReturn(Optional.of(tourist));
         when(userAchievementRepository.existsByUserIdAndAchievementId(10, 1)).thenReturn(true);
 
-        assertThrows(ConflictException.class, () -> achievementService.unlock(1, 10));
+        assertThrows(ConflictException.class, () -> achievementService.unlock(1, 10, null, null));
     }
 }

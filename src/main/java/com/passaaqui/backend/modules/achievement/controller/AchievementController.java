@@ -81,11 +81,18 @@ public class AchievementController {
                 .anyMatch(a -> a.getAuthority().startsWith("ROLE_ADMIN"));
 
         Integer targetUserId = currentUserId;
-        if (isAdmin && requestDTO != null && requestDTO.touristId() != null) {
-            targetUserId = requestDTO.touristId();
+        String location = null;
+        Integer poiId = null;
+
+        if (requestDTO != null) {
+            location = requestDTO.location();
+            poiId = requestDTO.poiId();
+            if (isAdmin && requestDTO.touristId() != null) {
+                targetUserId = requestDTO.touristId();
+            }
         }
 
-        return ResponseEntity.ok(achievementService.unlock(id, targetUserId));
+        return ResponseEntity.ok(achievementService.unlock(id, targetUserId, location, poiId));
     }
 
     private Integer getCurrentUserIdOrNull() {

@@ -27,6 +27,15 @@ public record AchievementResponseDTO(
     @JsonProperty("category_name")
     String categoryName,
 
+    @JsonProperty("location")
+    String location,
+
+    @JsonProperty("poi_id")
+    Integer poiId,
+
+    @JsonProperty("poi_name")
+    String poiName,
+
     @JsonProperty("unlocked")
     boolean unlocked,
 

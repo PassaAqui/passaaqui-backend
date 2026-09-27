@@ -42,6 +42,13 @@ public class AchievementModel {
     @JoinColumn(name = "category_id")
     private CategoryModel category;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "poi_id")
+    private com.passaaqui.backend.modules.poi.model.PoiModel poi;
+
+    @Column(name = "location_name")
+    private String location;
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;

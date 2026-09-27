@@ -14,5 +14,11 @@ public record UpdateAchievementDTO(
     Integer xpReward,
 
     @JsonProperty("category_id")
-    Integer categoryId
+    Integer categoryId,
+
+    @Size(max = 200, message = "Location must not exceed 200 characters")
+    String location,
+
+    @JsonProperty("poi_id")
+    Integer poiId
 ) {}
