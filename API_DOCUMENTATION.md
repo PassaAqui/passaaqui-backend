@@ -82,6 +82,7 @@ http://localhost:8080/api
 ### 👤 Usuários
 - [`GET /api/users`](#get-apiusers)
 - [`GET /api/users/{identifier}`](#get-apiusersidentifier)
+- [`PATCH /api/users/theme`](#patch-apiuserstheme)
 
 ### 🛡️ Administradores
 - [`POST /api/admin`](#post-apiadmin)
@@ -94,7 +95,9 @@ http://localhost:8080/api
 ### 🏖️ Turistas
 - [`GET /api/tourists`](#get-apitourists)
 - [`GET /api/tourists/me`](#get-apitouristsme)
+- [`GET /api/tourists/me/travel-history`](#get-apitouristsmetravel-history)
 - [`GET /api/tourists/{identifier}`](#get-apitouristsidentifier)
+- [`GET /api/tourists/{identifier}/travel-history`](#get-apitouristsidentifiertravel-history)
 - [`PUT /api/tourists/{identifier}`](#put-apitouristsidentifier)
 - [`DELETE /api/tourists/{identifier}`](#delete-apitouristsidentifier)
 
@@ -949,6 +952,71 @@ Mesmo problema do endpoint anterior — `@PreAuthorize("hasRole('ROLE_ADMIN')")`
 
 ---
 
+### PATCH /api/users/theme
+
+#### Descrição
+
+Atualiza a preferência de tema visual (`LIGHT` ou `DARK`) do usuário autenticado (turista, lojista ou admin).
+
+#### Controller
+
+`UserController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Qualquer usuário autenticado (`TOURIST`, `SHOPKEEPER`, `ADMIN_USER`, `ADMIN_ROOT`)
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `application/json` |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação / Valores aceitos |
+|---|---|---|---|
+| `theme` | String (enum) | Sim | `LIGHT` ou `DARK` |
+
+**Exemplo:**
+
+```json
+{
+  "theme": "DARK"
+}
+```
+
+#### Response 200 (OK)
+
+Retorna o objeto do usuário com o tema atualizado.
+
+```json
+{
+  "id": 1,
+  "email": "turista@email.com",
+  "name": "João Turista",
+  "role": "TOURIST",
+  "theme": "DARK",
+  "createdAt": "2026-05-24T10:00:00",
+  "updatedAt": "2026-05-24T12:00:00"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Campo `theme` ausente ou inválido |
+| 401 | Token ausente ou inválido |
+| 404 | Usuário não encontrado |
+
+---
+
 ## 🛡️ Administradores
 
 ### POST /api/admin
@@ -1355,6 +1423,7 @@ Apenas `TOURIST`
   "email": "turista@email.com",
   "name": "João Turista",
   "role": "TOURIST",
+  "theme": "LIGHT",
   "createdAt": "2026-05-24T10:00:00",
   "updatedAt": "2026-05-24T10:00:00",
   "deviceId": null,
@@ -1363,6 +1432,59 @@ Apenas `TOURIST`
   "currentXP": 0,
   "level": 0
 }
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+| 404 | Turista não encontrado |
+
+---
+
+### GET /api/tourists/me/travel-history
+
+#### Descrição
+
+Retorna o histórico de viagens e visitas a POIs do **turista autenticado**, ordenado do mais recente para o mais antigo.
+
+#### Controller
+
+`TouristController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "visit_id": 1,
+    "poi_id": 10,
+    "poi_name": "Cristo Redentor",
+    "poi_description": "Monumento e ponto turístico histórico",
+    "image_url": "http://localhost:9000/passaaqui-bucket/pois/10.jpg",
+    "poi_type": "TOURIST_POINT",
+    "city_name": "Rio de Janeiro",
+    "xp_earned": 50,
+    "distance_km": 1.25,
+    "visited_at": "2026-05-24T14:30:00"
+  }
+]
 ```
 
 #### Possíveis Erros
@@ -1407,6 +1529,7 @@ Retorna um turista por **ID** ou **e-mail**.
   "email": "turista@email.com",
   "name": "João Turista",
   "role": "TOURIST",
+  "theme": "LIGHT",
   "createdAt": "2026-05-24T10:00:00",
   "updatedAt": "2026-05-24T10:00:00",
   "deviceId": null,
@@ -1415,6 +1538,60 @@ Retorna um turista por **ID** ou **e-mail**.
   "currentXP": 0,
   "level": 0
 }
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Formato do `identifier` inválido |
+| 401 | Token ausente ou inválido |
+| 403 | Role não autorizada |
+| 404 | Turista não encontrado |
+
+---
+
+### GET /api/tourists/{identifier}/travel-history
+
+#### Descrição
+
+Retorna o histórico de viagens e visitas a POIs de um turista identificado por **ID** ou **e-mail**.
+
+#### Controller
+
+`TouristController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `identifier` | String | ID ou e-mail do turista |
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "visit_id": 1,
+    "poi_id": 10,
+    "poi_name": "Cristo Redentor",
+    "poi_description": "Monumento e ponto turístico histórico",
+    "image_url": "http://localhost:9000/passaaqui-bucket/pois/10.jpg",
+    "poi_type": "TOURIST_POINT",
+    "city_name": "Rio de Janeiro",
+    "xp_earned": 50,
+    "distance_km": 1.25,
+    "visited_at": "2026-05-24T14:30:00"
+  }
+]
 ```
 
 #### Possíveis Erros
@@ -1459,6 +1636,7 @@ Atualiza dados de um turista.
 | name | String | Sim | Não vazio |
 | password | String | Não | Se preenchido, deve seguir a regra de senha |
 | documentId | String | Sim | Não vazio |
+| theme | String (enum) | Não | `LIGHT` ou `DARK` |
 
 **Exemplo:**
 
@@ -1466,7 +1644,8 @@ Atualiza dados de um turista.
 {
   "name": "João Atualizado",
   "password": "Nova@Senha1",
-  "documentId": "98765432100"
+  "documentId": "98765432100",
+  "theme": "DARK"
 }
 ```
 
@@ -1478,6 +1657,7 @@ Atualiza dados de um turista.
   "email": "turista@email.com",
   "name": "João Atualizado",
   "role": "TOURIST",
+  "theme": "DARK",
   "createdAt": "2026-05-24T10:00:00",
   "updatedAt": "2026-05-24T12:00:00",
   "documentId": "98765432100",
@@ -1612,6 +1792,7 @@ Apenas `SHOPKEEPER`
   "email": "lojista@email.com",
   "name": "Maria Lojista",
   "role": "SHOPKEEPER",
+  "theme": "LIGHT",
   "createdAt": "2026-05-24T10:01:00",
   "updatedAt": "2026-05-24T10:01:00",
   "documentId": "11222333000181",
@@ -1708,6 +1889,7 @@ Atualiza dados de um lojista.
 | companyName | String | Não | — |
 | description | String | Não | — |
 | categoryId | Integer | Não | Deve ser um ID de categoria existente |
+| theme | String (enum) | Não | `LIGHT` ou `DARK` |
 
 **Exemplo:**
 
@@ -1715,7 +1897,8 @@ Atualiza dados de um lojista.
 {
   "name": "Maria Atualizada",
   "companyName": "Novo Comércio",
-  "categoryId": 2
+  "categoryId": 2,
+  "theme": "DARK"
 }
 ```
 

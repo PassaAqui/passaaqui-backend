@@ -54,4 +54,15 @@ public class UserController {
         }
         return ResponseEntity.ok(user);
     }
+
+    @PatchMapping("/theme")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UserModel> updateTheme(@RequestBody @jakarta.validation.Valid com.passaaqui.backend.modules.user.dto.UpdateThemeDTO dto) {
+        Integer userId = Integer.parseInt(org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString());
+        UserModel user = service.updateTheme(userId, dto.theme());
+        if (user.getImage() != null) {
+            user.setImageUrl(storageService.getFileUrl(user.getImage()));
+        }
+        return ResponseEntity.ok(user);
+    }
 }

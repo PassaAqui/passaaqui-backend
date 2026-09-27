@@ -11,4 +11,6 @@ public interface PoiVisitRepository extends JpaRepository<PoiVisitModel, Integer
     long countByPoiIdAndVisitedAtAfterAndUserIdNot(Integer poiId, LocalDateTime since, Integer userId);
 
     Optional<PoiVisitModel> findFirstByPoiIdAndUserIdOrderByVisitedAtDesc(Integer poiId, Integer userId);
+
+    java.util.List<PoiVisitModel> findByUserIdOrderByVisitedAtDesc(Integer userId);
 }

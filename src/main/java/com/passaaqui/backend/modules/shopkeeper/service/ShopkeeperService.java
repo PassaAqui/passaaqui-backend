@@ -128,6 +128,9 @@ public class ShopkeeperService {
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
             shopkeeper.setCategory(category);
         }
+        if (dto.theme() != null) {
+            shopkeeper.setTheme(dto.theme());
+        }
         return repository.save(shopkeeper);
     }
 

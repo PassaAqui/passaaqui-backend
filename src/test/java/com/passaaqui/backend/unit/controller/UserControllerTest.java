@@ -183,4 +183,27 @@ class UserControllerTest {
                         }))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void updateTheme_shouldReturn200() throws Exception {
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("1", null, null));
+
+        com.passaaqui.backend.modules.user.dto.UpdateThemeDTO dto =
+                new com.passaaqui.backend.modules.user.dto.UpdateThemeDTO(com.passaaqui.backend.modules.user.model.enums.ThemePreference.DARK);
+
+        UserModel user = new UserModel() {};
+        user.setId(1);
+        user.setName("User");
+        user.setEmail("user@test.com");
+        user.setTheme(com.passaaqui.backend.modules.user.model.enums.ThemePreference.DARK);
+
+        when(service.updateTheme(1, com.passaaqui.backend.modules.user.model.enums.ThemePreference.DARK)).thenReturn(user);
+
+        mockMvc.perform(patch("/api/users/theme")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.theme").value("DARK"));
+    }
 }
