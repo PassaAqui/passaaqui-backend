@@ -36,6 +36,25 @@ public class ProductRatingModel {
     @Column(nullable = false)
     private Integer rating;
 
+    @Column(columnDefinition = "TEXT")
+    private String comment;
+
+    @Column(length = 20)
+    private String orderCode;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "product_rating_images", joinColumns = @JoinColumn(name = "rating_id"))
+    @Column(name = "image_name")
+    private java.util.List<String> images = new java.util.ArrayList<>();
+
+    private String video;
+
+    @Transient
+    private java.util.List<String> imageUrls;
+
+    @Transient
+    private String videoUrl;
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;

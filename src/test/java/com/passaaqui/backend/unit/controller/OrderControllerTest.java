@@ -245,6 +245,7 @@ class OrderControllerTest {
     @Test
     void getPurchasedProducts_shouldReturn200() throws Exception {
         var unredeemedItem = new com.passaaqui.backend.modules.order.dto.PurchasedProductItemDTO(
+                1,
                 "#A3F92",
                 "Tapioca Clássica",
                 "http://images/tapioca.jpg",
@@ -254,6 +255,7 @@ class OrderControllerTest {
         );
 
         var redeemedItem = new com.passaaqui.backend.modules.order.dto.PurchasedProductItemDTO(
+                2,
                 "#B7C21",
                 "Vaso de Cerâmica",
                 "http://images/vaso.jpg",
@@ -272,12 +274,14 @@ class OrderControllerTest {
         mockMvc.perform(get("/api/orders/purchased-products"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.unredeemed").isArray())
+                .andExpect(jsonPath("$.unredeemed[0].product_id").value(1))
                 .andExpect(jsonPath("$.unredeemed[0].order_id").value("#A3F92"))
                 .andExpect(jsonPath("$.unredeemed[0].product_name").value("Tapioca Clássica"))
                 .andExpect(jsonPath("$.unredeemed[0].image_url").value("http://images/tapioca.jpg"))
                 .andExpect(jsonPath("$.unredeemed[0].status").value("UNREDEEMED"))
                 .andExpect(jsonPath("$.unredeemed[0].expiration_date").value("2026-04-20"))
                 .andExpect(jsonPath("$.redeemed").isArray())
+                .andExpect(jsonPath("$.redeemed[0].product_id").value(2))
                 .andExpect(jsonPath("$.redeemed[0].order_id").value("#B7C21"))
                 .andExpect(jsonPath("$.redeemed[0].product_name").value("Vaso de Cerâmica"))
                 .andExpect(jsonPath("$.redeemed[0].image_url").value("http://images/vaso.jpg"))

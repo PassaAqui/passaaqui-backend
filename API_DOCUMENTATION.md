@@ -3612,7 +3612,9 @@ Retorna o `ProductModel` atualizado com a lista de imagens restante.
 
 #### Descrição
 
-Avalia um produto com nota de 0 a 5. Cada turista só pode avaliar o mesmo produto **uma vez** (chamadas subsequentes atualizam a nota). Após a avaliação, os campos `averageRating` e `ratingsCount` do produto são recalculados automaticamente.
+Avalia um produto resgatado/adquirido com nota de 1 a 5, comentário opcional, identificador do pedido e mídias (fotos e/ou vídeo).
+**Regra obrigatória:** É obrigatório fornecer ao menos **1 imagem** ou **1 vídeo**. As imagens e o vídeo são enviados e armazenados no MinIO.
+Cada turista só pode avaliar o mesmo produto **uma vez** (chamadas subsequentes atualizam a nota, comentários e mídias). Após a avaliação, os campos `averageRating` e `ratingsCount` do produto são recalculados automaticamente.
 
 #### Controller
 
@@ -3632,19 +3634,37 @@ Apenas `TOURIST`
 |---|---|---|
 | `productId` | Integer | ID do produto |
 
-#### Request Body
+#### Content-Type
 
-| Campo | Tipo | Validação |
-|---|---|---|
-| `rating` | Integer | `0` a `5` (obrigatório) |
+`multipart/form-data`
+
+#### Form Data (Parâmetros de Requisição)
+
+| Campo | Tipo | Obrigatório | Validação / Descrição |
+|---|---|---|---|
+| `rating` | Integer | Sim | `1` a `5` (nota do produto) |
+| `comment` | String | Não | Texto de avaliação (máx. 1000 caracteres) |
+| `order_id` | String | Não | Código do pedido (ex: `"#A3F92"`) |
+| `photos` | File[] (Multipart) | Condicional | Lista de imagens (jpg, png, etc.) |
+| `video` | File (Multipart) | Condicional | Arquivo de vídeo (mp4, etc.) |
+
+> ⚠️ **Atenção:** É obrigatório fornecer ao menos um arquivo em `photos` ou em `video`.
 
 #### Response 200 (OK)
 
 ```json
 {
   "id": 1,
-  "rating": 4,
-  "createdAt": "2026-05-24T15:00:00"
+  "product_id": 10,
+  "product_name": "Tapioca Clássica",
+  "order_id": "#A3F92",
+  "rating": 5,
+  "comment": "Muito saborosa e crocante!",
+  "photos": [
+    "http://localhost:9000/test-bucket/ratings/images/uuid-photo1.jpg"
+  ],
+  "video": "http://localhost:9000/test-bucket/ratings/videos/uuid-video.mp4",
+  "created_at": "2026-05-24T15:00:00"
 }
 ```
 
@@ -3652,7 +3672,8 @@ Apenas `TOURIST`
 
 | Status | Motivo |
 |---|---|
-| 400 | Rating fora do intervalo 0-5 |
+| 400 | Rating fora do intervalo 1-5 |
+| 400 | Nenhuma foto ou vídeo fornecido |
 | 401 | Token ausente ou inválido |
 | 403 | Role não é TOURIST |
 | 404 | Produto não encontrado |
@@ -3663,7 +3684,7 @@ Apenas `TOURIST`
 
 #### Descrição
 
-Retorna a lista de avaliações de um produto.
+Retorna a lista de avaliações de um produto com URLs das fotos e vídeos geradas via MinIO.
 
 #### Controller
 
@@ -3685,8 +3706,16 @@ Retorna a lista de avaliações de um produto.
 [
   {
     "id": 1,
-    "rating": 4,
-    "createdAt": "2026-05-24T15:00:00"
+    "product_id": 10,
+    "product_name": "Tapioca Clássica",
+    "order_id": "#A3F92",
+    "rating": 5,
+    "comment": "Muito saborosa e crocante!",
+    "photos": [
+      "http://localhost:9000/test-bucket/ratings/images/uuid-photo1.jpg"
+    ],
+    "video": "http://localhost:9000/test-bucket/ratings/videos/uuid-video.mp4",
+    "created_at": "2026-05-24T15:00:00"
   }
 ]
 ```

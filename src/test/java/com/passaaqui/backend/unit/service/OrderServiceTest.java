@@ -394,6 +394,7 @@ class OrderServiceTest {
         assertEquals(1, response.redeemed().size());
 
         var unredeemedItem = response.unredeemed().get(0);
+        assertEquals(1, unredeemedItem.productId());
         assertEquals("#A3F92", unredeemedItem.orderId());
         assertEquals("Test Product", unredeemedItem.productName());
         assertEquals("http://images/tapioca.jpg", unredeemedItem.imageUrl());
@@ -402,6 +403,7 @@ class OrderServiceTest {
         assertNull(unredeemedItem.redemptionDate());
 
         var redeemedItem = response.redeemed().get(0);
+        assertEquals(1, redeemedItem.productId());
         assertEquals("#B7C21", redeemedItem.orderId());
         assertEquals("Test Product", redeemedItem.productName());
         assertEquals(com.passaaqui.backend.modules.order.model.enums.RedemptionStatus.REDEEMED, redeemedItem.status());

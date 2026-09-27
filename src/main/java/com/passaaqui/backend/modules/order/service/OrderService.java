@@ -279,6 +279,7 @@ public class OrderService {
                         : (order.getUpdatedAt() != null ? order.getUpdatedAt().toLocalDate() : (order.getCreatedAt() != null ? order.getCreatedAt().toLocalDate() : null));
 
                 redeemed.add(new PurchasedProductItemDTO(
+                        order.getProduct() != null ? order.getProduct().getId() : null,
                         orderCode,
                         order.getProduct() != null ? order.getProduct().getName() : null,
                         imageUrl,
@@ -292,6 +293,7 @@ public class OrderService {
                         : (order.getCreatedAt() != null ? order.getCreatedAt().plusDays(30).toLocalDate() : null);
 
                 unredeemed.add(new PurchasedProductItemDTO(
+                        order.getProduct() != null ? order.getProduct().getId() : null,
                         orderCode,
                         order.getProduct() != null ? order.getProduct().getName() : null,
                         imageUrl,

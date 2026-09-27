@@ -7,6 +7,9 @@ import com.passaaqui.backend.modules.order.model.enums.RedemptionStatus;
 import java.time.LocalDate;
 
 public record PurchasedProductItemDTO(
+    @JsonProperty("product_id")
+    Integer productId,
+
     @JsonProperty("order_id")
     String orderId,
 
