@@ -397,14 +397,14 @@ class OrderServiceTest {
         assertEquals("#A3F92", unredeemedItem.orderId());
         assertEquals("Test Product", unredeemedItem.productName());
         assertEquals("http://images/tapioca.jpg", unredeemedItem.imageUrl());
-        assertEquals(com.passaaqui.backend.modules.order.model.enums.RedemptionStatus.NAO_RESGATADO, unredeemedItem.status());
+        assertEquals(com.passaaqui.backend.modules.order.model.enums.RedemptionStatus.UNREDEEMED, unredeemedItem.status());
         assertEquals(java.time.LocalDate.of(2026, 4, 20), unredeemedItem.expirationDate());
         assertNull(unredeemedItem.redemptionDate());
 
         var redeemedItem = response.redeemed().get(0);
         assertEquals("#B7C21", redeemedItem.orderId());
         assertEquals("Test Product", redeemedItem.productName());
-        assertEquals(com.passaaqui.backend.modules.order.model.enums.RedemptionStatus.RESGATADO, redeemedItem.status());
+        assertEquals(com.passaaqui.backend.modules.order.model.enums.RedemptionStatus.REDEEMED, redeemedItem.status());
         assertNull(redeemedItem.expirationDate());
         assertEquals(java.time.LocalDate.of(2026, 4, 25), redeemedItem.redemptionDate());
     }

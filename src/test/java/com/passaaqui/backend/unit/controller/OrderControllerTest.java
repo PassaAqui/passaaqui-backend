@@ -248,7 +248,7 @@ class OrderControllerTest {
                 "#A3F92",
                 "Tapioca Clássica",
                 "http://images/tapioca.jpg",
-                com.passaaqui.backend.modules.order.model.enums.RedemptionStatus.NAO_RESGATADO,
+                com.passaaqui.backend.modules.order.model.enums.RedemptionStatus.UNREDEEMED,
                 java.time.LocalDate.of(2026, 4, 20),
                 null
         );
@@ -257,7 +257,7 @@ class OrderControllerTest {
                 "#B7C21",
                 "Vaso de Cerâmica",
                 "http://images/vaso.jpg",
-                com.passaaqui.backend.modules.order.model.enums.RedemptionStatus.RESGATADO,
+                com.passaaqui.backend.modules.order.model.enums.RedemptionStatus.REDEEMED,
                 null,
                 java.time.LocalDate.of(2026, 4, 25)
         );
@@ -271,17 +271,17 @@ class OrderControllerTest {
 
         mockMvc.perform(get("/api/orders/purchased-products"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nao_resgatados").isArray())
-                .andExpect(jsonPath("$.nao_resgatados[0].id_pedido").value("#A3F92"))
-                .andExpect(jsonPath("$.nao_resgatados[0].nome_produto").value("Tapioca Clássica"))
-                .andExpect(jsonPath("$.nao_resgatados[0].imagem_url").value("http://images/tapioca.jpg"))
-                .andExpect(jsonPath("$.nao_resgatados[0].status").value("nao_resgatado"))
-                .andExpect(jsonPath("$.nao_resgatados[0].data_validade").value("2026-04-20"))
-                .andExpect(jsonPath("$.resgatados").isArray())
-                .andExpect(jsonPath("$.resgatados[0].id_pedido").value("#B7C21"))
-                .andExpect(jsonPath("$.resgatados[0].nome_produto").value("Vaso de Cerâmica"))
-                .andExpect(jsonPath("$.resgatados[0].imagem_url").value("http://images/vaso.jpg"))
-                .andExpect(jsonPath("$.resgatados[0].status").value("resgatado"))
-                .andExpect(jsonPath("$.resgatados[0].data_resgate").value("2026-04-25"));
+                .andExpect(jsonPath("$.unredeemed").isArray())
+                .andExpect(jsonPath("$.unredeemed[0].order_id").value("#A3F92"))
+                .andExpect(jsonPath("$.unredeemed[0].product_name").value("Tapioca Clássica"))
+                .andExpect(jsonPath("$.unredeemed[0].image_url").value("http://images/tapioca.jpg"))
+                .andExpect(jsonPath("$.unredeemed[0].status").value("UNREDEEMED"))
+                .andExpect(jsonPath("$.unredeemed[0].expiration_date").value("2026-04-20"))
+                .andExpect(jsonPath("$.redeemed").isArray())
+                .andExpect(jsonPath("$.redeemed[0].order_id").value("#B7C21"))
+                .andExpect(jsonPath("$.redeemed[0].product_name").value("Vaso de Cerâmica"))
+                .andExpect(jsonPath("$.redeemed[0].image_url").value("http://images/vaso.jpg"))
+                .andExpect(jsonPath("$.redeemed[0].status").value("REDEEMED"))
+                .andExpect(jsonPath("$.redeemed[0].redemption_date").value("2026-04-25"));
     }
 }

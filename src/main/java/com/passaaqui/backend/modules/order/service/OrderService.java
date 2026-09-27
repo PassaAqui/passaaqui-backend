@@ -282,7 +282,7 @@ public class OrderService {
                         orderCode,
                         order.getProduct() != null ? order.getProduct().getName() : null,
                         imageUrl,
-                        RedemptionStatus.RESGATADO,
+                        RedemptionStatus.REDEEMED,
                         null,
                         redemptionDate
                 ));
@@ -295,7 +295,7 @@ public class OrderService {
                         orderCode,
                         order.getProduct() != null ? order.getProduct().getName() : null,
                         imageUrl,
-                        RedemptionStatus.NAO_RESGATADO,
+                        RedemptionStatus.UNREDEEMED,
                         expirationDate,
                         null
                 ));

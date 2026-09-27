@@ -7,22 +7,22 @@ import com.passaaqui.backend.modules.order.model.enums.RedemptionStatus;
 import java.time.LocalDate;
 
 public record PurchasedProductItemDTO(
-    @JsonProperty("id_pedido")
+    @JsonProperty("order_id")
     String orderId,
 
-    @JsonProperty("nome_produto")
+    @JsonProperty("product_name")
     String productName,
 
-    @JsonProperty("imagem_url")
+    @JsonProperty("image_url")
     String imageUrl,
 
     RedemptionStatus status,
 
-    @JsonProperty("data_validade")
+    @JsonProperty("expiration_date")
     @JsonFormat(pattern = "yyyy-MM-dd")
     LocalDate expirationDate,
 
-    @JsonProperty("data_resgate")
+    @JsonProperty("redemption_date")
     @JsonFormat(pattern = "yyyy-MM-dd")
     LocalDate redemptionDate
 ) {}

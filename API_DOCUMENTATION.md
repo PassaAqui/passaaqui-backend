@@ -4227,15 +4227,15 @@ Apenas `TOURIST`
 
 #### Descrição
 
-Retorna a lista de produtos comprados pelo turista autenticado, agrupados em duas listas: **não resgatados** (`nao_resgatados`) e **resgatados** (`resgatados`).
+Retorna a lista de produtos comprados pelo turista autenticado, agrupados em duas listas: **não resgatados** (`unredeemed`) e **resgatados** (`redeemed`).
 
 Para cada produto, os seguintes campos são retornados:
-- `id_pedido` (String): Código do pedido (ex: `"#A3F92"`).
-- `nome_produto` (String): Nome do produto adquirido.
-- `imagem_url` (String): URL pública da imagem do produto.
-- `status` (Enum): `"nao_resgatado"` ou `"resgatado"`.
-- `data_validade` (Date `yyyy-MM-dd`): Data limite para resgate (presente apenas se não resgatado).
-- `data_resgate` (Date `yyyy-MM-dd`): Data em que o produto foi resgatado (presente apenas se resgatado).
+- `order_id` (String): Código do pedido (ex: `"#A3F92"`).
+- `product_name` (String): Nome do produto adquirido.
+- `image_url` (String): URL pública da imagem do produto.
+- `status` (Enum): `"UNREDEEMED"` ou `"REDEEMED"`.
+- `expiration_date` (Date `yyyy-MM-dd`): Data limite para resgate (presente apenas se não resgatado).
+- `redemption_date` (Date `yyyy-MM-dd`): Data em que o produto foi resgatado (presente apenas se resgatado).
 
 #### Controller
 
@@ -4259,24 +4259,24 @@ Apenas `TOURIST`
 
 ```json
 {
-  "nao_resgatados": [
+  "unredeemed": [
     {
-      "id_pedido": "#A3F92",
-      "nome_produto": "Tapioca Clássica",
-      "imagem_url": "http://localhost:9000/test-bucket/products/tapioca.jpg",
-      "status": "nao_resgatado",
-      "data_validade": "2026-04-20",
-      "data_resgate": null
+      "order_id": "#A3F92",
+      "product_name": "Tapioca Clássica",
+      "image_url": "http://localhost:9000/test-bucket/products/tapioca.jpg",
+      "status": "UNREDEEMED",
+      "expiration_date": "2026-04-20",
+      "redemption_date": null
     }
   ],
-  "resgatados": [
+  "redeemed": [
     {
-      "id_pedido": "#B7C21",
-      "nome_produto": "Vaso de Cerâmica",
-      "imagem_url": "http://localhost:9000/test-bucket/products/vaso.jpg",
-      "status": "resgatado",
-      "data_validade": null,
-      "data_resgate": "2026-04-25"
+      "order_id": "#B7C21",
+      "product_name": "Vaso de Cerâmica",
+      "image_url": "http://localhost:9000/test-bucket/products/vaso.jpg",
+      "status": "REDEEMED",
+      "expiration_date": null,
+      "redemption_date": "2026-04-25"
     }
   ]
 }

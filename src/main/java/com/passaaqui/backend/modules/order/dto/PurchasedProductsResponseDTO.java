@@ -5,9 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public record PurchasedProductsResponseDTO(
-    @JsonProperty("nao_resgatados")
+    @JsonProperty("unredeemed")
     List<PurchasedProductItemDTO> unredeemed,
 
-    @JsonProperty("resgatados")
+    @JsonProperty("redeemed")
     List<PurchasedProductItemDTO> redeemed
 ) {}
