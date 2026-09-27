@@ -165,6 +165,7 @@ http://localhost:8080/api
 - [`GET /api/orders/shopkeeper/history`](#get-apiordersshopkeeperhistory)
 - [`GET /api/orders/my-current`](#get-apiordersmy-current)
 - [`GET /api/orders/my-history`](#get-apiordersmyhistory)
+- [`GET /api/orders/purchased-products`](#get-apiorderspurchased-products) `🔒 TOURIST`
 - [`GET /api/orders/{id}`](#get-apiordersid)
 
 ## 🧭 Direções (Rotas)
@@ -4210,6 +4211,75 @@ Apenas `TOURIST`
     "pickupCode": null
   }
 ]
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+| 404 | Turista não encontrado |
+
+---
+
+### GET /api/orders/purchased-products
+
+#### Descrição
+
+Retorna a lista de produtos comprados pelo turista autenticado, agrupados em duas listas: **não resgatados** (`nao_resgatados`) e **resgatados** (`resgatados`).
+
+Para cada produto, os seguintes campos são retornados:
+- `id_pedido` (String): Código do pedido (ex: `"#A3F92"`).
+- `nome_produto` (String): Nome do produto adquirido.
+- `imagem_url` (String): URL pública da imagem do produto.
+- `status` (Enum): `"nao_resgatado"` ou `"resgatado"`.
+- `data_validade` (Date `yyyy-MM-dd`): Data limite para resgate (presente apenas se não resgatado).
+- `data_resgate` (Date `yyyy-MM-dd`): Data em que o produto foi resgatado (presente apenas se resgatado).
+
+#### Controller
+
+`OrderController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+
+#### Response 200 (OK)
+
+```json
+{
+  "nao_resgatados": [
+    {
+      "id_pedido": "#A3F92",
+      "nome_produto": "Tapioca Clássica",
+      "imagem_url": "http://localhost:9000/test-bucket/products/tapioca.jpg",
+      "status": "nao_resgatado",
+      "data_validade": "2026-04-20",
+      "data_resgate": null
+    }
+  ],
+  "resgatados": [
+    {
+      "id_pedido": "#B7C21",
+      "nome_produto": "Vaso de Cerâmica",
+      "imagem_url": "http://localhost:9000/test-bucket/products/vaso.jpg",
+      "status": "resgatado",
+      "data_validade": null,
+      "data_resgate": "2026-04-25"
+    }
+  ]
+}
 ```
 
 #### Possíveis Erros

@@ -8,10 +8,13 @@ import com.passaaqui.backend.infra.exception.ConflictException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.modules.order.dto.CheckoutRequestDTO;
 import com.passaaqui.backend.modules.order.dto.OrderResponseDTO;
+import com.passaaqui.backend.modules.order.dto.PurchasedProductItemDTO;
+import com.passaaqui.backend.modules.order.dto.PurchasedProductsResponseDTO;
 import com.passaaqui.backend.modules.order.dto.ShopkeeperOrderDTO;
 import com.passaaqui.backend.modules.order.dto.UpdateOrderStatusDTO;
 import com.passaaqui.backend.modules.order.model.OrderModel;
 import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
+import com.passaaqui.backend.modules.order.model.enums.RedemptionStatus;
 import com.passaaqui.backend.modules.order.repository.OrderRepository;
 import com.passaaqui.backend.modules.product.model.ProductModel;
 import com.passaaqui.backend.modules.product.repository.ProductRepository;
@@ -249,6 +252,59 @@ public class OrderService {
                 .toList();
     }
 
+    public PurchasedProductsResponseDTO getPurchasedProducts() {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        TouristModel tourist = touristRepository.findById(Integer.parseInt(userId))
+                .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
+
+        List<OrderModel> orders = orderRepository.findByTourist_IdAndStatusInOrderByCreatedAtDesc(
+                tourist.getId(),
+                List.of(OrderStatus.PAID, OrderStatus.PREPARING, OrderStatus.READY_FOR_PICKUP, OrderStatus.COMPLETED)
+        );
+
+        List<PurchasedProductItemDTO> unredeemed = new ArrayList<>();
+        List<PurchasedProductItemDTO> redeemed = new ArrayList<>();
+
+        for (OrderModel order : orders) {
+            String imageUrl = null;
+            if (order.getProduct() != null && order.getProduct().getImages() != null && !order.getProduct().getImages().isEmpty()) {
+                imageUrl = storageService.getFileUrl(order.getProduct().getImages().get(0));
+            }
+
+            String orderCode = order.getCode();
+
+            if (order.getStatus() == OrderStatus.COMPLETED) {
+                LocalDate redemptionDate = order.getRedeemedAt() != null
+                        ? order.getRedeemedAt().toLocalDate()
+                        : (order.getUpdatedAt() != null ? order.getUpdatedAt().toLocalDate() : (order.getCreatedAt() != null ? order.getCreatedAt().toLocalDate() : null));
+
+                redeemed.add(new PurchasedProductItemDTO(
+                        orderCode,
+                        order.getProduct() != null ? order.getProduct().getName() : null,
+                        imageUrl,
+                        RedemptionStatus.RESGATADO,
+                        null,
+                        redemptionDate
+                ));
+            } else {
+                LocalDate expirationDate = order.getExpiresAt() != null
+                        ? order.getExpiresAt().toLocalDate()
+                        : (order.getCreatedAt() != null ? order.getCreatedAt().plusDays(30).toLocalDate() : null);
+
+                unredeemed.add(new PurchasedProductItemDTO(
+                        orderCode,
+                        order.getProduct() != null ? order.getProduct().getName() : null,
+                        imageUrl,
+                        RedemptionStatus.NAO_RESGATADO,
+                        expirationDate,
+                        null
+                ));
+            }
+        }
+
+        return new PurchasedProductsResponseDTO(unredeemed, redeemed);
+    }
+
     public List<ShopkeeperOrderDTO> getShopkeeperOrdersByStatus(OrderStatus status) {
         String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         ShopkeeperModel shopkeeper = shopkeeperRepository.findById(Integer.parseInt(userId))
@@ -278,6 +334,9 @@ public class OrderService {
         }
 
         order.setStatus(dto.status());
+        if (dto.status() == OrderStatus.COMPLETED && order.getRedeemedAt() == null) {
+            order.setRedeemedAt(LocalDateTime.now());
+        }
         order = orderRepository.save(order);
 
         String productImage = order.getProduct().getImages().isEmpty() ? null

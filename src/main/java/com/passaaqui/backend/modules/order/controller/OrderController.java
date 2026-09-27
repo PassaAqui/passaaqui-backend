@@ -2,6 +2,7 @@ package com.passaaqui.backend.modules.order.controller;
 
 import com.passaaqui.backend.modules.order.dto.CheckoutRequestDTO;
 import com.passaaqui.backend.modules.order.dto.OrderResponseDTO;
+import com.passaaqui.backend.modules.order.dto.PurchasedProductsResponseDTO;
 import com.passaaqui.backend.modules.order.dto.ShopkeeperOrderDTO;
 import com.passaaqui.backend.modules.order.dto.UpdateOrderStatusDTO;
 import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
@@ -52,6 +53,12 @@ public class OrderController {
     @PreAuthorize("hasRole('TOURIST')")
     public ResponseEntity<List<OrderResponseDTO>> getTouristHistory() {
         return ResponseEntity.ok(orderService.getTouristHistory());
+    }
+
+    @GetMapping("/purchased-products")
+    @PreAuthorize("hasRole('TOURIST')")
+    public ResponseEntity<PurchasedProductsResponseDTO> getPurchasedProducts() {
+        return ResponseEntity.ok(orderService.getPurchasedProducts());
     }
 
     @GetMapping("/my-current")

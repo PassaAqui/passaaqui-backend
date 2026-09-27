@@ -241,4 +241,47 @@ class OrderControllerTest {
         mockMvc.perform(get("/api/orders/" + orderId))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void getPurchasedProducts_shouldReturn200() throws Exception {
+        var unredeemedItem = new com.passaaqui.backend.modules.order.dto.PurchasedProductItemDTO(
+                "#A3F92",
+                "Tapioca Clássica",
+                "http://images/tapioca.jpg",
+                com.passaaqui.backend.modules.order.model.enums.RedemptionStatus.NAO_RESGATADO,
+                java.time.LocalDate.of(2026, 4, 20),
+                null
+        );
+
+        var redeemedItem = new com.passaaqui.backend.modules.order.dto.PurchasedProductItemDTO(
+                "#B7C21",
+                "Vaso de Cerâmica",
+                "http://images/vaso.jpg",
+                com.passaaqui.backend.modules.order.model.enums.RedemptionStatus.RESGATADO,
+                null,
+                java.time.LocalDate.of(2026, 4, 25)
+        );
+
+        var response = new com.passaaqui.backend.modules.order.dto.PurchasedProductsResponseDTO(
+                List.of(unredeemedItem),
+                List.of(redeemedItem)
+        );
+
+        when(orderService.getPurchasedProducts()).thenReturn(response);
+
+        mockMvc.perform(get("/api/orders/purchased-products"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nao_resgatados").isArray())
+                .andExpect(jsonPath("$.nao_resgatados[0].id_pedido").value("#A3F92"))
+                .andExpect(jsonPath("$.nao_resgatados[0].nome_produto").value("Tapioca Clássica"))
+                .andExpect(jsonPath("$.nao_resgatados[0].imagem_url").value("http://images/tapioca.jpg"))
+                .andExpect(jsonPath("$.nao_resgatados[0].status").value("nao_resgatado"))
+                .andExpect(jsonPath("$.nao_resgatados[0].data_validade").value("2026-04-20"))
+                .andExpect(jsonPath("$.resgatados").isArray())
+                .andExpect(jsonPath("$.resgatados[0].id_pedido").value("#B7C21"))
+                .andExpect(jsonPath("$.resgatados[0].nome_produto").value("Vaso de Cerâmica"))
+                .andExpect(jsonPath("$.resgatados[0].imagem_url").value("http://images/vaso.jpg"))
+                .andExpect(jsonPath("$.resgatados[0].status").value("resgatado"))
+                .andExpect(jsonPath("$.resgatados[0].data_resgate").value("2026-04-25"));
+    }
 }

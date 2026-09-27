@@ -72,6 +72,10 @@ public class OrderModel {
 
     private LocalDateTime pixExpiresAt;
 
+    private LocalDateTime expiresAt;
+
+    private LocalDateTime redeemedAt;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
