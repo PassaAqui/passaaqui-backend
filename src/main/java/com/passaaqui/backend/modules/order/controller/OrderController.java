@@ -7,6 +7,8 @@ import com.passaaqui.backend.modules.order.dto.ShopkeeperOrderDTO;
 import com.passaaqui.backend.modules.order.dto.UpdateOrderStatusDTO;
 import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
 import com.passaaqui.backend.modules.order.service.OrderService;
+import com.passaaqui.backend.infra.ratelimit.RateLimitTier;
+import com.passaaqui.backend.infra.ratelimit.RateLimited;
 import java.util.List;
 import java.util.UUID;
 import jakarta.validation.Valid;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
+@RateLimited(RateLimitTier.ORDER)
 public class OrderController {
 
     private final OrderService orderService;

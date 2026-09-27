@@ -63,4 +63,7 @@ public abstract class UserModel {
     public String getImage() {
         return image;
     }
+
+    @Version
+    private Integer version;
 }
