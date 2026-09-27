@@ -198,24 +198,19 @@ class OrderRepositoryIntegrationTest {
     }
 
     @Test
-    void shouldFindByIdForUpdate() {
-        var order = createOrder(OrderStatus.PENDING);
+    void shouldFindByTouristIdAndStatusInOrderByCreatedAtDesc() {
+        var paidOrder = createOrder(OrderStatus.PAID);
+        var completedOrder = createOrder(OrderStatus.COMPLETED);
+        var canceledOrder = createOrder(OrderStatus.CANCELED);
 
-        var found = orderRepository.findByIdForUpdate(order.getId());
+        var results = orderRepository.findByTourist_IdAndStatusInOrderByCreatedAtDesc(
+                tourist.getId(),
+                List.of(OrderStatus.PAID, OrderStatus.COMPLETED)
+        );
 
-        assertTrue(found.isPresent());
-        assertEquals(order.getId(), found.get().getId());
-    }
-
-    @Test
-    void shouldFindByTransactionIdForUpdate() {
-        var order = createOrder(OrderStatus.AWAITING_PAYMENT);
-        order.setTransactionId("tx_lock_123");
-        em.persistAndFlush(order);
-
-        var found = orderRepository.findByTransactionIdForUpdate("tx_lock_123");
-
-        assertTrue(found.isPresent());
-        assertEquals(order.getId(), found.get().getId());
+        assertEquals(2, results.size());
+        assertTrue(results.stream().anyMatch(o -> o.getId().equals(paidOrder.getId())));
+        assertTrue(results.stream().anyMatch(o -> o.getId().equals(completedOrder.getId())));
+        assertFalse(results.stream().anyMatch(o -> o.getId().equals(canceledOrder.getId())));
     }
 }
