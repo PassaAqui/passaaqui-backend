@@ -45,9 +45,9 @@ ON CONFLICT (id) DO UPDATE SET
 -- Hash BCrypt: $2a$10$M4XQr5O3YOzE8qJkTMPvFOJu59KxKT3D5H9vvzdQsMlHXQQNgJ8si
 
 -- 3.1 Administrador Root (ID 51)
-INSERT INTO user_model (id, email, name, password, role, theme, created_at, updated_at)
-VALUES (51, 'root@passaaqui.com', 'Administrador Root', '$2a$10$M4XQr5O3YOzE8qJkTMPvFOJu59KxKT3D5H9vvzdQsMlHXQQNgJ8si', 'ADMIN', 'LIGHT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, password = EXCLUDED.password, role = EXCLUDED.role;
+INSERT INTO user_model (id, email, name, password, role, theme, image, created_at, updated_at)
+VALUES (51, 'root@passaaqui.com', 'Administrador Root', '$2a$10$M4XQr5O3YOzE8qJkTMPvFOJu59KxKT3D5H9vvzdQsMlHXQQNgJ8si', 'ADMIN', 'LIGHT', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, password = EXCLUDED.password, role = EXCLUDED.role, image = EXCLUDED.image;
 
 INSERT INTO admin_model (id, admin_type)
 VALUES (51, 1)
@@ -55,18 +55,18 @@ ON CONFLICT (id) DO UPDATE SET admin_type = EXCLUDED.admin_type;
 
 -- 3.2 Lojistas (Shopkeepers para fornecer produtos aos turistas)
 -- Lojista 1: Armazém do Artesanato (ID 54)
-INSERT INTO user_model (id, email, name, password, role, theme, created_at, updated_at)
-VALUES (54, 'shopkeeper.test@example.com', 'Lojista Artesanatos Recife', '$2a$10$M4XQr5O3YOzE8qJkTMPvFOJu59KxKT3D5H9vvzdQsMlHXQQNgJ8si', 'SHOPKEEPER', 'DARK', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, password = EXCLUDED.password, role = EXCLUDED.role;
+INSERT INTO user_model (id, email, name, password, role, theme, image, created_at, updated_at)
+VALUES (54, 'shopkeeper.test@example.com', 'Lojista Artesanatos Recife', '$2a$10$M4XQr5O3YOzE8qJkTMPvFOJu59KxKT3D5H9vvzdQsMlHXQQNgJ8si', 'SHOPKEEPER', 'DARK', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, password = EXCLUDED.password, role = EXCLUDED.role, image = EXCLUDED.image;
 
 INSERT INTO shopkeeper_model (id, company_name, description, document_id, category_id)
 VALUES (54, 'Armazém do Artesanato', 'Loja de artesanato e doces típicos no Recife Antigo', '11222333000181', 9)
 ON CONFLICT (id) DO UPDATE SET company_name = EXCLUDED.company_name, description = EXCLUDED.description, document_id = EXCLUDED.document_id, category_id = EXCLUDED.category_id;
 
 -- Lojista 2: Sabores de Olinda (ID 55)
-INSERT INTO user_model (id, email, name, password, role, theme, created_at, updated_at)
-VALUES (55, 'lojista@passaaqui.com', 'Lojista Olinda Sabores', '$2a$10$M4XQr5O3YOzE8qJkTMPvFOJu59KxKT3D5H9vvzdQsMlHXQQNgJ8si', 'SHOPKEEPER', 'LIGHT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, password = EXCLUDED.password, role = EXCLUDED.role;
+INSERT INTO user_model (id, email, name, password, role, theme, image, created_at, updated_at)
+VALUES (55, 'lojista@passaaqui.com', 'Lojista Olinda Sabores', '$2a$10$M4XQr5O3YOzE8qJkTMPvFOJu59KxKT3D5H9vvzdQsMlHXQQNgJ8si', 'SHOPKEEPER', 'LIGHT', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, password = EXCLUDED.password, role = EXCLUDED.role, image = EXCLUDED.image;
 
 INSERT INTO shopkeeper_model (id, company_name, description, document_id, category_id)
 VALUES (55, 'Sabores do Alto da Sé', 'Tapiocaria e confeitaria tradicional de Olinda', '12345678000199', 1)
@@ -74,18 +74,18 @@ ON CONFLICT (id) DO UPDATE SET company_name = EXCLUDED.company_name, description
 
 -- 3.3 Turistas (Perfil de Teste com XP e Nível para o MVP)
 -- Turista 1 (ID 52): tourist.test@example.com
-INSERT INTO user_model (id, email, name, password, role, theme, created_at, updated_at)
-VALUES (52, 'tourist.test@example.com', 'Turista Teste', '$2a$10$M4XQr5O3YOzE8qJkTMPvFOJu59KxKT3D5H9vvzdQsMlHXQQNgJ8si', 'TOURIST', 'LIGHT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, password = EXCLUDED.password, role = EXCLUDED.role;
+INSERT INTO user_model (id, email, name, password, role, theme, image, created_at, updated_at)
+VALUES (52, 'tourist.test@example.com', 'Turista Teste', '$2a$10$M4XQr5O3YOzE8qJkTMPvFOJu59KxKT3D5H9vvzdQsMlHXQQNgJ8si', 'TOURIST', 'LIGHT', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, password = EXCLUDED.password, role = EXCLUDED.role, image = EXCLUDED.image;
 
 INSERT INTO tourist_model (id, currentxp, level, device_id, document_id)
 VALUES (52, 1500, 2, 'dev-tourist-001', '52998224725')
 ON CONFLICT (id) DO UPDATE SET currentxp = 1500, level = 2, document_id = '52998224725';
 
 -- Turista 2 (ID 53): turista@passaaqui.com
-INSERT INTO user_model (id, email, name, password, role, theme, created_at, updated_at)
-VALUES (53, 'turista@passaaqui.com', 'Turista Passa Aqui', '$2a$10$M4XQr5O3YOzE8qJkTMPvFOJu59KxKT3D5H9vvzdQsMlHXQQNgJ8si', 'TOURIST', 'LIGHT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, password = EXCLUDED.password, role = EXCLUDED.role;
+INSERT INTO user_model (id, email, name, password, role, theme, image, created_at, updated_at)
+VALUES (53, 'turista@passaaqui.com', 'Turista Passa Aqui', '$2a$10$M4XQr5O3YOzE8qJkTMPvFOJu59KxKT3D5H9vvzdQsMlHXQQNgJ8si', 'TOURIST', 'LIGHT', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, password = EXCLUDED.password, role = EXCLUDED.role, image = EXCLUDED.image;
 
 INSERT INTO tourist_model (id, currentxp, level, device_id, document_id)
 VALUES (53, 1250, 2, 'dev-tourist-002', '52998224725')
@@ -156,17 +156,29 @@ ON CONFLICT (id) DO UPDATE SET
     ratings_count = EXCLUDED.ratings_count,
     updated_at = CURRENT_TIMESTAMP;
 
--- 6. Conquistas do Sistema (tb_achievements)
-INSERT INTO tb_achievements (id, name, description, xp_reward, category_id, poi_id, location_name, created_at, updated_at)
+-- 5.1 Imagens dos Produtos (product_images)
+DELETE FROM product_images WHERE product_id IN (251, 252, 253, 254, 255, 256);
+INSERT INTO product_images (product_id, image_name)
 VALUES 
-(1, 'Primeiro Passo', 'Realizou seu primeiro check-in em um ponto turístico oficial do Passa Aqui.', 100, 10, 51, 'Recife - Marco Zero', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(2, 'Explorador do Recife', 'Descobriu e explorou os monumentos históricos do Recife Antigo.', 250, 10, 51, 'Recife Antigo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(3, 'Mestre das Ladeiras', 'Subiu o Alto da Sé e contemplou a inesquecível paisagem de Olinda.', 200, 10, 104, 'Olinda - Alto da Sé', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(4, 'Paladar Pernambucano', 'Experimentou o legítimo bolo de rolo ou tapioca pernambucana.', 150, 1, 1, 'Recife & Olinda', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(5, 'Colecionador de Aventuras', 'Alcançou mais de 1000 pontos de XP em sua jornada turística.', 300, 10, NULL, 'Pernambuco', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+(251, 'https://images.unsplash.com/photo-1578985545062-69928b1d9587'),
+(252, 'https://images.unsplash.com/photo-1514565131-fce0801e5785'),
+(253, 'https://images.unsplash.com/photo-1628294895950-9805252327bc'),
+(254, 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38'),
+(255, 'https://images.unsplash.com/photo-1509042239860-f550ce710b93'),
+(256, 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518');
+
+-- 6. Conquistas do Sistema (tb_achievements)
+INSERT INTO tb_achievements (id, name, description, image_name, xp_reward, category_id, poi_id, location_name, created_at, updated_at)
+VALUES 
+(1, 'Primeiro Passo', 'Realizou seu primeiro check-in em um ponto turístico oficial do Passa Aqui.', 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119', 100, 10, 51, 'Recife - Marco Zero', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(2, 'Explorador do Recife', 'Descobriu e explorou os monumentos históricos do Recife Antigo.', 'https://images.unsplash.com/photo-1533105079780-92b9be482077', 250, 10, 51, 'Recife Antigo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(3, 'Mestre das Ladeiras', 'Subiu o Alto da Sé e contemplou a inesquecível paisagem de Olinda.', 'https://images.unsplash.com/photo-1596701062351-8c2c14d1fdd0', 200, 10, 104, 'Olinda - Alto da Sé', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(4, 'Paladar Pernambucano', 'Experimentou o legítimo bolo de rolo ou tapioca pernambucana.', 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5', 150, 1, 1, 'Recife & Olinda', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(5, 'Colecionador de Aventuras', 'Alcançou mais de 1000 pontos de XP em sua jornada turística.', 'https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83', 300, 10, NULL, 'Pernambuco', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT (id) DO UPDATE SET 
     name = EXCLUDED.name,
     description = EXCLUDED.description,
+    image_name = EXCLUDED.image_name,
     xp_reward = EXCLUDED.xp_reward,
     category_id = EXCLUDED.category_id,
     poi_id = EXCLUDED.poi_id,
@@ -226,6 +238,13 @@ INSERT INTO product_rating_model (id, product_id, user_id, rating, comment, orde
 VALUES 
 (3, 251, 53, 5, 'Uma das melhores lembranças gastronômicas de Recife. Atendimento excelente no resgate.', 'ORD-7712', CURRENT_TIMESTAMP - interval '1 day')
 ON CONFLICT (product_id, user_id) DO UPDATE SET rating = EXCLUDED.rating, comment = EXCLUDED.comment, order_code = EXCLUDED.order_code;
+
+-- 11.1 Imagens das Avaliações (product_rating_images)
+DELETE FROM product_rating_images WHERE rating_id IN (2, 3);
+INSERT INTO product_rating_images (rating_id, image_name)
+VALUES 
+(2, 'https://images.unsplash.com/photo-1578985545062-69928b1d9587');
+
 
 -- 12. Atualização das Sequences para evitar colisão de IDs em futuras criações via API
 SELECT setval('city_model_seq', GREATEST((SELECT MAX(id) FROM city_model), 100), true);
