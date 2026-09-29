@@ -33,36 +33,37 @@ public class XpCalculationService {
             return new CheckinResponseDTO(0, null, new AppliedRules(false, false), "POI não é do tipo turístico");
         }
 
-        if (lastUserCheckin != null
-                && ChronoUnit.DAYS.between(lastUserCheckin, LocalDateTime.now()) < COOLDOWN_DAYS) {
-            antiFarmingActive = true;
-            blockReason = "Cooldown ativo (30 dias).";
-        }
+        // Regras de anti-farming desativadas temporariamente:
+        // if (lastUserCheckin != null
+        //         && ChronoUnit.DAYS.between(lastUserCheckin, LocalDateTime.now()) < COOLDOWN_DAYS) {
+        //     antiFarmingActive = true;
+        //     blockReason = "Cooldown ativo (30 dias).";
+        // }
 
-        if (distanceKm < MIN_DISTANCE_KM) {
-            invalidGps = true;
-            blockReason = "Deslocamento insuficiente detectado.";
-        }
+        // if (distanceKm < MIN_DISTANCE_KM) {
+        //     invalidGps = true;
+        //     blockReason = "Deslocamento insuficiente detectado.";
+        // }
 
-        if (antiFarmingActive || invalidGps) {
-            return new CheckinResponseDTO(0, null, new AppliedRules(antiFarmingActive, invalidGps), blockReason);
-        }
+        // if (antiFarmingActive || invalidGps) {
+        //     return new CheckinResponseDTO(0, null, new AppliedRules(antiFarmingActive, invalidGps), blockReason);
+        // }
 
         int finalXp;
 
         if (fixedXpReward != null) {
             finalXp = fixedXpReward;
+            return new CheckinResponseDTO(finalXp, null, new AppliedRules(false, false), null);
         } else {
-            double displacementFactor = distanceKm * DISPLACEMENT_FACTOR;
+            double effectiveDistance = distanceKm > 0 ? distanceKm : 0.1;
+            double displacementFactor = effectiveDistance * DISPLACEMENT_FACTOR;
             double invisibilityFactor = (double) INVISIBILITY_BASE / (recentVisits + 1);
             double rawXp = displacementFactor * invisibilityFactor;
             finalXp = (int) Math.round(rawXp);
-            if (finalXp < 0) finalXp = 0;
+            if (finalXp <= 0) finalXp = 1;
 
             Calculation calculation = new Calculation(distanceKm, displacementFactor, recentVisits, invisibilityFactor, rawXp, finalXp);
             return new CheckinResponseDTO(finalXp, calculation, new AppliedRules(false, false), null);
         }
-
-        return new CheckinResponseDTO(finalXp, null, new AppliedRules(false, false), null);
     }
 }
