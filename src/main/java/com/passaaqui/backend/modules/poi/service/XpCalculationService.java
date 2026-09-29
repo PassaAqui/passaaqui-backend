@@ -30,19 +30,19 @@ public class XpCalculationService {
         String blockReason = null;
 
         if (!"turistico".equals(poiType)) {
-            return new CheckinResponseDTO(0, null, new AppliedRules(false, false), "POI não é do tipo turístico");
+            return new CheckinResponseDTO(0, null, new AppliedRules(false, false), "POI is not a tourist point");
         }
 
-        // Regras de anti-farming desativadas temporariamente:
+        // Anti-farming rules temporarily disabled:
         // if (lastUserCheckin != null
         //         && ChronoUnit.DAYS.between(lastUserCheckin, LocalDateTime.now()) < COOLDOWN_DAYS) {
         //     antiFarmingActive = true;
-        //     blockReason = "Cooldown ativo (30 dias).";
+        //     blockReason = "Cooldown active (30 days).";
         // }
 
         // if (distanceKm < MIN_DISTANCE_KM) {
         //     invalidGps = true;
-        //     blockReason = "Deslocamento insuficiente detectado.";
+        //     blockReason = "Insufficient displacement detected.";
         // }
 
         // if (antiFarmingActive || invalidGps) {
