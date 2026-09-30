@@ -114,6 +114,93 @@ class ShopkeeperControllerTest {
     }
 
     @Test
+    void updateMe_shouldReturn200WithoutImage() throws Exception {
+        UpdateShopkeeperDTO dto = new UpdateShopkeeperDTO("Updated Shop", "NewP@ssw0rd1", "12345678901234", "Updated Company", "Desc", 1);
+        ShopkeeperModel shopkeeper = new ShopkeeperModel();
+        shopkeeper.setId(1);
+        shopkeeper.setName("Updated Shop");
+        shopkeeper.setEmail("shop@test.com");
+
+        PoiModel poi = new PoiModel();
+        poi.setId(10);
+        poi.setName("Store POI");
+
+        ShopkeeperProfileDTO profile = ShopkeeperProfileDTO.from(shopkeeper, poi);
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("1", null, null));
+
+        when(service.updateProfile(eq(1), any(UpdateShopkeeperDTO.class), isNull())).thenReturn(profile);
+
+        org.springframework.mock.web.MockMultipartFile dataPart = new org.springframework.mock.web.MockMultipartFile(
+                "data", "data", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(dto));
+
+        mockMvc.perform(multipart(org.springframework.http.HttpMethod.PUT, "/api/shopkeepers/me")
+                        .file(dataPart))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Updated Shop"));
+    }
+
+    @Test
+    void updateMe_shouldReturn200WithImage() throws Exception {
+        UpdateShopkeeperDTO dto = new UpdateShopkeeperDTO("Updated Shop", "NewP@ssw0rd1", "12345678901234", "Updated Company", "Desc", 1);
+        ShopkeeperModel shopkeeper = new ShopkeeperModel();
+        shopkeeper.setId(1);
+        shopkeeper.setName("Updated Shop");
+        shopkeeper.setImageUrl("http://storage.com/shop-avatar.jpg");
+
+        PoiModel poi = new PoiModel();
+        poi.setId(10);
+        poi.setName("Store POI");
+
+        ShopkeeperProfileDTO profile = ShopkeeperProfileDTO.from(shopkeeper, poi);
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("1", null, null));
+
+        when(service.updateProfile(eq(1), any(UpdateShopkeeperDTO.class), any())).thenReturn(profile);
+
+        org.springframework.mock.web.MockMultipartFile dataPart = new org.springframework.mock.web.MockMultipartFile(
+                "data", "data", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(dto));
+        org.springframework.mock.web.MockMultipartFile imagePart = new org.springframework.mock.web.MockMultipartFile(
+                "image", "avatar.jpg", MediaType.IMAGE_JPEG_VALUE, "fake-bytes".getBytes());
+
+        mockMvc.perform(multipart(org.springframework.http.HttpMethod.PUT, "/api/shopkeepers/me")
+                        .file(dataPart)
+                        .file(imagePart))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.image").value("http://storage.com/shop-avatar.jpg"));
+    }
+
+    @Test
+    void updateAvatar_shouldReturn200() throws Exception {
+        ShopkeeperModel shopkeeper = new ShopkeeperModel();
+        shopkeeper.setId(1);
+        shopkeeper.setImageUrl("http://storage.com/shop-avatar.jpg");
+
+        PoiModel poi = new PoiModel();
+        poi.setId(10);
+        poi.setName("Store POI");
+
+        ShopkeeperProfileDTO profile = ShopkeeperProfileDTO.from(shopkeeper, poi);
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("1", null, null));
+
+        when(service.updateAvatar(eq(1), any())).thenReturn(profile);
+
+        org.springframework.mock.web.MockMultipartFile imagePart = new org.springframework.mock.web.MockMultipartFile(
+                "image", "avatar.jpg", MediaType.IMAGE_JPEG_VALUE, "fake-bytes".getBytes());
+
+        mockMvc.perform(multipart(org.springframework.http.HttpMethod.PATCH, "/api/shopkeepers/me/avatar")
+                        .file(imagePart))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.image").value("http://storage.com/shop-avatar.jpg"));
+    }
+
+    @Test
     void findAll_shouldReturn200() throws Exception {
         ShopkeeperModel shopkeeper = new ShopkeeperModel();
         shopkeeper.setId(1);

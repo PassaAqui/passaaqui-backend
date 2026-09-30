@@ -39,6 +39,25 @@ public class ShopkeeperController {
         return ResponseEntity.ok(service.findProfileById(userId));
     }
 
+    @PutMapping(value = "/me", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SHOPKEEPER')")
+    public ResponseEntity<ShopkeeperProfileDTO> updateMe(
+            @org.springframework.web.bind.annotation.RequestPart("data") UpdateShopkeeperDTO dto,
+            @org.springframework.web.bind.annotation.RequestPart(value = "image", required = false) org.springframework.web.multipart.MultipartFile image) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.parseInt(authentication.getPrincipal().toString());
+        return ResponseEntity.ok(service.updateProfile(userId, dto, image));
+    }
+
+    @org.springframework.web.bind.annotation.PatchMapping(value = "/me/avatar", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SHOPKEEPER')")
+    public ResponseEntity<ShopkeeperProfileDTO> updateAvatar(
+            @org.springframework.web.bind.annotation.RequestParam("image") org.springframework.web.multipart.MultipartFile image) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.parseInt(authentication.getPrincipal().toString());
+        return ResponseEntity.ok(service.updateAvatar(userId, image));
+    }
+
     @GetMapping("/{identifier}")
     public ResponseEntity<ShopkeeperModel> findByIdentifier(@PathVariable String identifier) {
         return ResponseEntity.ok(service.findByIdOrEmail(identifier));
