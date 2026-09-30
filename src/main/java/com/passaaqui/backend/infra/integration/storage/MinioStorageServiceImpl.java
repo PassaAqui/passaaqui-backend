@@ -79,6 +79,12 @@ public class MinioStorageServiceImpl implements StorageService {
 
     @Override
     public String getFileUrl(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            return null;
+        }
+        if (fileName.startsWith("http://") || fileName.startsWith("https://")) {
+            return fileName;
+        }
         return generatePresignedUrl(fileName);
     }
 

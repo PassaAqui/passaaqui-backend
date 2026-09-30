@@ -45,25 +45,41 @@ public class TouristService {
     }
 
     public List<TouristModel> findAll() {
-        return repository.findAll();
+        List<TouristModel> tourists = repository.findAll();
+        for (TouristModel tourist : tourists) {
+            if (tourist.getImage() != null) {
+                tourist.setImageUrl(storageService.getFileUrl(tourist.getImage()));
+            }
+        }
+        return tourists;
     }
 
     public TouristModel findById(Integer id) {
-        return repository.findById(id)
+        TouristModel tourist = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
+        if (tourist.getImage() != null) {
+            tourist.setImageUrl(storageService.getFileUrl(tourist.getImage()));
+        }
+        return tourist;
     }
 
     public TouristModel findByIdOrEmail(String identifier) {
+        TouristModel tourist;
         if (identifier.contains("@")) {
-            return repository.findByEmail(identifier)
+            tourist = repository.findByEmail(identifier)
                 .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
+        } else {
+            try {
+                tourist = repository.findById(Integer.parseInt(identifier))
+                    .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
+            } catch (NumberFormatException e) {
+                throw new InvalidRequestException("Invalid identifier format");
+            }
         }
-        try {
-            return repository.findById(Integer.parseInt(identifier))
-                .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
-        } catch (NumberFormatException e) {
-            throw new InvalidRequestException("Invalid identifier format");
+        if (tourist.getImage() != null) {
+            tourist.setImageUrl(storageService.getFileUrl(tourist.getImage()));
         }
+        return tourist;
     }
 
     @Transactional

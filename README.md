@@ -80,84 +80,146 @@ O projeto conta com uma suíte de testes de estresse com [k6](./k6/README.md) si
 > [!WARNING]
 > ATENÇÃO: é preciso ter o Java 21 e o Maven instalados em sua máquina
 
-Configure as variáveis de ambiente
+A configuração das chaves e parâmetros da aplicação é centralizada em **[`src/main/resources`](./src/main/resources)** através dos arquivos de propriedades do Spring Boot:
 
-### Banco de Dados e JWT
+- **`application.properties`**: Arquivo base da aplicação. Carrega as variáveis de ambiente do sistema ou do Docker e inclui automaticamente o arquivo local de segredos (`application-secrets.properties`), se ele existir.
+- **`application-secrets.properties`**: Arquivo dedicado para desenvolvedores inserirem suas credenciais, chaves de API e segredos locais diretamente na pasta `src/main/resources/`. **Este arquivo já está no `.gitignore` e nunca é enviado ao repositório**, garantindo segurança no versionamento.
+- **`application-dev.properties`**: Perfil de desenvolvimento com banco H2 em memória e configurações mock para testes rápidos locais sem dependências externas (`spring.profiles.active=dev`).
 
+---
+
+### 🔑 Guia de Obtenção e Configuração das Chaves (API Keys)
+
+A aplicação integra com serviços externos para pagamento, cálculo de rotas e armazenamento de arquivos. Siga o passo a passo para obter cada chave:
+
+#### 1. AbacatePay (Gateway de Pagamento PIX)
+*Necessário para geração de cobranças PIX e webhooks de pedidos.*
+- **Onde obter:** Acesse o painel do [AbacatePay](https://app.abacatepay.com/) e faça login ou crie uma conta gratuita.
+- **API Key (`abacatepay.api.key`):** Vá em **Configurações / Integrações** (ou modo Sandbox/Desenvolvimento) e copie sua chave de API iniciada em `abc_dev_...` (para testes) ou `abc_prod_...`.
+- **Webhook Secret (`abacatepay.webhook.secret`):** Cadastre uma URL de webhook (ex: `https://seu-dominio/api/orders/webhook`) ou configure uma palavra-chave para validação da assinatura HMAC dos webhooks. Em desenvolvimento local, qualquer valor pode ser usado (ex: `testes`).
+
+#### 2. OpenRouteService (Rotas e Distâncias)
+*Necessário para o cálculo de rotas turísticas, POIs e distâncias geográficas.*
+- **Onde obter:** Acesse [openrouteservice.org/dev/#/home](https://openrouteservice.org/dev/#/home) e crie uma conta gratuita.
+- **API Key (`openrouteservice.api.key`):**
+  1. No painel de controle do OpenRouteService, acesse a aba **Tokens**.
+  2. Clique em **Request a token**, escolhendo o plano **Free** e tipo **Standard**.
+  3. Dê um nome ao token e clique em **Create Token**.
+  4. Copie o token gerado (chave alfanumérica/base64 de ~110 caracteres).
+
+#### 3. JWT Secret (Segurança e Autenticação)
+- **`jwt.secret`:** Chave criptográfica HMAC-SHA256 para assinatura dos tokens JWT.
+- **Requisito:** Deve ter **no mínimo 256 bits (32 caracteres)**.
+- Você pode gerar uma chave aleatória no Linux/macOS via terminal:
+  ```bash
+  openssl rand -base64 32
+  ```
+
+#### 4. MinIO / S3 (Armazenamento de Imagens e Documentos)
+- Armazena uploads de imagens de usuários, produtos, estabelecimentos e conquistas.
+- Ao executar via Docker Compose, o MinIO já sobe configurado.
+- Para execução local:
+  - `minio.url` / `minio.url.external`: Endpoint de conexão (padrão: `http://localhost:9000`).
+  - `minio.access.key` / `minio.secret.key`: Credenciais de acesso root (padrão: `root` / `root@123`).
+  - `minio.bucket.name`: Nome do bucket (padrão: `passaaqui-bucket`).
+
+---
+
+### 📝 Como Configurar em `src/main/resources/application-secrets.properties` (Recomendado para Dev Local)
+
+Para iniciar o projeto localmente pelo Maven ou pela sua IDE sem precisar definir variáveis no terminal a cada sessão, crie ou edite o arquivo **`src/main/resources/application-secrets.properties`**:
+
+```properties
+# src/main/resources/application-secrets.properties (Ignorado pelo Git)
+
+# JWT (mínimo 32 caracteres)
+jwt.secret=WIT7xsOCEKXtRi3mQA1ZMsOc5wMODgTXimEvVbbNBNm
+
+# AbacatePay
+abacatepay.api.key=abc_dev_qKYZEFLXu4PEcKPAFtH4Tkt2
+abacatepay.webhook.secret=testes
+
+# OpenRouteService
+openrouteservice.api.key=eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImZlNjc1ZDlmZTFmZDRmMjA5NWEyZmY2YTFhNGE2ZGE4IiwiaCI6Im11cm11cjY0In0=
+
+# MinIO
+minio.access.key=root
+minio.secret.key=root@123
+```
+
+O `src/main/resources/application.properties` está configurado para carregar automaticamente esse arquivo através de `spring.config.import=optional:classpath:application-secrets.properties`.
+
+---
+
+### Alternativa: Variáveis de Ambiente no Terminal
+
+Caso prefira injetar as chaves diretamente no ambiente ou utilize CI/CD:
+
+**Linux / macOS:**
 ```bash
-# Windows (PowerShell)
+export JWT_SECRET="WIT7xsOCEKXtRi3mQA1ZMsOc5wMODgTXimEvVbbNBNm"
+export SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/passaaqui"
+export SPRING_DATASOURCE_USERNAME="postgres"
+export SPRING_DATASOURCE_PASSWORD="postgres"
+export ABACATEPAY_API_KEY="sua-chave-abacatepay"
+export ABACATEPAY_WEBHOOK_SECRET="seu-webhook-secret"
+export OPENROUTESERVICE_API_KEY="seu-token-openrouteservice"
+export MINIO_URL="http://localhost:9000"
+export MINIO_URL_EXTERNAL="http://localhost:9000"
+export MINIO_ACCESS_KEY="root"
+export MINIO_SECRET_KEY="root@123"
+export MINIO_BUCKET_NAME="passaaqui-bucket"
+```
+
+**Windows (PowerShell):**
+```powershell
+$env:JWT_SECRET="WIT7xsOCEKXtRi3mQA1ZMsOc5wMODgTXimEvVbbNBNm"
 $env:SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/passaaqui"
 $env:SPRING_DATASOURCE_USERNAME="postgres"
 $env:SPRING_DATASOURCE_PASSWORD="postgres"
-$env:JWT_SECRET="your-jwt-secret-key"
-
-# Linux / macOS
-export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/passaaqui
-export SPRING_DATASOURCE_USERNAME=postgres
-export SPRING_DATASOURCE_PASSWORD=postgres
-export JWT_SECRET=your-jwt-secret-key
-```
-
-> [!IMPORTANT]
-> O `JWT_SECRET` deve ser uma chave de no mínimo 256 bits (32 caracteres) para o algoritmo HS256
-
-### Serviços externos
-
-Algumas funcionalidades dependem de serviços terceiros. Obtenha as credenciais nos links abaixo e configure as variáveis de ambiente correspondentes.
-
-| Variável | Onde obter |
-|---|---|
-| `ABACATEPAY_API_KEY` | [app.abacatepay.com](https://app.abacatepay.com/) |
-| `ABACATEPAY_WEBHOOK_SECRET` | [app.abacatepay.com](https://app.abacatepay.com/) |
-| `OPENROUTESERVICE_API_KEY` | [openrouteservice.org](https://openrouteservice.org/) |
-| `MINIO_URL` / `MINIO_URL_EXTERNAL` / `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` / `MINIO_BUCKET_NAME` | Sua instância MinIO (ou use as do `docker-compose.yaml`) |
-
-Exemplo de configuração:
-
-```bash
-# Windows (PowerShell)
-$env:ABACATEPAY_API_KEY="sua-chave-aqui"
+$env:ABACATEPAY_API_KEY="sua-chave-abacatepay"
 $env:ABACATEPAY_WEBHOOK_SECRET="seu-webhook-secret"
-$env:OPENROUTESERVICE_API_KEY="sua-chave-aqui"
-
-# Linux / macOS
-export ABACATEPAY_API_KEY=sua-chave-aqui
-export ABACATEPAY_WEBHOOK_SECRET=seu-webhook-secret
-export OPENROUTESERVICE_API_KEY=sua-chave-aqui
+$env:OPENROUTESERVICE_API_KEY="seu-token-openrouteservice"
+$env:MINIO_URL="http://localhost:9000"
+$env:MINIO_URL_EXTERNAL="http://localhost:9000"
+$env:MINIO_ACCESS_KEY="root"
+$env:MINIO_SECRET_KEY="root@123"
+$env:MINIO_BUCKET_NAME="passaaqui-bucket"
 ```
 
-### Redis
+---
 
-Por padrão o Redis assume `localhost:6379` sem senha. Se precisar customizar:
+### Tabela Resumo das Propriedades
+
+| Propriedade (`application.properties`) | Variável de Ambiente | Obrigatória | Padrão / Exemplo | Descrição |
+|---|---|---|---|---|
+| `jwt.secret` | `JWT_SECRET` | Sim | `WIT7xsOCEKXt...` | Assinatura JWT (mínimo 32 caracteres) |
+| `spring.datasource.url` | `SPRING_DATASOURCE_URL` | Sim | `jdbc:postgresql://localhost:5432/passaaqui` | URL de conexão PostgreSQL |
+| `spring.datasource.username` | `SPRING_DATASOURCE_USERNAME` | Sim | `postgres` | Usuário do banco |
+| `spring.datasource.password` | `SPRING_DATASOURCE_PASSWORD` | Sim | `postgres` | Senha do banco |
+| `abacatepay.api.key` | `ABACATEPAY_API_KEY` | Sim | `abc_dev_...` | Chave no [AbacatePay](https://app.abacatepay.com/) |
+| `abacatepay.webhook.secret` | `ABACATEPAY_WEBHOOK_SECRET` | Sim | `testes` | Validação HMAC de webhook |
+| `openrouteservice.api.key` | `OPENROUTESERVICE_API_KEY` | Sim | Token base64 | Token em [openrouteservice.org](https://openrouteservice.org/) |
+| `minio.url` | `MINIO_URL` | Sim | `http://localhost:9000` | URL do servidor MinIO |
+| `minio.url.external` | `MINIO_URL_EXTERNAL` | Sim | `http://localhost:9000` | URL pública para imagens |
+| `minio.access.key` | `MINIO_ACCESS_KEY` | Sim | `root` | Access Key do MinIO |
+| `minio.secret.key` | `MINIO_SECRET_KEY` | Sim | `root@123` | Secret Key do MinIO |
+| `minio.bucket.name` | `MINIO_BUCKET_NAME` | Sim | `passaaqui-bucket` | Bucket do MinIO |
+| `spring.data.redis.password` | `REDIS_PASSWORD` | Não | Vazio | Senha do Redis |
+| `xp.take-rate` | `XP_TAKE_RATE` | Não | `0.05` | Taxa de XP (5%) |
+| `xp.margin-factor` | `XP_MARGIN_FACTOR` | Não | `0.60` | Margem de XP (60%) |
+| `xp.absolute-ceiling` | `XP_ABSOLUTE_CEILING` | Não | `15.00` | Teto absoluto (R$ 15,00) |
+| `xp.conversion-factor` | `XP_CONVERSION_FACTOR` | Não | `100` | Conversão (100 pts/R$) |
+
+### Executando com Docker Compose
+
+Ao executar com Docker Compose, todos os serviços periféricos (PostgreSQL, Redis, MinIO) já sobem orquestrados e prontos para uso:
 
 ```bash
-export REDIS_HOST=localhost
-export REDIS_PORT=6379
-export REDIS_PASSWORD=
-```
-
-### XP Calculation
-
-Os parâmetros de cálculo de XP possuem valores padrão, mas podem ser sobrescritos:
-
-```bash
-export XP_TAKE_RATE=0.05
-export XP_MARGIN_FACTOR=0.60
-export XP_ABSOLUTE_CEILING=15.00
-export XP_CONVERSION_FACTOR=100
-```
-
-### Docker Compose
-
-Se estiver usando o `docker-compose.yaml` do projeto, as variáveis de banco, MinIO e Redis já vêm pré-configuradas. Basta definir as variáveis dos serviços externos no arquivo ou no ambiente da máquina host.
-
-Suba o banco de dados e a aplicação com Docker
-
-```
 docker compose up -d
 ```
 
-A aplicação estará disponível em `http://localhost:8080`
+A aplicação backend estará disponível em `http://localhost:8080`.
 
 ### Criar administrador inicial
 
