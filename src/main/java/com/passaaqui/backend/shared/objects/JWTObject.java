@@ -12,4 +12,8 @@ public class JWTObject {
 
     private String refresh_token, access_token;
     
+    @Override
+    public String toString() {
+        return "JWTObject(access_token=[PROTECTED], refresh_token=[PROTECTED])";
+    }
 }
