@@ -68,7 +68,7 @@ class AchievementControllerTest {
         MockMultipartFile photo = new MockMultipartFile("photo", "img.jpg", "image/jpeg", "content".getBytes());
 
         AchievementResponseDTO response = new AchievementResponseDTO(
-                1, "Tapioca Real", "Desc", "http://storage/img.jpg", 50, 1, "Gastronomia", "Mercado São José", 5, "Mercado São José", false, null
+                1, "Tapioca Real", "Desc", "http://storage/img.jpg", 50, 1, "Gastronomia", "COLHEITA", "Mercado São José", 5, "Mercado São José", false, null
         );
 
         when(achievementService.create(any(CreateAchievementDTO.class), any())).thenReturn(response);
@@ -79,6 +79,7 @@ class AchievementControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.achievement_id").value(1))
                 .andExpect(jsonPath("$.name").value("Tapioca Real"))
+                .andExpect(jsonPath("$.category").value("COLHEITA"))
                 .andExpect(jsonPath("$.location").value("Mercado São José"))
                 .andExpect(jsonPath("$.poi_name").value("Mercado São José"))
                 .andExpect(jsonPath("$.unlocked").value(false));
@@ -90,7 +91,7 @@ class AchievementControllerTest {
         MockMultipartFile dataFile = new MockMultipartFile("data", "", "application/json", objectMapper.writeValueAsBytes(dto));
 
         AchievementResponseDTO response = new AchievementResponseDTO(
-                1, "Tapioca Real Atualizada", "Desc 2", "http://storage/img.jpg", 100, 1, "Gastronomia", "Recife Antigo", 5, "Recife Antigo", false, null
+                1, "Tapioca Real Atualizada", "Desc 2", "http://storage/img.jpg", 100, 1, "Gastronomia", "COLHEITA", "Recife Antigo", 5, "Recife Antigo", false, null
         );
 
         when(achievementService.update(eq(1), any(UpdateAchievementDTO.class), any())).thenReturn(response);
@@ -100,6 +101,7 @@ class AchievementControllerTest {
                         .with(req -> { req.setMethod("PUT"); return req; }))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Tapioca Real Atualizada"))
+                .andExpect(jsonPath("$.category").value("COLHEITA"))
                 .andExpect(jsonPath("$.location").value("Recife Antigo"))
                 .andExpect(jsonPath("$.xp_reward").value(100));
     }
@@ -115,7 +117,7 @@ class AchievementControllerTest {
     @Test
     void getById_shouldReturn200() throws Exception {
         AchievementResponseDTO response = new AchievementResponseDTO(
-                1, "Tapioca Real", "Desc", "http://storage/img.jpg", 50, 1, "Gastronomia", "Mercado São José", 5, "Mercado São José", true, LocalDateTime.now()
+                1, "Tapioca Real", "Desc", "http://storage/img.jpg", 50, 1, "Gastronomia", "COLHEITA", "Mercado São José", 5, "Mercado São José", true, LocalDateTime.now()
         );
 
         when(achievementService.getById(1, 1)).thenReturn(response);
@@ -123,29 +125,93 @@ class AchievementControllerTest {
         mockMvc.perform(get("/api/achievements/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.achievement_id").value(1))
+                .andExpect(jsonPath("$.category").value("COLHEITA"))
                 .andExpect(jsonPath("$.location").value("Mercado São José"))
                 .andExpect(jsonPath("$.unlocked").value(true));
     }
 
     @Test
-    void listAll_shouldReturn200() throws Exception {
+    void listAll_shouldReturn200WithoutFilter() throws Exception {
         AchievementResponseDTO response = new AchievementResponseDTO(
-                1, "Tapioca Real", "Desc", "http://storage/img.jpg", 50, 1, "Gastronomia", "Mercado São José", 5, "Mercado São José", false, null
+                1, "Tapioca Real", "Desc", "http://storage/img.jpg", 50, 1, "Gastronomia", "COLHEITA", "Mercado São José", 5, "Mercado São José", false, null
         );
 
-        when(achievementService.listAll(eq(1), isNull())).thenReturn(List.of(response));
+        when(achievementService.listAll(eq(1), isNull(), isNull())).thenReturn(List.of(response));
 
         mockMvc.perform(get("/api/achievements"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].achievement_id").value(1))
                 .andExpect(jsonPath("$[0].name").value("Tapioca Real"))
+                .andExpect(jsonPath("$[0].category").value("COLHEITA"))
                 .andExpect(jsonPath("$[0].location").value("Mercado São José"));
+    }
+
+    @Test
+    void listAll_shouldReturn200WithTudo() throws Exception {
+        AchievementResponseDTO response = new AchievementResponseDTO(
+                1, "Tapioca Real", "Desc", "http://storage/img.jpg", 50, 1, "Gastronomia", "COLHEITA", "Mercado São José", 5, "Mercado São José", false, null
+        );
+
+        when(achievementService.listAll(eq(1), isNull(), eq("TUDO"))).thenReturn(List.of(response));
+
+        mockMvc.perform(get("/api/achievements?category=TUDO"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].achievement_id").value(1))
+                .andExpect(jsonPath("$[0].category").value("COLHEITA"));
+    }
+
+    @Test
+    void listAll_shouldReturn200WithValidCategory() throws Exception {
+        AchievementResponseDTO response = new AchievementResponseDTO(
+                1, "Tapioca Real", "Desc", "http://storage/img.jpg", 50, 1, "Gastronomia", "COLHEITA", "Mercado São José", 5, "Mercado São José", false, null
+        );
+
+        when(achievementService.listAll(eq(1), isNull(), eq("COLHEITA"))).thenReturn(List.of(response));
+
+        mockMvc.perform(get("/api/achievements?category=COLHEITA"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].achievement_id").value(1))
+                .andExpect(jsonPath("$[0].category").value("COLHEITA"));
+    }
+
+    @Test
+    void listAll_shouldReturnEmptyList_whenCategoryHasNoAchievements() throws Exception {
+        when(achievementService.listAll(eq(1), isNull(), eq("FLORACAO"))).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/achievements?category=FLORACAO"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void listAll_shouldReturn400_whenInvalidCategory() throws Exception {
+        when(achievementService.listAll(eq(1), isNull(), eq("INVALID_CATEGORY")))
+                .thenThrow(new com.passaaqui.backend.infra.exception.InvalidRequestException("Invalid achievement category: INVALID_CATEGORY"));
+
+        mockMvc.perform(get("/api/achievements?category=INVALID_CATEGORY"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid achievement category: INVALID_CATEGORY"));
+    }
+
+    @Test
+    void getCategories_shouldReturn200WithCategoriesList() throws Exception {
+        var cat1 = new com.passaaqui.backend.modules.achievement.dto.AchievementCategoryDTO("TUDO", "Tudo", "Conquistas gerais");
+        var cat2 = new com.passaaqui.backend.modules.achievement.dto.AchievementCategoryDTO("COLHEITA", "Colheita", "Mercados");
+
+        when(achievementService.getCategories()).thenReturn(List.of(cat1, cat2));
+
+        mockMvc.perform(get("/api/achievements/categories"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].value").value("TUDO"))
+                .andExpect(jsonPath("$[0].label").value("Tudo"))
+                .andExpect(jsonPath("$[1].value").value("COLHEITA"));
     }
 
     @Test
     void getMyAchievements_shouldReturn200() throws Exception {
         AchievementResponseDTO response = new AchievementResponseDTO(
-                1, "Tapioca Real", "Desc", "http://storage/img.jpg", 50, 1, "Gastronomia", "Mercado São José", 5, "Mercado São José", true, LocalDateTime.now()
+                1, "Tapioca Real", "Desc", "http://storage/img.jpg", 50, 1, "Gastronomia", "COLHEITA", "Mercado São José", 5, "Mercado São José", true, LocalDateTime.now()
         );
 
         when(achievementService.listUserUnlockedAchievements(1)).thenReturn(List.of(response));
@@ -160,7 +226,7 @@ class AchievementControllerTest {
     @Test
     void unlock_shouldReturn200() throws Exception {
         AchievementResponseDTO response = new AchievementResponseDTO(
-                1, "Tapioca Real", "Desc", "http://storage/img.jpg", 50, 1, "Gastronomia", "Mercado São José", 5, "Mercado São José", true, LocalDateTime.now()
+                1, "Tapioca Real", "Desc", "http://storage/img.jpg", 50, 1, "Gastronomia", "COLHEITA", "Mercado São José", 5, "Mercado São José", true, LocalDateTime.now()
         );
 
         UnlockAchievementRequestDTO unlockDto = new UnlockAchievementRequestDTO(1, "Mercado São José", 5);
