@@ -29,8 +29,8 @@ public class XpCalculationService {
         boolean invalidGps = false;
         String blockReason = null;
 
-        if (!"turistico".equals(poiType)) {
-            return new CheckinResponseDTO(0, null, new AppliedRules(false, false), "POI is not a tourist point");
+        if (!"tourist".equalsIgnoreCase(poiType) && !"turistico".equalsIgnoreCase(poiType)) {
+            return new CheckinResponseDTO(0, null, new AppliedRules(false, false), "POI não é do tipo turístico");
         }
 
         // Anti-farming rules temporarily disabled:

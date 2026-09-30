@@ -115,9 +115,9 @@ class OrderServiceTest {
         var dto = new CheckoutRequestDTO(1, null);
         var checkoutResponse = new CheckoutResponseDTO("tx_123", 5000, "active", false, "pix-code", "qr-base64", 0, null, null, null, "2026-06-23T11:00:00Z", Map.of());
 
-        when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
+        when(touristRepository.findByIdForUpdate(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(false);
-        when(productRepository.findById(1)).thenReturn(Optional.of(product));
+        when(productRepository.findByIdForUpdate(1)).thenReturn(Optional.of(product));
         when(productRepository.save(any(ProductModel.class))).thenAnswer(i -> i.getArgument(0));
         when(orderRepository.save(any(OrderModel.class))).thenReturn(order);
         when(abacateClient.createCheckout(any())).thenReturn(checkoutResponse);
@@ -136,9 +136,9 @@ class OrderServiceTest {
         BigDecimal expectedDiscount = BigDecimal.valueOf(2.00); // 200 / 100
         BigDecimal expectedTotal = BigDecimal.valueOf(50.00).subtract(expectedDiscount);
 
-        when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
+        when(touristRepository.findByIdForUpdate(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(false);
-        when(productRepository.findById(1)).thenReturn(Optional.of(product));
+        when(productRepository.findByIdForUpdate(1)).thenReturn(Optional.of(product));
         when(productRepository.save(any(ProductModel.class))).thenAnswer(i -> i.getArgument(0));
         when(orderRepository.save(any(OrderModel.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(abacateClient.createCheckout(any())).thenReturn(checkoutResponse);
@@ -156,9 +156,9 @@ class OrderServiceTest {
         tourist.setCurrentXP(50);
         var dto = new CheckoutRequestDTO(1, 100);
 
-        when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
+        when(touristRepository.findByIdForUpdate(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(false);
-        when(productRepository.findById(1)).thenReturn(Optional.of(product));
+        when(productRepository.findByIdForUpdate(1)).thenReturn(Optional.of(product));
         when(productRepository.save(any(ProductModel.class))).thenAnswer(i -> i.getArgument(0));
 
         assertThrows(InvalidRequestException.class, () -> orderService.checkout(dto));
@@ -168,9 +168,9 @@ class OrderServiceTest {
     void checkout_shouldThrow_whenXpExceedsProductMax() {
         var dto = new CheckoutRequestDTO(1, 600);
 
-        when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
+        when(touristRepository.findByIdForUpdate(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(false);
-        when(productRepository.findById(1)).thenReturn(Optional.of(product));
+        when(productRepository.findByIdForUpdate(1)).thenReturn(Optional.of(product));
         when(productRepository.save(any(ProductModel.class))).thenAnswer(i -> i.getArgument(0));
 
         assertThrows(InvalidRequestException.class, () -> orderService.checkout(dto));
@@ -181,9 +181,9 @@ class OrderServiceTest {
         var dto = new CheckoutRequestDTO(1, null);
         var checkoutResponse = new CheckoutResponseDTO("tx_123", 5000, "active", false, "pix-code", "qr-base64", 0, null, null, null, "2026-06-23T11:00:00Z", Map.of());
 
-        when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
+        when(touristRepository.findByIdForUpdate(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(false);
-        when(productRepository.findById(1)).thenReturn(Optional.of(product));
+        when(productRepository.findByIdForUpdate(1)).thenReturn(Optional.of(product));
         when(productRepository.save(any(ProductModel.class))).thenAnswer(i -> i.getArgument(0));
         when(orderRepository.save(any(OrderModel.class))).thenReturn(order);
         when(abacateClient.createCheckout(any())).thenReturn(checkoutResponse);
@@ -200,7 +200,7 @@ class OrderServiceTest {
     void checkout_shouldThrow_whenTouristNotFound() {
         var dto = new CheckoutRequestDTO(1, null);
 
-        when(touristRepository.findById(1)).thenReturn(Optional.empty());
+        when(touristRepository.findByIdForUpdate(1)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> orderService.checkout(dto));
     }
@@ -209,7 +209,7 @@ class OrderServiceTest {
     void checkout_shouldThrow_whenActiveOrderExists() {
         var dto = new CheckoutRequestDTO(1, null);
 
-        when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
+        when(touristRepository.findByIdForUpdate(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> orderService.checkout(dto));
@@ -220,9 +220,9 @@ class OrderServiceTest {
         product.setStock(0);
         var dto = new CheckoutRequestDTO(1, null);
 
-        when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
+        when(touristRepository.findByIdForUpdate(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(false);
-        when(productRepository.findById(1)).thenReturn(Optional.of(product));
+        when(productRepository.findByIdForUpdate(1)).thenReturn(Optional.of(product));
 
         assertThrows(InvalidRequestException.class, () -> orderService.checkout(dto));
     }
@@ -231,9 +231,9 @@ class OrderServiceTest {
     void checkout_shouldThrow_whenProductNotFound() {
         var dto = new CheckoutRequestDTO(999, null);
 
-        when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
+        when(touristRepository.findByIdForUpdate(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.existsByTourist_IdAndStatusNotIn(eq(1), anyList())).thenReturn(false);
-        when(productRepository.findById(999)).thenReturn(Optional.empty());
+        when(productRepository.findByIdForUpdate(999)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> orderService.checkout(dto));
     }

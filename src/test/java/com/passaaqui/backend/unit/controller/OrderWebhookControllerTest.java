@@ -131,7 +131,7 @@ class OrderWebhookControllerTest {
                                 new OrderWebhookController.WebhookTransparent(orderId.toString(), "PAID")
                         )
                 ));
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(orderId)).thenReturn(Optional.of(order));
 
         mockMvc.perform(post("/api/orders-webhook/webhook/abacatepay")
                         .header("X-Webhook-Signature", signature)
@@ -170,7 +170,8 @@ class OrderWebhookControllerTest {
                                 new OrderWebhookController.WebhookTransparent(orderId.toString(), "CANCELED")
                         )
                 ));
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(orderId)).thenReturn(Optional.of(order));
+        when(productRepository.findByIdForUpdate(1)).thenReturn(Optional.of(order.getProduct()));
 
         mockMvc.perform(post("/api/orders-webhook/webhook/abacatepay")
                         .header("X-Webhook-Signature", signature)
@@ -203,7 +204,8 @@ class OrderWebhookControllerTest {
                                 new OrderWebhookController.WebhookTransparent(orderId.toString(), "FAILED")
                         )
                 ));
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(orderId)).thenReturn(Optional.of(order));
+        when(productRepository.findByIdForUpdate(1)).thenReturn(Optional.of(order.getProduct()));
 
         mockMvc.perform(post("/api/orders-webhook/webhook/abacatepay")
                         .header("X-Webhook-Signature", signature)
@@ -243,7 +245,7 @@ class OrderWebhookControllerTest {
                                 new OrderWebhookController.WebhookTransparent(orderId.toString(), "PAID")
                         )
                 ));
-        when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
+        when(orderRepository.findByIdForUpdate(orderId)).thenReturn(Optional.empty());
 
         mockMvc.perform(post("/api/orders-webhook/webhook/abacatepay")
                         .header("X-Webhook-Signature", signature)
@@ -251,6 +253,70 @@ class OrderWebhookControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
+        verify(orderRepository, never()).save(any());
+        verify(messagingTemplate, never()).convertAndSend(anyString(), any(OrderStatusDTO.class));
+    }
+
+    @Test
+    void handleWebhook_shouldBeIdempotent_whenPaymentCompletedTwice() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        String payload = "{\"event\":\"transparent.completed\",\"data\":{\"transparent\":{\"externalId\":\"" + orderId + "\",\"status\":\"PAID\"}}}";
+        String signature = computeHmacSha256(payload, WEBHOOK_SECRET);
+
+        OrderModel order = OrderModel.builder()
+                .id(orderId)
+                .status(OrderStatus.PAID)
+                .pickupCode("ABC123")
+                .build();
+
+        when(objectMapper.readValue(payload, OrderWebhookController.WebhookPayload.class))
+                .thenReturn(new OrderWebhookController.WebhookPayload(
+                        "transparent.completed",
+                        new OrderWebhookController.WebhookData(
+                                new OrderWebhookController.WebhookTransparent(orderId.toString(), "PAID")
+                        )
+                ));
+        when(orderRepository.findByIdForUpdate(orderId)).thenReturn(Optional.of(order));
+
+        mockMvc.perform(post("/api/orders-webhook/webhook/abacatepay")
+                        .header("X-Webhook-Signature", signature)
+                        .content(payload)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        verify(orderRepository, never()).save(any());
+        verify(messagingTemplate, never()).convertAndSend(anyString(), any(OrderStatusDTO.class));
+    }
+
+    @Test
+    void handleWebhook_shouldBeIdempotent_whenCancellationReceivedTwice() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        String payload = "{\"event\":\"transparent.canceled\",\"data\":{\"transparent\":{\"externalId\":\"" + orderId + "\",\"status\":\"CANCELED\"}}}";
+        String signature = computeHmacSha256(payload, WEBHOOK_SECRET);
+
+        OrderModel order = OrderModel.builder()
+                .id(orderId)
+                .product(createProductWithStock())
+                .quantity(1)
+                .status(OrderStatus.CANCELED)
+                .build();
+
+        when(objectMapper.readValue(payload, OrderWebhookController.WebhookPayload.class))
+                .thenReturn(new OrderWebhookController.WebhookPayload(
+                        "transparent.canceled",
+                        new OrderWebhookController.WebhookData(
+                                new OrderWebhookController.WebhookTransparent(orderId.toString(), "CANCELED")
+                        )
+                ));
+        when(orderRepository.findByIdForUpdate(orderId)).thenReturn(Optional.of(order));
+
+        mockMvc.perform(post("/api/orders-webhook/webhook/abacatepay")
+                        .header("X-Webhook-Signature", signature)
+                        .content(payload)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        verify(productRepository, never()).save(any(ProductModel.class));
         verify(orderRepository, never()).save(any());
         verify(messagingTemplate, never()).convertAndSend(anyString(), any(OrderStatusDTO.class));
     }
