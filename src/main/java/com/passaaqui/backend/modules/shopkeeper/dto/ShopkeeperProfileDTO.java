@@ -27,7 +27,7 @@ public record ShopkeeperProfileDTO(
             shopkeeper.getDocumentId(),
             shopkeeper.getCompanyName(),
             shopkeeper.getDescription(),
-            shopkeeper.getImage(),
+            shopkeeper.getImageUrl() != null ? shopkeeper.getImageUrl() : shopkeeper.getImage(),
             shopkeeper.getTheme(),
             shopkeeper.getCategory(),
             poi,

@@ -44,22 +44,22 @@ public class TouristService {
         return newTourist;
     }
 
+    private void populateImageUrl(TouristModel tourist) {
+        if (tourist.getImage() != null && !tourist.getImage().isBlank()) {
+            tourist.setImageUrl(storageService.getFileUrl(tourist.getImage()));
+        }
+    }
+
     public List<TouristModel> findAll() {
         List<TouristModel> tourists = repository.findAll();
-        for (TouristModel tourist : tourists) {
-            if (tourist.getImage() != null) {
-                tourist.setImageUrl(storageService.getFileUrl(tourist.getImage()));
-            }
-        }
+        tourists.forEach(this::populateImageUrl);
         return tourists;
     }
 
     public TouristModel findById(Integer id) {
         TouristModel tourist = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
-        if (tourist.getImage() != null) {
-            tourist.setImageUrl(storageService.getFileUrl(tourist.getImage()));
-        }
+        populateImageUrl(tourist);
         return tourist;
     }
 
@@ -76,20 +76,55 @@ public class TouristService {
                 throw new InvalidRequestException("Invalid identifier format");
             }
         }
-        if (tourist.getImage() != null) {
-            tourist.setImageUrl(storageService.getFileUrl(tourist.getImage()));
-        }
+        populateImageUrl(tourist);
         return tourist;
     }
 
     @Transactional
     public TouristModel update(String identifier, UpdateTouristDTO dto) {
         TouristModel tourist = findByIdOrEmail(identifier);
+        applyUpdateDto(tourist, dto);
+        TouristModel saved = repository.save(tourist);
+        populateImageUrl(saved);
+        return saved;
+    }
+
+    @Transactional
+    public TouristModel updateProfile(Integer touristId, UpdateTouristDTO dto, org.springframework.web.multipart.MultipartFile image) {
+        TouristModel tourist = findById(touristId);
+        applyUpdateDto(tourist, dto);
+
+        if (image != null && !image.isEmpty()) {
+            String imageName = storageService.uploadFile(image, "users");
+            tourist.setImage(imageName);
+        }
+
+        TouristModel saved = repository.save(tourist);
+        populateImageUrl(saved);
+        return saved;
+    }
+
+    @Transactional
+    public TouristModel updateAvatar(Integer touristId, org.springframework.web.multipart.MultipartFile image) {
+        if (image == null || image.isEmpty()) {
+            throw new InvalidRequestException("Image file must not be empty");
+        }
+
+        TouristModel tourist = findById(touristId);
+        String imageName = storageService.uploadFile(image, "users");
+        tourist.setImage(imageName);
+
+        TouristModel saved = repository.save(tourist);
+        populateImageUrl(saved);
+        return saved;
+    }
+
+    private void applyUpdateDto(TouristModel tourist, UpdateTouristDTO dto) {
+        if (dto == null) return;
         if (dto.name() != null && !dto.name().isBlank()) tourist.setName(dto.name());
         if (dto.password() != null && !dto.password().isBlank()) tourist.setPassword(passwordEncoder.encode(dto.password()));
         if (dto.documentId() != null && !dto.documentId().isBlank()) tourist.setDocumentId(dto.documentId());
         if (dto.theme() != null) tourist.setTheme(dto.theme());
-        return repository.save(tourist);
     }
 
     @Transactional

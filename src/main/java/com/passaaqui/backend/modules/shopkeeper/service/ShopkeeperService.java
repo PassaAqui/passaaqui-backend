@@ -86,38 +86,107 @@ public class ShopkeeperService {
         return newShopkeeper;
     }
 
+    private void populateImageUrl(ShopkeeperModel shopkeeper) {
+        if (shopkeeper.getImage() != null && !shopkeeper.getImage().isBlank()) {
+            shopkeeper.setImageUrl(storageService.getFileUrl(shopkeeper.getImage()));
+        }
+    }
+
     public List<ShopkeeperModel> findAll() {
-        return repository.findAll();
+        List<ShopkeeperModel> shopkeepers = repository.findAll();
+        shopkeepers.forEach(this::populateImageUrl);
+        return shopkeepers;
     }
 
     public ShopkeeperModel findById(Integer id) {
-        return repository.findById(id)
+        ShopkeeperModel shopkeeper = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Shopkeeper not found"));
+        populateImageUrl(shopkeeper);
+        return shopkeeper;
     }
 
     public ShopkeeperProfileDTO findProfileById(Integer id) {
         ShopkeeperModel shopkeeper = findById(id);
         PoiModel poi = poiRepository.findByShopkeeperId(id)
                 .orElseThrow(() -> new ResourceNotFoundException("POI not found for this shopkeeper"));
+        if (poi.getImage() != null && !poi.getImage().isBlank()) {
+            poi.setImageUrl(storageService.getFileUrl(poi.getImage()));
+        }
         return ShopkeeperProfileDTO.from(shopkeeper, poi);
     }
 
     public ShopkeeperModel findByIdOrEmail(String identifier) {
+        ShopkeeperModel shopkeeper;
         if (identifier.contains("@")) {
-            return repository.findByEmail(identifier)
+            shopkeeper = repository.findByEmail(identifier)
                 .orElseThrow(() -> new ResourceNotFoundException("Shopkeeper not found"));
+        } else {
+            try {
+                shopkeeper = repository.findById(Integer.parseInt(identifier))
+                    .orElseThrow(() -> new ResourceNotFoundException("Shopkeeper not found"));
+            } catch (NumberFormatException e) {
+                throw new InvalidRequestException("Invalid identifier format");
+            }
         }
-        try {
-            return repository.findById(Integer.parseInt(identifier))
-                .orElseThrow(() -> new ResourceNotFoundException("Shopkeeper not found"));
-        } catch (NumberFormatException e) {
-            throw new InvalidRequestException("Invalid identifier format");
-        }
+        populateImageUrl(shopkeeper);
+        return shopkeeper;
     }
 
     @Transactional
     public ShopkeeperModel update(String identifier, UpdateShopkeeperDTO dto) {
         ShopkeeperModel shopkeeper = findByIdOrEmail(identifier);
+        applyUpdateDto(shopkeeper, dto);
+        ShopkeeperModel saved = repository.save(shopkeeper);
+        populateImageUrl(saved);
+        return saved;
+    }
+
+    @Transactional
+    public ShopkeeperProfileDTO updateProfile(Integer shopkeeperId, UpdateShopkeeperDTO dto, MultipartFile image) {
+        ShopkeeperModel shopkeeper = findById(shopkeeperId);
+        applyUpdateDto(shopkeeper, dto);
+
+        if (image != null && !image.isEmpty()) {
+            String imageName = storageService.uploadFile(image, "users");
+            shopkeeper.setImage(imageName);
+        }
+
+        ShopkeeperModel saved = repository.save(shopkeeper);
+        populateImageUrl(saved);
+
+        PoiModel poi = poiRepository.findByShopkeeperId(shopkeeperId)
+                .orElseThrow(() -> new ResourceNotFoundException("POI not found for this shopkeeper"));
+        if (poi.getImage() != null && !poi.getImage().isBlank()) {
+            poi.setImageUrl(storageService.getFileUrl(poi.getImage()));
+        }
+
+        return ShopkeeperProfileDTO.from(saved, poi);
+    }
+
+    @Transactional
+    public ShopkeeperProfileDTO updateAvatar(Integer shopkeeperId, MultipartFile image) {
+        if (image == null || image.isEmpty()) {
+            throw new InvalidRequestException("Image file must not be empty");
+        }
+
+        ShopkeeperModel shopkeeper = findById(shopkeeperId);
+        String imageName = storageService.uploadFile(image, "users");
+        shopkeeper.setImage(imageName);
+
+        ShopkeeperModel saved = repository.save(shopkeeper);
+        populateImageUrl(saved);
+
+        PoiModel poi = poiRepository.findByShopkeeperId(shopkeeperId)
+                .orElseThrow(() -> new ResourceNotFoundException("POI not found for this shopkeeper"));
+        if (poi.getImage() != null && !poi.getImage().isBlank()) {
+            poi.setImageUrl(storageService.getFileUrl(poi.getImage()));
+        }
+
+        return ShopkeeperProfileDTO.from(saved, poi);
+    }
+
+    private void applyUpdateDto(ShopkeeperModel shopkeeper, UpdateShopkeeperDTO dto) {
+        if (dto == null) return;
         if (dto.name() != null && !dto.name().isBlank()) shopkeeper.setName(dto.name());
         if (dto.password() != null && !dto.password().isBlank()) shopkeeper.setPassword(passwordEncoder.encode(dto.password()));
         if (dto.documentId() != null && !dto.documentId().isBlank()) shopkeeper.setDocumentId(dto.documentId());
@@ -131,7 +200,6 @@ public class ShopkeeperService {
         if (dto.theme() != null) {
             shopkeeper.setTheme(dto.theme());
         }
-        return repository.save(shopkeeper);
     }
 
     @Transactional
