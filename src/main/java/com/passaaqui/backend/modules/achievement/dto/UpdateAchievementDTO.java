@@ -16,9 +16,16 @@ public record UpdateAchievementDTO(
     @JsonProperty("category_id")
     Integer categoryId,
 
+    @JsonProperty("category")
+    String category,
+
     @Size(max = 200, message = "Location must not exceed 200 characters")
     String location,
 
     @JsonProperty("poi_id")
     Integer poiId
-) {}
+) {
+    public UpdateAchievementDTO(String name, String description, Integer xpReward, Integer categoryId, String location, Integer poiId) {
+        this(name, description, xpReward, categoryId, null, location, poiId);
+    }
+}

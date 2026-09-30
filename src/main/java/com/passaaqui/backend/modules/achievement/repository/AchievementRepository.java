@@ -13,4 +13,6 @@ public interface AchievementRepository extends JpaRepository<AchievementModel, I
     boolean existsByNameIgnoreCase(String name);
 
     List<AchievementModel> findByCategoryId(Integer categoryId);
+
+    List<AchievementModel> findByAchievementCategory(com.passaaqui.backend.modules.achievement.model.enums.AchievementCategory achievementCategory);
 }

@@ -52,6 +52,10 @@ public class AchievementService {
             achievement.setCategory(category);
         }
 
+        if (dto.category() != null && !dto.category().isBlank()) {
+            achievement.setAchievementCategory(parseCategory(dto.category()));
+        }
+
         if (dto.poiId() != null) {
             com.passaaqui.backend.modules.poi.model.PoiModel poi = poiRepository.findById(dto.poiId())
                     .orElseThrow(() -> new ResourceNotFoundException("POI not found"));
@@ -100,6 +104,10 @@ public class AchievementService {
             achievement.setCategory(category);
         }
 
+        if (dto.category() != null && !dto.category().isBlank()) {
+            achievement.setAchievementCategory(parseCategory(dto.category()));
+        }
+
         if (dto.poiId() != null) {
             com.passaaqui.backend.modules.poi.model.PoiModel poi = poiRepository.findById(dto.poiId())
                     .orElseThrow(() -> new ResourceNotFoundException("POI not found"));
@@ -144,9 +152,32 @@ public class AchievementService {
         return toResponseDTO(achievement, null);
     }
 
-    public List<AchievementResponseDTO> listAll(Integer userId, Integer categoryId) {
+    public List<com.passaaqui.backend.modules.achievement.dto.AchievementCategoryDTO> getCategories() {
+        return java.util.Arrays.stream(com.passaaqui.backend.modules.achievement.model.enums.AchievementCategory.values())
+                .map(cat -> new com.passaaqui.backend.modules.achievement.dto.AchievementCategoryDTO(
+                        cat.name(),
+                        cat.getLabel(),
+                        cat.getDescription()
+                ))
+                .toList();
+    }
+
+    public List<AchievementResponseDTO> listAll(Integer userId, Integer categoryId, String categoryFilter) {
         List<AchievementModel> achievements;
-        if (categoryId != null) {
+
+        if (categoryFilter != null && !categoryFilter.isBlank()) {
+            com.passaaqui.backend.modules.achievement.model.enums.AchievementCategory parsed = parseCategory(categoryFilter);
+            if (parsed == com.passaaqui.backend.modules.achievement.model.enums.AchievementCategory.TUDO) {
+                achievements = categoryId != null ? achievementRepository.findByCategoryId(categoryId) : achievementRepository.findAll();
+            } else {
+                achievements = achievementRepository.findByAchievementCategory(parsed);
+                if (categoryId != null) {
+                    achievements = achievements.stream()
+                            .filter(a -> a.getCategory() != null && categoryId.equals(a.getCategory().getId()))
+                            .toList();
+                }
+            }
+        } else if (categoryId != null) {
             achievements = achievementRepository.findByCategoryId(categoryId);
         } else {
             achievements = achievementRepository.findAll();
@@ -165,6 +196,14 @@ public class AchievementService {
         return achievements.stream()
                 .map(achievement -> toResponseDTO(achievement, null))
                 .toList();
+    }
+
+    private com.passaaqui.backend.modules.achievement.model.enums.AchievementCategory parseCategory(String value) {
+        try {
+            return com.passaaqui.backend.modules.achievement.model.enums.AchievementCategory.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new com.passaaqui.backend.infra.exception.InvalidRequestException("Invalid achievement category: " + value);
+        }
     }
 
     public List<AchievementResponseDTO> listUserUnlockedAchievements(Integer userId) {
@@ -258,11 +297,16 @@ public class AchievementService {
                 achievement.getXpReward(),
                 achievement.getCategory() != null ? achievement.getCategory().getId() : null,
                 achievement.getCategory() != null ? achievement.getCategory().getName() : null,
+                achievement.getAchievementCategory() != null ? achievement.getAchievementCategory().name() : null,
                 location,
                 poiId,
                 poiName,
                 unlocked,
                 unlockedAt
         );
+    }
+
+    public List<AchievementResponseDTO> listAll(Integer userId, Integer categoryId) {
+        return listAll(userId, categoryId, null);
     }
 }

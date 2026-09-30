@@ -42,6 +42,10 @@ public class AchievementModel {
     @JoinColumn(name = "category_id")
     private CategoryModel category;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "achievement_category", length = 50)
+    private com.passaaqui.backend.modules.achievement.model.enums.AchievementCategory achievementCategory = com.passaaqui.backend.modules.achievement.model.enums.AchievementCategory.TUDO;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "poi_id")
     private com.passaaqui.backend.modules.poi.model.PoiModel poi;

@@ -172,7 +172,7 @@ class AchievementServiceTest {
         when(userAchievementRepository.findByUserId(10)).thenReturn(List.of(ua));
         when(storageService.getFileUrl("tapioca.jpg")).thenReturn("http://storage/tapioca.jpg");
 
-        List<AchievementResponseDTO> list = achievementService.listAll(10, null);
+        List<AchievementResponseDTO> list = achievementService.listAll(10, null, null);
 
         assertEquals(1, list.size());
         assertTrue(list.get(0).unlocked());
@@ -180,6 +180,57 @@ class AchievementServiceTest {
         assertEquals(5, list.get(0).poiId());
         assertEquals("Mercado São José", list.get(0).poiName());
         assertEquals(LocalDateTime.of(2026, 4, 1, 12, 0), list.get(0).unlockedAt());
+    }
+
+    @Test
+    void listAll_shouldReturnAll_whenCategoryIsTudo() {
+        when(achievementRepository.findAll()).thenReturn(List.of(achievement));
+
+        List<AchievementResponseDTO> list = achievementService.listAll(null, null, "TUDO");
+
+        assertEquals(1, list.size());
+        verify(achievementRepository).findAll();
+    }
+
+    @Test
+    void listAll_shouldFilterByCategory_whenValidCategoryProvided() {
+        achievement.setAchievementCategory(com.passaaqui.backend.modules.achievement.model.enums.AchievementCategory.COLHEITA);
+        when(achievementRepository.findByAchievementCategory(com.passaaqui.backend.modules.achievement.model.enums.AchievementCategory.COLHEITA))
+                .thenReturn(List.of(achievement));
+
+        List<AchievementResponseDTO> list = achievementService.listAll(null, null, "COLHEITA");
+
+        assertEquals(1, list.size());
+        assertEquals("COLHEITA", list.get(0).category());
+        verify(achievementRepository).findByAchievementCategory(com.passaaqui.backend.modules.achievement.model.enums.AchievementCategory.COLHEITA);
+    }
+
+    @Test
+    void listAll_shouldReturnEmptyList_whenCategoryHasNoAchievements() {
+        when(achievementRepository.findByAchievementCategory(com.passaaqui.backend.modules.achievement.model.enums.AchievementCategory.FLORACAO))
+                .thenReturn(List.of());
+
+        List<AchievementResponseDTO> list = achievementService.listAll(null, null, "FLORACAO");
+
+        assertNotNull(list);
+        assertTrue(list.isEmpty());
+    }
+
+    @Test
+    void listAll_shouldThrowInvalidRequestException_whenCategoryIsInvalid() {
+        assertThrows(com.passaaqui.backend.infra.exception.InvalidRequestException.class,
+                () -> achievementService.listAll(null, null, "INVALIDO"));
+    }
+
+    @Test
+    void getCategories_shouldReturnAllCategoriesWithTudoFirst() {
+        List<com.passaaqui.backend.modules.achievement.dto.AchievementCategoryDTO> categories = achievementService.getCategories();
+
+        assertNotNull(categories);
+        assertFalse(categories.isEmpty());
+        assertEquals("TUDO", categories.get(0).value());
+        assertEquals("Tudo", categories.get(0).label());
+        assertTrue(categories.stream().anyMatch(c -> c.value().equals("COLHEITA") && c.label().equals("Colheita")));
     }
 
     @Test

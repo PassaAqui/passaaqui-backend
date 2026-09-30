@@ -55,11 +55,17 @@ public class AchievementController {
         return ResponseEntity.ok(achievementService.getById(id, userId));
     }
 
+    @GetMapping("/categories")
+    public ResponseEntity<List<com.passaaqui.backend.modules.achievement.dto.AchievementCategoryDTO>> getCategories() {
+        return ResponseEntity.ok(achievementService.getCategories());
+    }
+
     @GetMapping
     public ResponseEntity<List<AchievementResponseDTO>> listAll(
-            @RequestParam(value = "category_id", required = false) Integer categoryId) {
+            @RequestParam(value = "category_id", required = false) Integer categoryId,
+            @RequestParam(value = "category", required = false) String category) {
         Integer userId = getCurrentUserIdOrNull();
-        return ResponseEntity.ok(achievementService.listAll(userId, categoryId));
+        return ResponseEntity.ok(achievementService.listAll(userId, categoryId, category));
     }
 
     @GetMapping("/my")
