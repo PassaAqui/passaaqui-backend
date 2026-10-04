@@ -82,6 +82,7 @@ http://localhost:8080/api
 ### 👤 Usuários
 - [`GET /api/users`](#get-apiusers)
 - [`GET /api/users/{identifier}`](#get-apiusersidentifier)
+- [`PUT /api/users/{id}`](#put-apiusersid)
 - [`PATCH /api/users/theme`](#patch-apiuserstheme)
 
 ### 🛡️ Administradores
@@ -95,6 +96,8 @@ http://localhost:8080/api
 ### 🏖️ Turistas
 - [`GET /api/tourists`](#get-apitourists)
 - [`GET /api/tourists/me`](#get-apitouristsme)
+- [`PUT /api/tourists/me`](#put-apitouristsme)
+- [`PATCH /api/tourists/me/avatar`](#patch-apitouristsmeavatar)
 - [`GET /api/tourists/me/travel-history`](#get-apitouristsmetravel-history)
 - [`GET /api/tourists/{identifier}`](#get-apitouristsidentifier)
 - [`GET /api/tourists/{identifier}/travel-history`](#get-apitouristsidentifiertravel-history)
@@ -104,6 +107,8 @@ http://localhost:8080/api
 ### 🏪 Lojistas
 - [`GET /api/shopkeepers`](#get-apishopkeepers)
 - [`GET /api/shopkeepers/me`](#get-apishopkeepersme)
+- [`PUT /api/shopkeepers/me`](#put-apishopkeepersme)
+- [`PATCH /api/shopkeepers/me/avatar`](#patch-apishopkeepersmeavatar)
 - [`GET /api/shopkeepers/{identifier}`](#get-apishopkeepersidentifier)
 - [`PUT /api/shopkeepers/{identifier}`](#put-apishopkeepersidentifier)
 - [`DELETE /api/shopkeepers/{identifier}`](#delete-apishopkeepersidentifier)
@@ -160,11 +165,14 @@ http://localhost:8080/api
 - [`DELETE /api/products/{id}`](#delete-apiproductsid)
 - [`POST /api/products/{id}/images`](#post-apiproductsidimages) `🔒 SHOPKEEPER / ADMIN`
 - [`DELETE /api/products/{id}/images/{index}`](#delete-apiproductsidimagesindex) `🔒 SHOPKEEPER / ADMIN`
+- [`POST /api/products/{productId}/ratings`](#post-apiproductsproductidratings) `🔒 TOURIST`
+- [`GET /api/products/{productId}/ratings`](#get-apiproductsproductidratings)
 
 ### 🏆 Conquistas (Achievements)
 - [`POST /api/achievements`](#post-apiachievements) `🔒 ADMIN`
 - [`PUT /api/achievements/{id}`](#put-apiachievementsid) `🔒 ADMIN`
 - [`DELETE /api/achievements/{id}`](#delete-apiachievementsid) `🔒 ADMIN`
+- [`GET /api/achievements/categories`](#get-apiachievementscategories) `🔓 Público`
 - [`GET /api/achievements`](#get-apiachievements)
 - [`GET /api/achievements/{id}`](#get-apiachievementsid)
 - [`GET /api/achievements/my`](#get-apiachievementsmy) `🔒 TOURIST`
@@ -179,6 +187,7 @@ http://localhost:8080/api
 - [`GET /api/orders/my-history`](#get-apiordersmyhistory)
 - [`GET /api/orders/purchased-products`](#get-apiorderspurchased-products) `🔒 TOURIST`
 - [`GET /api/orders/{id}`](#get-apiordersid)
+- [`POST /api/orders-webhook/webhook/abacatepay`](#post-apiorders-webhookwebhookabacatepay) `🔓 Webhook Público`
 
 ## 🧭 Direções (Rotas)
 
@@ -864,7 +873,7 @@ Retorna a lista de **todos os usuários** cadastrados (tourists, shopkeepers e a
 
 #### Permissões
 
-A classe `UserController` possui `@PreAuthorize("hasRole('ROLE_ADMIN')")` — entretanto, o `SecurityFilter` nunca cria uma authority com o nome `ROLE_ROLE_ADMIN` (apenas `ROLE_ADMIN_USER` ou `ROLE_ADMIN_ROOT`). Isso torna este endpoint **inacessível** na prática (veja [Observações Técnicas](#-observações-técnicas)).
+`ADMIN_USER` ou `ADMIN_ROOT`
 
 #### Headers
 
@@ -881,6 +890,8 @@ A classe `UserController` possui `@PreAuthorize("hasRole('ROLE_ADMIN')")` — en
     "email": "turista@email.com",
     "name": "João Turista",
     "role": "TOURIST",
+    "image": "http://localhost:9000/passaaqui-bucket/users/avatar.jpg",
+    "theme": "LIGHT",
     "createdAt": "2026-05-24T10:00:00",
     "updatedAt": "2026-05-24T10:00:00"
   },
@@ -889,6 +900,8 @@ A classe `UserController` possui `@PreAuthorize("hasRole('ROLE_ADMIN')")` — en
     "email": "lojista@email.com",
     "name": "Maria Lojista",
     "role": "SHOPKEEPER",
+    "image": "http://localhost:9000/passaaqui-bucket/users/shopkeeper.jpg",
+    "theme": "LIGHT",
     "createdAt": "2026-05-24T10:01:00",
     "updatedAt": "2026-05-24T10:01:00"
   }
@@ -902,6 +915,7 @@ A classe `UserController` possui `@PreAuthorize("hasRole('ROLE_ADMIN')")` — en
 | Status | Motivo |
 |---|---|
 | 401 | Token ausente ou inválido |
+| 403 | Role não autorizada (exige ADMIN_USER ou ADMIN_ROOT) |
 
 ---
 
@@ -921,7 +935,7 @@ Retorna um usuário específico por **ID** ou **e-mail**.
 
 #### Permissões
 
-Mesmo problema do endpoint anterior — `@PreAuthorize("hasRole('ROLE_ADMIN')")` nunca corresponde a uma authority real.
+`ADMIN_USER` ou `ADMIN_ROOT`
 
 #### Path Params
 
@@ -937,6 +951,8 @@ Mesmo problema do endpoint anterior — `@PreAuthorize("hasRole('ROLE_ADMIN')")`
   "email": "turista@email.com",
   "name": "João Turista",
   "role": "TOURIST",
+  "image": "http://localhost:9000/passaaqui-bucket/users/avatar.jpg",
+  "theme": "LIGHT",
   "createdAt": "2026-05-24T10:00:00",
   "updatedAt": "2026-05-24T10:00:00"
 }
@@ -948,6 +964,79 @@ Mesmo problema do endpoint anterior — `@PreAuthorize("hasRole('ROLE_ADMIN')")`
 |---|---|
 | 400 | Formato do `identifier` inválido |
 | 401 | Token ausente ou inválido |
+| 403 | Role não autorizada (exige ADMIN_USER ou ADMIN_ROOT) |
+| 404 | Usuário não encontrado |
+
+---
+
+### PUT /api/users/{id}
+
+#### Descrição
+
+Atualiza os dados cadastrais (nome) e/ou a foto de perfil de um usuário específico por ID.
+
+#### Controller
+
+`UserController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+`ADMIN_USER` ou `ADMIN_ROOT`
+
+#### Path Params
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `id` | Integer | ID do usuário a atualizar |
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `multipart/form-data` |
+
+#### Request Body (multipart/form-data)
+
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `data` | String (JSON) | Sim | Objeto JSON contendo `"name"` |
+| `image` | File | Não | Novo arquivo de avatar/foto de perfil |
+
+**Exemplo de JSON em `data`:**
+```json
+{
+  "name": "Nome Atualizado"
+}
+```
+
+#### Response 200 (OK)
+
+Retorna o objeto `UserModel` atualizado com a URL pública de imagem.
+
+```json
+{
+  "id": 1,
+  "email": "turista@email.com",
+  "name": "Nome Atualizado",
+  "role": "TOURIST",
+  "image": "http://localhost:9000/passaaqui-bucket/users/avatar.jpg",
+  "theme": "LIGHT",
+  "createdAt": "2026-05-24T10:00:00",
+  "updatedAt": "2026-05-24T12:00:00"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não autorizada (exige ADMIN_USER ou ADMIN_ROOT) |
 | 404 | Usuário não encontrado |
 
 ---
@@ -1424,6 +1513,8 @@ Apenas `TOURIST`
   "name": "João Turista",
   "role": "TOURIST",
   "theme": "LIGHT",
+  "image": "http://localhost:9000/passaaqui-bucket/users/avatar-1.jpg",
+  "imageUrl": "http://localhost:9000/passaaqui-bucket/users/avatar-1.jpg",
   "createdAt": "2026-05-24T10:00:00",
   "updatedAt": "2026-05-24T10:00:00",
   "deviceId": null,
@@ -1438,6 +1529,146 @@ Apenas `TOURIST`
 
 | Status | Motivo |
 |---|---|
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+| 404 | Turista não encontrado |
+
+---
+
+### PUT /api/tourists/me
+
+#### Descrição
+
+Atualiza os dados de perfil do **turista autenticado** e permite atualizar ou enviar sua **foto de perfil (avatar)**. O endpoint recebe `multipart/form-data` contendo a parte JSON `data` e a parte opcional `image`.
+
+#### Controller
+
+`TouristController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `multipart/form-data` |
+
+#### Request Body (multipart/form-data)
+
+| Parte | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `data` | JSON (Part) | Sim | Objeto `UpdateTouristDTO` com os dados a atualizar |
+| `image` | File (Part) | Não | Novo arquivo de imagem da foto de perfil (avatar) |
+
+**Campos do JSON `data` (`UpdateTouristDTO`):**
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| `name` | String | Não | Nome do turista |
+| `password` | String | Não | Se preenchido, deve seguir a regra de senha do sistema |
+| `documentId` | String | Não | CPF do turista |
+| `theme` | String (enum) | Não | `LIGHT` ou `DARK` |
+
+**Exemplo de requisição com `curl`:**
+
+```bash
+curl -X PUT http://localhost:8080/api/tourists/me \
+  -H "Authorization: Bearer <token>" \
+  -F 'data={
+  "name": "João Turista Atualizado",
+  "documentId": "12345678909",
+  "theme": "DARK"
+};type=application/json' \
+  -F 'image=@/caminho/para/avatar.jpg'
+```
+
+#### Response 200 (OK)
+
+```json
+{
+  "id": 1,
+  "email": "turista@email.com",
+  "name": "João Turista Atualizado",
+  "role": "TOURIST",
+  "theme": "DARK",
+  "image": "http://localhost:9000/passaaqui-bucket/users/avatar-uuid.jpg",
+  "imageUrl": "http://localhost:9000/passaaqui-bucket/users/avatar-uuid.jpg",
+  "createdAt": "2026-05-24T10:00:00",
+  "updatedAt": "2026-05-24T12:00:00",
+  "deviceId": null,
+  "documentId": "12345678909",
+  "lastKnownLocation": null,
+  "currentXP": 0,
+  "level": 0
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Dados inválidos ou erro no upload |
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+| 404 | Turista não encontrado |
+
+---
+
+### PATCH /api/tourists/me/avatar
+
+#### Descrição
+
+Atualiza exclusivamente a **foto de perfil (avatar)** do **turista autenticado**.
+
+#### Controller
+
+`TouristController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `multipart/form-data` |
+
+#### Request Body (multipart/form-data)
+
+| Parâmetro | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `image` | File | Sim | Arquivo de imagem a ser definido como avatar |
+
+**Exemplo de requisição com `curl`:**
+
+```bash
+curl -X PATCH http://localhost:8080/api/tourists/me/avatar \
+  -H "Authorization: Bearer <token>" \
+  -F 'image=@/caminho/para/nova-foto.jpg'
+```
+
+#### Response 200 (OK)
+
+Retorna o objeto `TouristModel` com o avatar atualizado.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Arquivo ausente ou inválido |
 | 401 | Token ausente ou inválido |
 | 403 | Role não é TOURIST |
 | 404 | Turista não encontrado |
@@ -1789,15 +2020,13 @@ Apenas `SHOPKEEPER`
 ```json
 {
   "id": 2,
-  "email": "lojista@email.com",
   "name": "Maria Lojista",
-  "role": "SHOPKEEPER",
-  "theme": "LIGHT",
-  "createdAt": "2026-05-24T10:01:00",
-  "updatedAt": "2026-05-24T10:01:00",
+  "email": "lojista@email.com",
   "documentId": "11222333000181",
   "companyName": "Maria's Comércio",
   "description": "Loja de artesanato local",
+  "image": "http://localhost:9000/passaaqui-bucket/users/avatar-2.jpg",
+  "theme": "LIGHT",
   "category": {
     "id": 1,
     "name": "Alimentação",
@@ -1806,7 +2035,8 @@ Apenas `SHOPKEEPER`
   "poi": {
     "id": 10,
     "name": "Store POI",
-    "description": null,
+    "description": "Loja de artesanato no centro",
+    "imageUrl": "http://localhost:9000/passaaqui-bucket/pois/store-10.jpg",
     "type": "STORE",
     "latitude": -23.5,
     "longitude": -46.6,
@@ -1814,7 +2044,9 @@ Apenas `SHOPKEEPER`
       "id": 1,
       "name": "São Paulo"
     }
-  }
+  },
+  "createdAt": "2026-05-24T10:01:00",
+  "updatedAt": "2026-05-24T10:01:00"
 }
 ```
 
@@ -1826,6 +2058,171 @@ Apenas `SHOPKEEPER`
 | 403 | Role não é SHOPKEEPER |
 | 404 | Lojista não encontrado |
 | 404 | POI não encontrado para este lojista |
+
+---
+
+### PUT /api/shopkeepers/me
+
+#### Descrição
+
+Atualiza os dados de perfil do **lojista autenticado**, incluindo dados da loja / POI vinculado (`poiName`, `poiDescription`), com suporte a upload de imagem do lojista (`image` / avatar) e logotipo ou imagem da loja (`poiImage`). O endpoint recebe `multipart/form-data`.
+
+#### Controller
+
+`ShopkeeperController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `SHOPKEEPER`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `multipart/form-data` |
+
+#### Request Body (multipart/form-data)
+
+| Parte | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `data` | JSON (Part) | Sim | Objeto `UpdateShopkeeperDTO` com os dados a atualizar |
+| `image` | File (Part) | Não | Novo arquivo de imagem da foto de perfil (avatar do lojista) |
+| `poiImage` | File (Part) | Não | Novo arquivo de imagem do ponto comercial / loja (logo do POI) |
+
+**Campos do JSON `data` (`UpdateShopkeeperDTO`):**
+
+| Campo | Tipo | Obrigatório | Validação |
+|---|---|---|---|
+| `name` | String | Não | Nome do lojista |
+| `password` | String | Não | Se preenchido, deve seguir a regra de senha do sistema |
+| `documentId` | String | Não | CPF ou CNPJ do lojista |
+| `companyName` | String | Não | Nome da empresa / razão social |
+| `description` | String | Não | Descrição da empresa |
+| `categoryId` | Integer | Não | ID de categoria existente |
+| `theme` | String (enum) | Não | `LIGHT` ou `DARK` |
+| `poiName` | String | Não | Nome fantasia / nome de exibição do ponto comercial (POI) |
+| `poiDescription` | String | Não | Descrição detalhada do ponto comercial (POI) |
+
+**Exemplo de requisição com `curl`:**
+
+```bash
+curl -X PUT http://localhost:8080/api/shopkeepers/me \
+  -H "Authorization: Bearer <token>" \
+  -F 'data={
+  "name": "Maria Lojista Atualizada",
+  "companyName": "Maria Artesanatos LTDA",
+  "poiName": "Maria Artesanatos",
+  "poiDescription": "Loja especializada em bordados e cerâmica regional",
+  "theme": "DARK"
+};type=application/json' \
+  -F 'image=@/caminho/para/avatar.jpg' \
+  -F 'poiImage=@/caminho/para/logo-loja.jpg'
+```
+
+#### Response 200 (OK)
+
+Retorna o objeto `ShopkeeperProfileDTO` com dados do lojista e do POI atualizados:
+
+```json
+{
+  "id": 2,
+  "name": "Maria Lojista Atualizada",
+  "email": "lojista@email.com",
+  "documentId": "11222333000181",
+  "companyName": "Maria Artesanatos LTDA",
+  "description": "Loja especializada em bordados e cerâmica regional",
+  "image": "http://localhost:9000/passaaqui-bucket/users/avatar-novo.jpg",
+  "theme": "DARK",
+  "category": {
+    "id": 1,
+    "name": "Alimentação",
+    "description": "Restaurantes, lanchonetes e food trucks"
+  },
+  "poi": {
+    "id": 10,
+    "name": "Maria Artesanatos",
+    "description": "Loja especializada em bordados e cerâmica regional",
+    "imageUrl": "http://localhost:9000/passaaqui-bucket/pois/logo-novo.jpg",
+    "type": "STORE",
+    "latitude": -23.5,
+    "longitude": -46.6,
+    "city": {
+      "id": 1,
+      "name": "São Paulo"
+    }
+  },
+  "createdAt": "2026-05-24T10:01:00",
+  "updatedAt": "2026-05-24T12:00:00"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Dados inválidos ou erro no upload |
+| 401 | Token ausente ou inválido |
+| 403 | Role não é SHOPKEEPER |
+| 404 | Lojista ou POI não encontrado |
+
+---
+
+### PATCH /api/shopkeepers/me/avatar
+
+#### Descrição
+
+Atualiza exclusivamente a **foto de perfil (avatar)** do **lojista autenticado**.
+
+#### Controller
+
+`ShopkeeperController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `SHOPKEEPER`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `multipart/form-data` |
+
+#### Request Body (multipart/form-data)
+
+| Parâmetro | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `image` | File | Sim | Arquivo de imagem a ser definido como avatar do lojista |
+
+**Exemplo de requisição com `curl`:**
+
+```bash
+curl -X PATCH http://localhost:8080/api/shopkeepers/me/avatar \
+  -H "Authorization: Bearer <token>" \
+  -F 'image=@/caminho/para/nova-foto-lojista.jpg'
+```
+
+#### Response 200 (OK)
+
+Retorna o objeto `ShopkeeperProfileDTO` com o avatar atualizado.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Arquivo ausente ou inválido |
+| 401 | Token ausente ou inválido |
+| 403 | Role não é SHOPKEEPER |
+| 404 | Lojista não encontrado |
 
 ---
 
@@ -4112,11 +4509,84 @@ Exclui uma conquista do sistema, remove sua imagem no MinIO e desvincula as conq
 
 ---
 
+### GET /api/achievements/categories
+
+#### Descrição
+
+Lista todas as categorias de conquistas suportadas pela plataforma, com seus respectivos identificadores, rótulos amigáveis de exibição (`label`) e descrições detalhadas.
+
+#### Controller
+
+`AchievementController`
+
+#### Autenticação
+
+🔓 Pública (não requer autenticação)
+
+#### Response 200 (OK)
+
+```json
+[
+  {
+    "value": "TUDO",
+    "label": "Tudo",
+    "description": "Conquistas gerais, sem categoria específica"
+  },
+  {
+    "value": "SABORES_DA_MATA",
+    "label": "Sabores da Mata",
+    "description": "Visitar restaurantes, lanchonetes e bares; provar pratos típicos"
+  },
+  {
+    "value": "GRAO_DE_OURO",
+    "label": "Grão de Ouro",
+    "description": "Visitar padarias e cafeterias"
+  },
+  {
+    "value": "COLHEITA",
+    "label": "Colheita",
+    "description": "Conhecer mercados e feiras locais"
+  },
+  {
+    "value": "SEIVA_VITAL",
+    "label": "Seiva Vital",
+    "description": "Visitar farmácias e lojas de saúde parceiras"
+  },
+  {
+    "value": "INSTINTO_SELVAGEM",
+    "label": "Instinto Selvagem",
+    "description": "Check-in em academias e centros esportivos"
+  },
+  {
+    "value": "FLORACAO",
+    "label": "Floração",
+    "description": "Visitar salões, barbearias e clínicas de estética"
+  },
+  {
+    "value": "COMPANHEIROS_DA_MATA",
+    "label": "Companheiros da Mata",
+    "description": "Visitar pet shops e cuidados animais"
+  },
+  {
+    "value": "RAIZES_DO_BRASIL",
+    "label": "Raízes do Brasil",
+    "description": "Museus, teatros, igrejas históricas, patrimônio e eventos culturais"
+  },
+  {
+    "value": "DESBRAVADOR",
+    "label": "Desbravador",
+    "description": "Praias, parques, mirantes e roteiros"
+  }
+]
+```
+
+---
+
 ### GET /api/achievements
 
 #### Descrição
 
-Lista todas as conquistas do sistema, com suporte a filtro por categoria (`category_id`). Se a requisição for feita por um usuário autenticado (ou com token Bearer), cada conquista incluirá o status `unlocked: true/false`, a data de desbloqueio `unlocked_at`, e o local/POI onde foi obtida (`location`, `poi_id`, `poi_name`), permitindo que o aplicativo renderize os detalhes completos do modal e dos cards.
+Lista todas as conquistas do sistema, com suporte a filtro por ID da categoria (`category_id`) ou pelo nome/chave da categoria (`category`). Se a requisição for feita por um usuário autenticado (ou com token Bearer), cada conquista incluirá o status `unlocked: true/false`, a data de desbloqueio `unlocked_at`, e o local/POI onde foi obtida (`location`, `poi_id`, `poi_name`), permitindo que o aplicativo renderize os detalhes completos do modal e dos cards.
 
 #### Controller
 
@@ -4131,6 +4601,7 @@ Pública / Opcional (se autenticado, calcula o status `unlocked` para o turista 
 | Parâmetro | Tipo | Obrigatório | Descrição |
 |---|---|---|---|
 | `category_id` | Integer | Não | Filtrar por ID de categoria (ex: Gastronomia, Cultura) |
+| `category` | String | Não | Filtrar pelo nome ou código da categoria de conquista (ex: `SABORES_DA_MATA`, `DESBRAVADOR`) |
 
 #### Response 200 (OK)
 
@@ -4860,6 +5331,64 @@ Retorna os detalhes de um pedido específico. Apenas o **turista que criou o ped
 
 ---
 
+### POST /api/orders-webhook/webhook/abacatepay
+
+#### Descrição
+
+Endpoint público de **Webhook da AbacatePay** para notificações assíncronas de cobranças PIX transparentes. Valida a assinatura HMAC-SHA256 (`X-Webhook-Signature`) e atualiza o status do pedido (`PAID` com geração de código de retirada `pickupCode`, ou `CANCELED` com devolução do estoque do produto). Também notifica clientes conectados via WebSocket no tópico `/topic/orders/{orderId}`.
+
+#### Controller
+
+`OrderWebhookController`
+
+#### Autenticação
+
+🔓 Aberto (autenticado por assinatura criptográfica HMAC-SHA256)
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| `X-Webhook-Signature` | Sim | Assinatura HMAC-SHA256 do corpo bruto (`rawBody`) da requisição |
+| `Content-Type` | Sim | `application/json` |
+
+#### Request Body
+
+Payload JSON enviado pelo webhook da AbacatePay.
+
+**Exemplo:**
+
+```json
+{
+  "event": "transparent.completed",
+  "data": {
+    "transparent": {
+      "id": "trans_123456",
+      "externalId": "550e8400-e29b-41d4-a716-446655440000",
+      "status": "COMPLETED",
+      "amount": 4990
+    }
+  }
+}
+```
+
+**Eventos tratados:**
+- `transparent.completed`: Transforma o pedido em `PAID`, gera o `pickupCode` e notifica via WebSocket.
+- `transparent.canceled`, `transparent.failed`, `transparent.refunded`: Transforma o pedido em `CANCELED`, devolve as unidades ao estoque do produto e notifica via WebSocket.
+
+#### Response 200 (OK)
+
+Corpo vazio.
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Payload JSON inválido ou malformatado |
+| 403 | Assinatura HMAC em `X-Webhook-Signature` inválida ou chave secreta incorreta |
+
+---
+
 ## 🔌 WebSocket (STOMP)
 
 ### ws://host/ws
@@ -4950,18 +5479,20 @@ host:localhost:8080
 | Módulo | Endpoints | Públicos | Autenticados | Admin | Role Específica |
 |---|---|---|---|---|---|---|
 | Auth | 5 | 5 | — | — | — |
-| Users | 2 | — | — | 2 | ADMIN_USER/ROOT |
+| Users | 4 | — | 1 | 3 | ADMIN_USER/ROOT |
 | Admin | 6 | — | — | 6 | ADMIN_ROOT |
-| Tourists | 4 | — | — | 4 | ADMIN_USER/ROOT |
-| Shopkeepers | 4 | — | — | 4 | ADMIN_USER/ROOT |
-| Cities | 5 | — | — | 5 | ADMIN_USER/ROOT |
-| Categories | 5 | — | — | 5 | ADMIN_USER/ROOT |
-| POIs | 6 | — | 3 | 3 | TOURIST (checkin) |
-| POI Ratings | 2 | — | 1 | — | TOURIST |
+| Tourists | 9 | — | — | 5 | TOURIST (4) / ADMIN |
+| Shopkeepers | 7 | — | — | 4 | SHOPKEEPER (3) / ADMIN |
+| Cities | 6 | — | — | 6 | ADMIN_USER/ROOT |
+| Categories | 5 | 2 | — | 3 | ADMIN_USER/ROOT |
+| POIs | 10 | 2 | — | 5 | SHOPKEEPER (1) / TOURIST (2) |
+| POI Ratings | 2 | 1 | — | — | TOURIST (1) |
 | Direction | 1 | — | — | — | TOURIST |
 | Route | 4 | — | — | — | TOURIST |
-| Products | 9 | — | 4 | — | SHOPKEEPER / TOURIST |
-| Achievements | 7 | — | 2 | 3 | TOURIST / ADMIN |
-| Orders | 7 | — | 1 | — | TOURIST / SHOPKEEPER |
+| Dashboard | 1 | — | — | — | SHOPKEEPER |
+| Products | 11 | 3 | — | 2 | SHOPKEEPER (4) / TOURIST (2) |
+| Product Ratings | 2 | 1 | — | — | TOURIST (1) |
+| Achievements | 8 | 2 | — | 4 | TOURIST (2) / ADMIN |
+| Orders | 9 | 1 | 1 | — | TOURIST / SHOPKEEPER |
 | WebSocket (STOMP) | 1 | — | — | — | TOURIST / SHOPKEEPER |
-| **Total** | **72** | **5** | **13** | **32** | **22** |
+| **Total** | **91** | **14** | **2** | **33** | **42** |
