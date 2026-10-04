@@ -143,6 +143,11 @@ public class ShopkeeperService {
 
     @Transactional
     public ShopkeeperProfileDTO updateProfile(Integer shopkeeperId, UpdateShopkeeperDTO dto, MultipartFile image) {
+        return updateProfile(shopkeeperId, dto, image, null);
+    }
+
+    @Transactional
+    public ShopkeeperProfileDTO updateProfile(Integer shopkeeperId, UpdateShopkeeperDTO dto, MultipartFile image, MultipartFile poiImage) {
         ShopkeeperModel shopkeeper = findById(shopkeeperId);
         applyUpdateDto(shopkeeper, dto);
 
@@ -156,11 +161,27 @@ public class ShopkeeperService {
 
         PoiModel poi = poiRepository.findByShopkeeperId(shopkeeperId)
                 .orElseThrow(() -> new ResourceNotFoundException("POI not found for this shopkeeper"));
-        if (poi.getImage() != null && !poi.getImage().isBlank()) {
-            poi.setImageUrl(storageService.getFileUrl(poi.getImage()));
+
+        if (dto != null) {
+            if (dto.poiName() != null && !dto.poiName().isBlank()) {
+                poi.setName(dto.poiName());
+            }
+            if (dto.poiDescription() != null && !dto.poiDescription().isBlank()) {
+                poi.setDescription(dto.poiDescription());
+            }
         }
 
-        return ShopkeeperProfileDTO.from(saved, poi);
+        if (poiImage != null && !poiImage.isEmpty()) {
+            String poiImageName = storageService.uploadFile(poiImage, "pois");
+            poi.setImage(poiImageName);
+        }
+
+        PoiModel savedPoi = poiRepository.save(poi);
+        if (savedPoi.getImage() != null && !savedPoi.getImage().isBlank()) {
+            savedPoi.setImageUrl(storageService.getFileUrl(savedPoi.getImage()));
+        }
+
+        return ShopkeeperProfileDTO.from(saved, savedPoi);
     }
 
     @Transactional
