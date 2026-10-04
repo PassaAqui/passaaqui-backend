@@ -27,6 +27,9 @@ public record AchievementResponseDTO(
     @JsonProperty("category_name")
     String categoryName,
 
+    @JsonProperty("category")
+    String category,
+
     @JsonProperty("location")
     String location,
 
