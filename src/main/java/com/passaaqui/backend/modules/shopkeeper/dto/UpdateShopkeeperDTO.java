@@ -9,9 +9,15 @@ public record UpdateShopkeeperDTO(
     String companyName,
     String description,
     Integer categoryId,
-    ThemePreference theme
+    ThemePreference theme,
+    String poiName,
+    String poiDescription
 ) {
     public UpdateShopkeeperDTO(String name, String password, String documentId, String companyName, String description, Integer categoryId) {
-        this(name, password, documentId, companyName, description, categoryId, null);
+        this(name, password, documentId, companyName, description, categoryId, null, null, null);
+    }
+
+    public UpdateShopkeeperDTO(String name, String password, String documentId, String companyName, String description, Integer categoryId, ThemePreference theme) {
+        this(name, password, documentId, companyName, description, categoryId, theme, null, null);
     }
 }
