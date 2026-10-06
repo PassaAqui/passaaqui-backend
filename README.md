@@ -213,13 +213,34 @@ $env:MINIO_BUCKET_NAME="passaaqui-bucket"
 
 ### Executando com Docker Compose
 
-Ao executar com Docker Compose, todos os serviços periféricos (PostgreSQL, Redis, MinIO) já sobem orquestrados e prontos para uso:
+Para rodar todo o ecossistema (PostgreSQL, Redis, MinIO e a API Backend) via Docker Compose:
 
-```bash
-docker compose up -d
-```
+1. **Configurar as variáveis de ambiente:**
+   Copie o arquivo de exemplo [.env.example](./.env.example) para `.env` (se ainda não existir):
+   
+   **Linux / macOS**
+   ```bash
+   cp .env.example .env
+   ```
 
-A aplicação backend estará disponível em `http://localhost:8080`.
+   **Windows (PowerShell)**
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+
+   Ajuste as variáveis e chaves de API conforme necessário no arquivo `.env`.
+
+2. **Subir os serviços:**
+   ```bash
+   docker compose up -d --build
+   ```
+
+   **Serviços iniciados:**
+   - **Backend API:** `http://localhost:8080`
+   - **PostgreSQL:** porta `5432`
+   - **Redis:** porta `6379`
+   - **MinIO API:** `http://localhost:9000`
+   - **MinIO Console (Web):** `http://localhost:9001` (usuário padrão: `root` / senha: `root@123`)
 
 ### Criar administrador inicial
 
