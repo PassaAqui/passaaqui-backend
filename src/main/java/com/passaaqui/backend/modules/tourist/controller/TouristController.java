@@ -39,6 +39,39 @@ public class TouristController {
         return ResponseEntity.ok(service.findById(userId));
     }
 
+    @PutMapping(value = "/me", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('TOURIST')")
+    public ResponseEntity<TouristModel> updateMe(
+            @org.springframework.web.bind.annotation.RequestPart("data") @Valid UpdateTouristDTO dto,
+            @org.springframework.web.bind.annotation.RequestPart(value = "image", required = false) org.springframework.web.multipart.MultipartFile image) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.parseInt(authentication.getPrincipal().toString());
+        return ResponseEntity.ok(service.updateProfile(userId, dto, image));
+    }
+
+    @org.springframework.web.bind.annotation.PatchMapping(value = "/me/avatar", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('TOURIST')")
+    public ResponseEntity<TouristModel> updateAvatar(
+            @org.springframework.web.bind.annotation.RequestParam("image") org.springframework.web.multipart.MultipartFile image) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.parseInt(authentication.getPrincipal().toString());
+        return ResponseEntity.ok(service.updateAvatar(userId, image));
+    }
+
+    @GetMapping("/me/travel-history")
+    @PreAuthorize("hasRole('TOURIST')")
+    public ResponseEntity<List<com.passaaqui.backend.modules.poi.dto.PoiTravelHistoryDTO>> myTravelHistory() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.parseInt(authentication.getPrincipal().toString());
+        return ResponseEntity.ok(service.getPoiTravelHistory(userId));
+    }
+
+    @GetMapping("/{identifier}/travel-history")
+    public ResponseEntity<List<com.passaaqui.backend.modules.poi.dto.PoiTravelHistoryDTO>> travelHistoryByIdentifier(@PathVariable String identifier) {
+        TouristModel tourist = service.findByIdOrEmail(identifier);
+        return ResponseEntity.ok(service.getPoiTravelHistory(tourist.getId()));
+    }
+
     @GetMapping("/{identifier}")
     public ResponseEntity<TouristModel> findByIdentifier(@PathVariable String identifier) {
         return ResponseEntity.ok(service.findByIdOrEmail(identifier));

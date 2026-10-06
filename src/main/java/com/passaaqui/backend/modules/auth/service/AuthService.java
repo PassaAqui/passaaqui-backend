@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.passaaqui.backend.infra.exception.InvalidRequestException;
 import com.passaaqui.backend.modules.auth.model.AuthModel;
@@ -105,7 +106,7 @@ public class AuthService {
         return touristService.createUser(dto.email(), dto.name(), password_hash, dto.documentId());
     }
 
-    public ShopkeeperModel registerAccountShopkeeper(RegisterShopkeeperDTO dto) {
+    public ShopkeeperModel registerAccountShopkeeper(RegisterShopkeeperDTO dto, MultipartFile image) {
         if (!dto.password().equalsIgnoreCase(dto.confirm_password()))
             throw new InvalidRequestException("The passwords provided are not the same.");
 
@@ -113,7 +114,8 @@ public class AuthService {
 
         return shopkeeperService.createUser(dto.email(), dto.name(), password_hash, dto.documentId(), dto.companyName(), dto.description(), dto.categoryId(),
             dto.poiName(), dto.poiDescription(), dto.latitude(), dto.longitude(),
-            dto.minLatitude(), dto.maxLatitude(), dto.minLongitude(), dto.maxLongitude(), dto.cityId());
+            dto.minLatitude(), dto.maxLatitude(), dto.minLongitude(), dto.maxLongitude(), dto.cityId(),
+            image);
     }
 
     public JWTObject loginAccount(String email, String password, String userAgent, String ipAddress) {

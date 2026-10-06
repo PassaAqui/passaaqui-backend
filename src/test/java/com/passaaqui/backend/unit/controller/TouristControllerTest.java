@@ -84,6 +84,75 @@ class TouristControllerTest {
     }
 
     @Test
+    void updateMe_shouldReturn200WithoutImage() throws Exception {
+        UpdateTouristDTO dto = new UpdateTouristDTO("Updated Tourist", "NewP@ssw0rd1", "12345678901");
+        TouristModel tourist = new TouristModel();
+        tourist.setId(1);
+        tourist.setName("Updated Tourist");
+        tourist.setEmail("tourist@test.com");
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("1", null, null));
+
+        when(service.updateProfile(eq(1), any(UpdateTouristDTO.class), isNull())).thenReturn(tourist);
+
+        org.springframework.mock.web.MockMultipartFile dataPart = new org.springframework.mock.web.MockMultipartFile(
+                "data", "data", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(dto));
+
+        mockMvc.perform(multipart(org.springframework.http.HttpMethod.PUT, "/api/tourists/me")
+                        .file(dataPart))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Updated Tourist"));
+    }
+
+    @Test
+    void updateMe_shouldReturn200WithImage() throws Exception {
+        UpdateTouristDTO dto = new UpdateTouristDTO("Updated Tourist", "NewP@ssw0rd1", "12345678901");
+        TouristModel tourist = new TouristModel();
+        tourist.setId(1);
+        tourist.setName("Updated Tourist");
+        tourist.setImageUrl("http://storage.com/avatar.jpg");
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("1", null, null));
+
+        when(service.updateProfile(eq(1), any(UpdateTouristDTO.class), any())).thenReturn(tourist);
+
+        org.springframework.mock.web.MockMultipartFile dataPart = new org.springframework.mock.web.MockMultipartFile(
+                "data", "data", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(dto));
+        org.springframework.mock.web.MockMultipartFile imagePart = new org.springframework.mock.web.MockMultipartFile(
+                "image", "avatar.jpg", MediaType.IMAGE_JPEG_VALUE, "fake-bytes".getBytes());
+
+        mockMvc.perform(multipart(org.springframework.http.HttpMethod.PUT, "/api/tourists/me")
+                        .file(dataPart)
+                        .file(imagePart))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.image").value("http://storage.com/avatar.jpg"));
+    }
+
+    @Test
+    void updateAvatar_shouldReturn200() throws Exception {
+        TouristModel tourist = new TouristModel();
+        tourist.setId(1);
+        tourist.setImageUrl("http://storage.com/avatar.jpg");
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("1", null, null));
+
+        when(service.updateAvatar(eq(1), any())).thenReturn(tourist);
+
+        org.springframework.mock.web.MockMultipartFile imagePart = new org.springframework.mock.web.MockMultipartFile(
+                "image", "avatar.jpg", MediaType.IMAGE_JPEG_VALUE, "fake-bytes".getBytes());
+
+        mockMvc.perform(multipart(org.springframework.http.HttpMethod.PATCH, "/api/tourists/me/avatar")
+                        .file(imagePart))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.image").value("http://storage.com/avatar.jpg"));
+    }
+
+    @Test
     void findAll_shouldReturn200() throws Exception {
         TouristModel tourist = new TouristModel();
         tourist.setId(1);
@@ -196,5 +265,49 @@ class TouristControllerTest {
 
         mockMvc.perform(delete("/api/tourists/999"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void myTravelHistory_shouldReturn200() throws Exception {
+        com.passaaqui.backend.modules.poi.dto.PoiTravelHistoryDTO historyItem =
+                new com.passaaqui.backend.modules.poi.dto.PoiTravelHistoryDTO(
+                        1, 10, "Cristo Redentor", "Monumento", "http://image.url",
+                        com.passaaqui.backend.modules.poi.model.enums.PoiType.TOURIST_POINT, "Rio de Janeiro", 50, 1.2, java.time.LocalDateTime.now()
+                );
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("1", null, null));
+
+        when(service.getPoiTravelHistory(1)).thenReturn(List.of(historyItem));
+
+        mockMvc.perform(get("/api/tourists/me/travel-history"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].visit_id").value(1))
+                .andExpect(jsonPath("$[0].poi_id").value(10))
+                .andExpect(jsonPath("$[0].poi_name").value("Cristo Redentor"))
+                .andExpect(jsonPath("$[0].city_name").value("Rio de Janeiro"))
+                .andExpect(jsonPath("$[0].xp_earned").value(50));
+    }
+
+    @Test
+    void travelHistoryByIdentifier_shouldReturn200() throws Exception {
+        TouristModel tourist = new TouristModel();
+        tourist.setId(5);
+        tourist.setEmail("tourist5@test.com");
+
+        com.passaaqui.backend.modules.poi.dto.PoiTravelHistoryDTO historyItem =
+                new com.passaaqui.backend.modules.poi.dto.PoiTravelHistoryDTO(
+                        2, 12, "Praia de Boa Viagem", "Praia", "http://image2.url",
+                        com.passaaqui.backend.modules.poi.model.enums.PoiType.TOURIST_POINT, "Recife", 30, 0.5, java.time.LocalDateTime.now()
+                );
+
+        when(service.findByIdOrEmail("5")).thenReturn(tourist);
+        when(service.getPoiTravelHistory(5)).thenReturn(List.of(historyItem));
+
+        mockMvc.perform(get("/api/tourists/5/travel-history"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].visit_id").value(2))
+                .andExpect(jsonPath("$[0].poi_name").value("Praia de Boa Viagem"))
+                .andExpect(jsonPath("$[0].city_name").value("Recife"));
     }
 }

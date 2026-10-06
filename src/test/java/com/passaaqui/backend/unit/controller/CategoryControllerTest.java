@@ -4,16 +4,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.passaaqui.backend.infra.exception.GlobalExceptionHandler;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.modules.category.controller.CategoryController;
+import com.passaaqui.backend.modules.category.dto.CategoryFeedDTO;
 import com.passaaqui.backend.modules.category.dto.CreateCategoryDTO;
 import com.passaaqui.backend.modules.category.dto.UpdateCategoryDTO;
 import com.passaaqui.backend.modules.category.model.CategoryModel;
 import com.passaaqui.backend.modules.category.service.CategoryService;
+import com.passaaqui.backend.modules.product.model.ProductModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -42,6 +48,7 @@ class CategoryControllerTest {
     void setup() {
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .build();
         objectMapper = new ObjectMapper();
     }
@@ -102,22 +109,45 @@ class CategoryControllerTest {
     }
 
     @Test
-    void findById_shouldReturn200() throws Exception {
+    void findById_shouldReturnFeedWithProducts() throws Exception {
         CategoryModel category = new CategoryModel();
         category.setId(1);
         category.setName("Food");
 
-        when(service.findById(1)).thenReturn(category);
+        Page<ProductModel> emptyPage = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
+
+        when(service.findFeedById(eq(1), any())).thenReturn(CategoryFeedDTO.from(category, emptyPage));
 
         mockMvc.perform(get("/api/categories/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("Food"));
+                .andExpect(jsonPath("$.name").value("Food"))
+                .andExpect(jsonPath("$.products.content").isArray())
+                .andExpect(jsonPath("$.products.totalElements").value(0));
+    }
+
+    @Test
+    void findById_shouldReturnFeedWithPageParams() throws Exception {
+        CategoryModel category = new CategoryModel();
+        category.setId(1);
+        category.setName("Food");
+
+        Page<ProductModel> page = new PageImpl<>(List.of(), PageRequest.of(0, 5), 0);
+
+        when(service.findFeedById(eq(1), any())).thenReturn(CategoryFeedDTO.from(category, page));
+
+        mockMvc.perform(get("/api/categories/1")
+                        .param("page", "0")
+                        .param("size", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.products.size").value(5))
+                .andExpect(jsonPath("$.products.number").value(0));
     }
 
     @Test
     void findById_shouldReturn404WhenNotFound() throws Exception {
-        when(service.findById(999)).thenThrow(new ResourceNotFoundException("Category not found"));
+        when(service.findFeedById(eq(999), any())).thenThrow(new ResourceNotFoundException("Category not found"));
 
         mockMvc.perform(get("/api/categories/999"))
                 .andExpect(status().isNotFound());

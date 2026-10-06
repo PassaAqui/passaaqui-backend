@@ -10,7 +10,8 @@ public record CreateProductDTO(
 
     String description,
 
-    @Min(0)
+    @NotNull
+    @jakarta.validation.constraints.DecimalMin(value = "5.0", message = "Price must be at least 5.00")
     Double price,
 
     Integer maxXp,
@@ -25,5 +26,9 @@ public record CreateProductDTO(
     Integer poiId,
 
     @NotNull
-    Integer categoryId
+    Integer categoryId,
+
+    Boolean active,
+
+    Boolean highlight
 ) {}

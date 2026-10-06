@@ -25,7 +25,7 @@ public record RegisterShopkeeperDTO(
 
     @NotNull
     @Document(message = "Invalid document")
-    @Size(min = 14, max = 18, message = "Invalid document")
+    @Size(min = 11, max = 18, message = "Invalid document")
     String documentId,
 
     @NotNull

@@ -5,11 +5,15 @@ import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.modules.city.model.CityModel;
 import com.passaaqui.backend.modules.city.repository.CityRepository;
 import com.passaaqui.backend.modules.poi.dto.CreatePoiDTO;
+import com.passaaqui.backend.modules.poi.dto.PoiDetailDTO;
 import com.passaaqui.backend.modules.poi.dto.PoiNearbyDTO;
 import com.passaaqui.backend.modules.poi.dto.UpdatePoiDTO;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.poi.model.enums.PoiType;
 import com.passaaqui.backend.modules.poi.repository.PoiRepository;
+import com.passaaqui.backend.modules.product.dto.ProductDTO;
+import com.passaaqui.backend.modules.product.repository.ProductRepository;
+import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +49,7 @@ public class PoiService {
     private final PoiRepository repository;
     private final CityRepository cityRepository;
     private final StorageService storageService;
+    private final ProductRepository productRepository;
 
     @Transactional
     public PoiModel create(CreatePoiDTO dto, MultipartFile image) {
@@ -54,7 +60,6 @@ public class PoiService {
         poi.setName(dto.name());
         poi.setDescription(dto.description());
         poi.setType(dto.type());
-        poi.setXpReward(dto.type() == PoiType.STORE ? null : dto.xpReward());
         poi.setLatitude(dto.latitude());
         poi.setLongitude(dto.longitude());
         poi.setMinLatitude(dto.minLatitude());
@@ -102,6 +107,25 @@ public class PoiService {
             .orElseThrow(() -> new ResourceNotFoundException("POI not found"));
     }
 
+    public PoiDetailDTO findDetailById(Integer id) {
+        PoiModel poi = findById(id);
+        String imageUrl = poi.getImage() != null ? storageService.getFileUrl(poi.getImage()) : null;
+
+        List<ProductDTO> products = Collections.emptyList();
+        if (poi.getType() == PoiType.STORE) {
+            products = productRepository.findByPoiId(id).stream()
+                .map(p -> {
+                    List<String> urls = p.getImages().stream()
+                        .map(storageService::getFileUrl)
+                        .toList();
+                    return ProductDTO.from(p, urls);
+                })
+                .toList();
+        }
+
+        return PoiDetailDTO.from(poi, imageUrl, products);
+    }
+
     @Transactional
     public PoiModel update(Integer id, UpdatePoiDTO dto) {
         PoiModel poi = findById(id);
@@ -129,6 +153,23 @@ public class PoiService {
     public void delete(Integer id) {
         PoiModel poi = findById(id);
         repository.delete(poi);
+    }
+
+    @Transactional
+    public PoiModel setXpReward(Integer id, Integer xpReward) {
+        PoiModel poi = findById(id);
+        poi.setXpReward(xpReward);
+        return repository.save(poi);
+    }
+
+    @Transactional
+    public PoiModel updateImage(Integer id, MultipartFile image) {
+        PoiModel poi = findById(id);
+        if (image != null && !image.isEmpty()) {
+            String imageName = storageService.uploadFile(image, "pois");
+            poi.setImage(imageName);
+        }
+        return repository.save(poi);
     }
 
     private double getRadiusForMode(String mode) {

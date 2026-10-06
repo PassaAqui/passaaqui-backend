@@ -1,13 +1,20 @@
 package com.passaaqui.backend.modules.order.service;
 
+import com.passaaqui.backend.infra.exception.ForbiddenException;
 import com.passaaqui.backend.infra.exception.InvalidRequestException;
 import com.passaaqui.backend.infra.integration.abacatepay.AbacateClient;
+import com.passaaqui.backend.infra.integration.storage.StorageService;
 import com.passaaqui.backend.infra.exception.ConflictException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.modules.order.dto.CheckoutRequestDTO;
 import com.passaaqui.backend.modules.order.dto.OrderResponseDTO;
+import com.passaaqui.backend.modules.order.dto.PurchasedProductItemDTO;
+import com.passaaqui.backend.modules.order.dto.PurchasedProductsResponseDTO;
+import com.passaaqui.backend.modules.order.dto.ShopkeeperOrderDTO;
+import com.passaaqui.backend.modules.order.dto.UpdateOrderStatusDTO;
 import com.passaaqui.backend.modules.order.model.OrderModel;
 import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
+import com.passaaqui.backend.modules.order.model.enums.RedemptionStatus;
 import com.passaaqui.backend.modules.order.repository.OrderRepository;
 import com.passaaqui.backend.modules.product.model.ProductModel;
 import com.passaaqui.backend.modules.product.repository.ProductRepository;
@@ -26,8 +33,11 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Comparator;
-import java.util.List;
+import java.security.SecureRandom;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.*;
 import java.util.stream.Stream;
 
 @Service
@@ -39,6 +49,7 @@ public class OrderService {
     private final ShopkeeperRepository shopkeeperRepository;
     private final TouristRepository touristRepository;
     private final AbacateClient abacateClient;
+    private final StorageService storageService;
 
     @Value("${xp.conversion-factor}")
     private int xpConversionFactor;
@@ -74,6 +85,7 @@ public class OrderService {
 
         BigDecimal unitPrice = BigDecimal.valueOf(product.getPrice());
         BigDecimal totalAmount = unitPrice;
+        BigDecimal cashDiscount = BigDecimal.ZERO;
 
         if (request.xpToUse() != null && request.xpToUse() > 0) {
             if (request.xpToUse() > tourist.getCurrentXP()) {
@@ -84,9 +96,9 @@ public class OrderService {
                 throw new InvalidRequestException("Este produto permite no máximo " + product.getMaxXp() + " XP de desconto.");
             }
 
-            BigDecimal discountAmount = calculateDiscount(request.xpToUse(), unitPrice, product.getMaxXp());
+            cashDiscount = calculateDiscount(request.xpToUse(), unitPrice, product.getMaxXp());
 
-            totalAmount = unitPrice.subtract(discountAmount).max(BigDecimal.ZERO);
+            totalAmount = unitPrice.subtract(cashDiscount).max(BigDecimal.ZERO);
 
             tourist.setCurrentXP(tourist.getCurrentXP() - request.xpToUse());
             touristRepository.save(tourist);
@@ -98,7 +110,9 @@ public class OrderService {
                 .product(product)
                 .quantity(1)
                 .totalAmount(totalAmount)
+                .cashDiscount(cashDiscount)
                 .status(OrderStatus.PENDING)
+                .code(generateOrderCode())
                 .build();
 
         order = orderRepository.save(order);
@@ -238,13 +252,178 @@ public class OrderService {
                 .toList();
     }
 
-    public OrderResponseDTO getMyCurrentOrder() {
+    public PurchasedProductsResponseDTO getPurchasedProducts() {
         String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
         TouristModel tourist = touristRepository.findById(Integer.parseInt(userId))
                 .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
 
-        OrderModel order = orderRepository.findTopByTourist_IdAndStatusOrderByCreatedAtDesc(tourist.getId(), OrderStatus.PAID)
-                .orElseThrow(() -> new ResourceNotFoundException("No paid order found"));
+        List<OrderModel> orders = orderRepository.findByTourist_IdAndStatusInOrderByCreatedAtDesc(
+                tourist.getId(),
+                List.of(OrderStatus.PAID, OrderStatus.PREPARING, OrderStatus.READY_FOR_PICKUP, OrderStatus.COMPLETED)
+        );
+
+        List<PurchasedProductItemDTO> unredeemed = new ArrayList<>();
+        List<PurchasedProductItemDTO> redeemed = new ArrayList<>();
+
+        for (OrderModel order : orders) {
+            String imageUrl = null;
+            if (order.getProduct() != null && order.getProduct().getImages() != null && !order.getProduct().getImages().isEmpty()) {
+                imageUrl = storageService.getFileUrl(order.getProduct().getImages().get(0));
+            }
+
+            String orderCode = order.getCode();
+
+            if (order.getStatus() == OrderStatus.COMPLETED) {
+                LocalDate redemptionDate = order.getRedeemedAt() != null
+                        ? order.getRedeemedAt().toLocalDate()
+                        : (order.getUpdatedAt() != null ? order.getUpdatedAt().toLocalDate() : (order.getCreatedAt() != null ? order.getCreatedAt().toLocalDate() : null));
+
+                redeemed.add(new PurchasedProductItemDTO(
+                        order.getProduct() != null ? order.getProduct().getId() : null,
+                        orderCode,
+                        order.getProduct() != null ? order.getProduct().getName() : null,
+                        imageUrl,
+                        RedemptionStatus.REDEEMED,
+                        null,
+                        redemptionDate
+                ));
+            } else {
+                LocalDate expirationDate = order.getExpiresAt() != null
+                        ? order.getExpiresAt().toLocalDate()
+                        : (order.getCreatedAt() != null ? order.getCreatedAt().plusDays(30).toLocalDate() : null);
+
+                unredeemed.add(new PurchasedProductItemDTO(
+                        order.getProduct() != null ? order.getProduct().getId() : null,
+                        orderCode,
+                        order.getProduct() != null ? order.getProduct().getName() : null,
+                        imageUrl,
+                        RedemptionStatus.UNREDEEMED,
+                        expirationDate,
+                        null
+                ));
+            }
+        }
+
+        return new PurchasedProductsResponseDTO(unredeemed, redeemed);
+    }
+
+    public List<ShopkeeperOrderDTO> getShopkeeperOrdersByStatus(OrderStatus status) {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        ShopkeeperModel shopkeeper = shopkeeperRepository.findById(Integer.parseInt(userId))
+                .orElseThrow(() -> new ResourceNotFoundException("Shopkeeper not found"));
+
+        List<OrderModel> orders;
+        if (status != null) {
+            orders = orderRepository.findByShopkeeper_IdAndStatusOrderByCreatedAtDesc(shopkeeper.getId(), status);
+        } else {
+            orders = orderRepository.findByShopkeeper_IdOrderByCreatedAtDesc(shopkeeper.getId());
+        }
+
+        return orders.stream().map(ShopkeeperOrderDTO::from).toList();
+    }
+
+    @Transactional
+    public ShopkeeperOrderDTO updateOrderStatus(UUID orderId, UpdateOrderStatusDTO dto) {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        ShopkeeperModel shopkeeper = shopkeeperRepository.findById(Integer.parseInt(userId))
+                .orElseThrow(() -> new ResourceNotFoundException("Shopkeeper not found"));
+
+        OrderModel order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (!order.getShopkeeper().getId().equals(shopkeeper.getId())) {
+            throw new com.passaaqui.backend.infra.exception.ForbiddenException("This order does not belong to you");
+        }
+
+        order.setStatus(dto.status());
+        if (dto.status() == OrderStatus.COMPLETED && order.getRedeemedAt() == null) {
+            order.setRedeemedAt(LocalDateTime.now());
+        }
+        order = orderRepository.save(order);
+
+        String productImage = order.getProduct().getImages().isEmpty() ? null
+                : storageService.getFileUrl(order.getProduct().getImages().get(0));
+
+        return ShopkeeperOrderDTO.from(order, productImage);
+    }
+
+    public List<ShopkeeperOrderDTO> getRecentOrders(Integer shopkeeperId, int limit) {
+        return orderRepository.findTop5ByShopkeeper_IdOrderByCreatedAtDesc(shopkeeperId)
+                .stream()
+                .map(ShopkeeperOrderDTO::from)
+                .toList();
+    }
+
+    public long countOrdersToday(Integer shopkeeperId) {
+        LocalDate today = LocalDate.now();
+        return orderRepository.countByShopkeeper_IdAndCreatedAtBetween(shopkeeperId,
+                today.atStartOfDay(), today.atTime(LocalTime.MAX));
+    }
+
+    public BigDecimal revenueToday(Integer shopkeeperId) {
+        LocalDate today = LocalDate.now();
+        List<OrderModel> orders = orderRepository.findByShopkeeper_IdOrderByCreatedAtDesc(shopkeeperId);
+        return orders.stream()
+                .filter(o -> o.getStatus() == OrderStatus.COMPLETED && o.getCreatedAt().toLocalDate().equals(today))
+                .map(OrderModel::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public long countPendingOrders(Integer shopkeeperId) {
+        return orderRepository.findByShopkeeper_IdAndStatus(shopkeeperId, OrderStatus.PENDING).size();
+    }
+
+    public List<BigDecimal> weeklySales(Integer shopkeeperId) {
+        LocalDate today = LocalDate.now();
+        LocalDate monday = today.with(java.time.DayOfWeek.MONDAY);
+        LocalDate sunday = today.with(java.time.DayOfWeek.SUNDAY);
+
+        Map<Integer, BigDecimal> results = orderRepository.findByShopkeeper_IdOrderByCreatedAtDesc(shopkeeperId)
+                .stream()
+                .filter(o -> !o.getCreatedAt().toLocalDate().isBefore(monday) && !o.getCreatedAt().toLocalDate().isAfter(sunday))
+                .filter(o -> o.getStatus() == OrderStatus.COMPLETED || o.getStatus() == OrderStatus.PAID)
+                .collect(java.util.stream.Collectors.groupingBy(
+                    o -> o.getCreatedAt().getDayOfWeek().getValue(),
+                    java.util.stream.Collectors.reducing(BigDecimal.ZERO, OrderModel::getTotalAmount, BigDecimal::add)
+                ));
+
+        List<BigDecimal> weeklySales = new ArrayList<>();
+        for (int day = 1; day <= 7; day++) {
+            weeklySales.add(results.getOrDefault(day, BigDecimal.ZERO));
+        }
+        return weeklySales;
+    }
+
+    public String generateOrderCode() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(5);
+        for (int i = 0; i < 5; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return "#" + sb.toString();
+    }
+
+    public OrderResponseDTO findById(UUID id) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        String userId = auth.getPrincipal().toString();
+
+        OrderModel order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        var authorities = auth.getAuthorities();
+        boolean isAdmin = authorities != null && authorities.stream()
+                .anyMatch(a -> a.getAuthority().startsWith("ROLE_ADMIN"));
+
+        if (!isAdmin) {
+            Integer currentUserId = Integer.parseInt(userId);
+            boolean isTourist = order.getTourist().getId().equals(currentUserId);
+            boolean isShopkeeper = order.getShopkeeper().getId().equals(currentUserId);
+
+            if (!isTourist && !isShopkeeper) {
+                throw new ForbiddenException("Você não tem permissão para acessar este pedido");
+            }
+        }
 
         return new OrderResponseDTO(
                 order.getId(),
@@ -263,5 +442,30 @@ public class OrderService {
                 order.getPixExpiresAt(),
                 order.getPickupCode()
         );
+    }
+
+    public Optional<OrderResponseDTO> getMyCurrentOrder() {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        TouristModel tourist = touristRepository.findById(Integer.parseInt(userId))
+                .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
+
+        return orderRepository.findTopByTourist_IdAndStatusOrderByCreatedAtDesc(tourist.getId(), OrderStatus.PAID)
+                .map(order -> new OrderResponseDTO(
+                        order.getId(),
+                        order.getProduct().getId(),
+                        order.getProduct().getName(),
+                        order.getShopkeeper().getId(),
+                        order.getShopkeeper().getCompanyName(),
+                        order.getQuantity(),
+                        BigDecimal.valueOf(order.getProduct().getPrice()),
+                        order.getTotalAmount(),
+                        order.getStatus(),
+                        order.getTransactionId(),
+                        order.getCreatedAt(),
+                        order.getPix(),
+                        order.getQrCodeUrl(),
+                        order.getPixExpiresAt(),
+                        order.getPickupCode()
+                ));
     }
 }

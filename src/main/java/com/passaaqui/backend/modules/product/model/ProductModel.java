@@ -1,5 +1,7 @@
 package com.passaaqui.backend.modules.product.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.passaaqui.backend.modules.category.model.CategoryModel;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
@@ -12,6 +14,8 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -36,6 +40,24 @@ public class ProductModel {
     @Column(nullable = false)
     private Integer stock = 0;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "image_name")
+    private List<String> images = new ArrayList<>();
+
+    @Transient
+    @JsonProperty("images")
+    private List<String> imageUrls;
+
+    private Double averageRating;
+
+    private Integer ratingsCount;
+
+    @JsonIgnore
+    public List<String> getImages() {
+        return images;
+    }
+
     @Version
     private Integer version;
 
@@ -50,6 +72,12 @@ public class ProductModel {
     @ManyToOne
     @JoinColumn(nullable = false)
     private PoiModel poi;
+
+    @Column(nullable = false)
+    private Boolean active = true;
+
+    @Column(nullable = false)
+    private Boolean highlight = false;
 
     @CreatedDate
     @Column(updatable = false)

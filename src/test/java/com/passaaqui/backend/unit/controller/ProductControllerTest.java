@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -48,7 +49,7 @@ class ProductControllerTest {
 
     @Test
     void create_shouldReturn200() throws Exception {
-        CreateProductDTO dto = new CreateProductDTO("Product", "Description", 29.99, 100, 50, 1, 1, 2);
+        CreateProductDTO dto = new CreateProductDTO("Product", "Description", 29.99, 100, 50, 1, 1, 2, true, false);
         ProductModel product = new ProductModel();
         product.setId(1);
         product.setName("Product");
@@ -66,7 +67,7 @@ class ProductControllerTest {
 
     @Test
     void create_shouldReturn400WhenInvalid() throws Exception {
-        CreateProductDTO dto = new CreateProductDTO("", "", null, null, null, null, null, null);
+        CreateProductDTO dto = new CreateProductDTO("", "", null, null, null, null, null, null, null, null);
 
         mockMvc.perform(post("/api/products")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -75,8 +76,28 @@ class ProductControllerTest {
     }
 
     @Test
+    void create_shouldReturn400WhenPriceBelowMinimum() throws Exception {
+        CreateProductDTO dto = new CreateProductDTO("Product", "Desc", 4.99, 10, 5, 1, 1, 1, true, false);
+
+        mockMvc.perform(post("/api/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void update_shouldReturn400WhenPriceBelowMinimum() throws Exception {
+        UpdateProductDTO dto = new UpdateProductDTO(null, null, 3.50, null, null, null, null, null, null, null);
+
+        mockMvc.perform(put("/api/products/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void create_shouldReturn404WhenShopkeeperNotFound() throws Exception {
-        CreateProductDTO dto = new CreateProductDTO("Product", "Desc", 10.0, null, null, 999, 1, 1);
+        CreateProductDTO dto = new CreateProductDTO("Product", "Desc", 10.0, null, null, 999, 1, 1, null, null);
         when(service.create(any(CreateProductDTO.class)))
                 .thenThrow(new ResourceNotFoundException("Shopkeeper not found"));
 
@@ -88,7 +109,7 @@ class ProductControllerTest {
 
     @Test
     void update_shouldReturn200() throws Exception {
-        UpdateProductDTO dto = new UpdateProductDTO("Updated", "Updated desc", 39.99, 200, null, 1, 1, 2);
+        UpdateProductDTO dto = new UpdateProductDTO("Updated", "Updated desc", 39.99, 200, null, 1, 1, 2, null, null);
         ProductModel product = new ProductModel();
         product.setId(1);
         product.setName("Updated");
@@ -106,7 +127,7 @@ class ProductControllerTest {
 
     @Test
     void update_shouldReturn404WhenNotFound() throws Exception {
-        UpdateProductDTO dto = new UpdateProductDTO("Updated", null, null, null, null, null, null, null);
+        UpdateProductDTO dto = new UpdateProductDTO("Updated", null, null, null, null, null, null, null, null, null);
         when(service.update(eq(999), any(UpdateProductDTO.class)))
                 .thenThrow(new ResourceNotFoundException("Product not found"));
 
@@ -201,6 +222,29 @@ class ProductControllerTest {
         when(service.findById(999)).thenThrow(new ResourceNotFoundException("Product not found"));
 
         mockMvc.perform(get("/api/products/999"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void findByIdWithAccessCheck_shouldReturn200() throws Exception {
+        ProductModel product = new ProductModel();
+        product.setId(1);
+        product.setName("Protected Product");
+
+        when(service.findByIdWithAccessCheck(1)).thenReturn(product);
+
+        mockMvc.perform(get("/api/products/1/details"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Protected Product"));
+    }
+
+    @Test
+    void findByIdWithAccessCheck_shouldReturn404WhenNotFound() throws Exception {
+        when(service.findByIdWithAccessCheck(999))
+                .thenThrow(new ResourceNotFoundException("Product not found"));
+
+        mockMvc.perform(get("/api/products/999/details"))
                 .andExpect(status().isNotFound());
     }
 }

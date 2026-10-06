@@ -22,40 +22,48 @@ public class XpCalculationService {
             String poiType,
             double distanceKm,
             int recentVisits,
-            LocalDateTime lastUserCheckin
+            LocalDateTime lastUserCheckin,
+            Integer fixedXpReward
     ) {
         boolean antiFarmingActive = false;
         boolean invalidGps = false;
         String blockReason = null;
 
         if (!"turistico".equals(poiType)) {
-            return new CheckinResponseDTO(0, null, new AppliedRules(false, false), "POI não é do tipo turístico");
+            return new CheckinResponseDTO(0, null, new AppliedRules(false, false), "POI is not a tourist point");
         }
 
-        if (lastUserCheckin != null
-                && ChronoUnit.DAYS.between(lastUserCheckin, LocalDateTime.now()) < COOLDOWN_DAYS) {
-            antiFarmingActive = true;
-            blockReason = "Cooldown ativo (30 dias).";
+        // Anti-farming rules temporarily disabled:
+        // if (lastUserCheckin != null
+        //         && ChronoUnit.DAYS.between(lastUserCheckin, LocalDateTime.now()) < COOLDOWN_DAYS) {
+        //     antiFarmingActive = true;
+        //     blockReason = "Cooldown active (30 days).";
+        // }
+
+        // if (distanceKm < MIN_DISTANCE_KM) {
+        //     invalidGps = true;
+        //     blockReason = "Insufficient displacement detected.";
+        // }
+
+        // if (antiFarmingActive || invalidGps) {
+        //     return new CheckinResponseDTO(0, null, new AppliedRules(antiFarmingActive, invalidGps), blockReason);
+        // }
+
+        int finalXp;
+
+        if (fixedXpReward != null) {
+            finalXp = fixedXpReward;
+            return new CheckinResponseDTO(finalXp, null, new AppliedRules(false, false), null);
+        } else {
+            double effectiveDistance = distanceKm > 0 ? distanceKm : 0.1;
+            double displacementFactor = effectiveDistance * DISPLACEMENT_FACTOR;
+            double invisibilityFactor = (double) INVISIBILITY_BASE / (recentVisits + 1);
+            double rawXp = displacementFactor * invisibilityFactor;
+            finalXp = (int) Math.round(rawXp);
+            if (finalXp <= 0) finalXp = 1;
+
+            Calculation calculation = new Calculation(distanceKm, displacementFactor, recentVisits, invisibilityFactor, rawXp, finalXp);
+            return new CheckinResponseDTO(finalXp, calculation, new AppliedRules(false, false), null);
         }
-
-        if (distanceKm < MIN_DISTANCE_KM) {
-            invalidGps = true;
-            blockReason = "Deslocamento insuficiente detectado.";
-        }
-
-        if (antiFarmingActive || invalidGps) {
-            return new CheckinResponseDTO(0, null, new AppliedRules(antiFarmingActive, invalidGps), blockReason);
-        }
-
-        double displacementFactor = distanceKm * DISPLACEMENT_FACTOR;
-        double invisibilityFactor = (double) INVISIBILITY_BASE / (recentVisits + 1);
-        double rawXp = displacementFactor * invisibilityFactor;
-        int finalXp = (int) Math.round(rawXp);
-
-        if (finalXp < 0) finalXp = 0;
-
-        Calculation calculation = new Calculation(distanceKm, displacementFactor, recentVisits, invisibilityFactor, rawXp, finalXp);
-
-        return new CheckinResponseDTO(finalXp, calculation, new AppliedRules(false, false), null);
     }
 }

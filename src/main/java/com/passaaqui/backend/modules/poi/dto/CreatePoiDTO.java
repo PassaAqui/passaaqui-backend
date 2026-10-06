@@ -11,9 +11,6 @@ public record CreatePoiDTO(
 
     String description,
 
-    @Min(0)
-    Integer xpReward,
-
     @NotNull
     PoiType type,
 

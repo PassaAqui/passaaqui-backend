@@ -5,6 +5,7 @@ import com.passaaqui.backend.modules.city.repository.CityRepository;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.poi.model.enums.PoiType;
 import com.passaaqui.backend.modules.poi.repository.PoiRepository;
+import com.passaaqui.backend.modules.tourist.model.TouristModel;
 import com.passaaqui.backend.modules.tourist.service.TouristService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,9 +48,12 @@ class AuthSecurityTest {
     @Autowired
     private PoiRepository poiRepository;
 
+    private TouristModel createdTourist;
+    private PoiModel createdPoi;
+
     @BeforeEach
     void setUp() {
-        touristService.createUser("test@test.com", "Test", passwordEncoder.encode("pass"), "52998224725");
+        createdTourist = touristService.createUser("test@test.com", "Test", passwordEncoder.encode("pass"), "52998224725");
 
         var city = new CityModel();
         city.setName("Test City");
@@ -61,7 +65,7 @@ class AuthSecurityTest {
         poi.setDescription("Test Description");
         poi.setType(PoiType.TOURIST_POINT);
         poi.setCity(city);
-        poiRepository.save(poi);
+        createdPoi = poiRepository.save(poi);
     }
 
     @Test
@@ -88,11 +92,11 @@ class AuthSecurityTest {
     @Test
     void touristEndpoint_shouldAllowTouristRole() throws Exception {
         var auth = new UsernamePasswordAuthenticationToken(
-                "1", null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_TOURIST"))
+                String.valueOf(createdTourist.getId()), null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_TOURIST"))
         );
-        SecurityContextHolder.getContext().setAuthentication(auth);
 
-        mockMvc.perform(post("/api/pois/{poiId}/ratings", 1)
+        mockMvc.perform(post("/api/pois/{poiId}/ratings", createdPoi.getId())
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication(auth))
                         .contentType("application/json")
                         .content("{\"rating\":4}"))
                 .andExpect(status().isOk());

@@ -1,15 +1,22 @@
 package com.passaaqui.backend.modules.category.service;
 
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
+import com.passaaqui.backend.infra.integration.storage.StorageService;
+import com.passaaqui.backend.modules.category.dto.CategoryFeedDTO;
 import com.passaaqui.backend.modules.category.dto.CreateCategoryDTO;
 import com.passaaqui.backend.modules.category.dto.UpdateCategoryDTO;
 import com.passaaqui.backend.modules.category.model.CategoryModel;
 import com.passaaqui.backend.modules.category.repository.CategoryRepository;
+import com.passaaqui.backend.modules.product.model.ProductModel;
+import com.passaaqui.backend.modules.product.repository.ProductRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -17,6 +24,8 @@ import java.util.List;
 public class CategoryService {
 
     private final CategoryRepository repository;
+    private final ProductRepository productRepository;
+    private final StorageService storageService;
 
     @PostConstruct
     @Transactional
@@ -59,6 +68,19 @@ public class CategoryService {
     public CategoryModel findById(Integer id) {
         return repository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+    }
+
+    public CategoryFeedDTO findFeedById(Integer id, Pageable pageable) {
+        CategoryModel category = findById(id);
+        Page<ProductModel> products = productRepository.findByCategoryId(id, pageable);
+        for (ProductModel product : products) {
+            List<String> urls = new ArrayList<>();
+            for (String imageName : product.getImages()) {
+                urls.add(storageService.getFileUrl(imageName));
+            }
+            product.setImageUrls(urls);
+        }
+        return CategoryFeedDTO.from(category, products);
     }
 
     @Transactional

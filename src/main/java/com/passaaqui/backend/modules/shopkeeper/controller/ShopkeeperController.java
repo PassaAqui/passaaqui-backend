@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.passaaqui.backend.modules.shopkeeper.dto.ShopkeeperProfileDTO;
 import com.passaaqui.backend.modules.shopkeeper.dto.UpdateShopkeeperDTO;
 import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
 import com.passaaqui.backend.modules.shopkeeper.service.ShopkeeperService;
@@ -32,10 +33,30 @@ public class ShopkeeperController {
 
     @GetMapping("/me")
     @PreAuthorize("hasRole('SHOPKEEPER')")
-    public ResponseEntity<ShopkeeperModel> me() {
+    public ResponseEntity<ShopkeeperProfileDTO> me() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Integer userId = Integer.parseInt(authentication.getPrincipal().toString());
-        return ResponseEntity.ok(service.findById(userId));
+        return ResponseEntity.ok(service.findProfileById(userId));
+    }
+
+    @PutMapping(value = "/me", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SHOPKEEPER')")
+    public ResponseEntity<ShopkeeperProfileDTO> updateMe(
+            @org.springframework.web.bind.annotation.RequestPart("data") UpdateShopkeeperDTO dto,
+            @org.springframework.web.bind.annotation.RequestPart(value = "image", required = false) org.springframework.web.multipart.MultipartFile image,
+            @org.springframework.web.bind.annotation.RequestPart(value = "poiImage", required = false) org.springframework.web.multipart.MultipartFile poiImage) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.parseInt(authentication.getPrincipal().toString());
+        return ResponseEntity.ok(service.updateProfile(userId, dto, image, poiImage));
+    }
+
+    @org.springframework.web.bind.annotation.PatchMapping(value = "/me/avatar", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SHOPKEEPER')")
+    public ResponseEntity<ShopkeeperProfileDTO> updateAvatar(
+            @org.springframework.web.bind.annotation.RequestParam("image") org.springframework.web.multipart.MultipartFile image) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.parseInt(authentication.getPrincipal().toString());
+        return ResponseEntity.ok(service.updateAvatar(userId, image));
     }
 
     @GetMapping("/{identifier}")

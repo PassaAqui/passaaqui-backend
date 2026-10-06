@@ -6,7 +6,9 @@ import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.infra.exception.ConflictException;
 import com.passaaqui.backend.modules.order.controller.OrderController;
 import com.passaaqui.backend.modules.order.dto.CheckoutRequestDTO;
+import com.passaaqui.backend.modules.order.dto.OrderItemDTO;
 import com.passaaqui.backend.modules.order.dto.OrderResponseDTO;
+import com.passaaqui.backend.modules.order.dto.ShopkeeperOrderDTO;
 import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
 import com.passaaqui.backend.modules.order.service.OrderService;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +24,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -128,23 +131,23 @@ class OrderControllerTest {
     @Test
     void getShopkeeperOrders_shouldReturn200() throws Exception {
         UUID orderId = UUID.randomUUID();
-        OrderResponseDTO response = new OrderResponseDTO(
-                orderId, 1, "Product", 2, "Shop", 1,
-                BigDecimal.TEN, BigDecimal.TEN, OrderStatus.PAID,
-                "tx-123", LocalDateTime.now(), null, null, null, "CODE123"
+        ShopkeeperOrderDTO response = new ShopkeeperOrderDTO(
+                orderId, "John Doe", LocalDateTime.now(), OrderStatus.PAID,
+                "#ABC12", BigDecimal.TEN, BigDecimal.ZERO, null, List.of(new OrderItemDTO("Product", 1))
         );
 
-        when(orderService.getShopkeeperOrders()).thenReturn(List.of(response));
+        when(orderService.getShopkeeperOrdersByStatus(any())).thenReturn(List.of(response));
 
         mockMvc.perform(get("/api/orders/shopkeeper"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(orderId.toString()))
-                .andExpect(jsonPath("$[0].pickupCode").value("CODE123"));
+                .andExpect(jsonPath("$[0].code").value("#ABC12"))
+                .andExpect(jsonPath("$[0].items[0].name").value("Product"));
     }
 
     @Test
     void getShopkeeperOrders_shouldReturn200EmptyList() throws Exception {
-        when(orderService.getShopkeeperOrders()).thenReturn(List.of());
+        when(orderService.getShopkeeperOrdersByStatus(any())).thenReturn(List.of());
 
         mockMvc.perform(get("/api/orders/shopkeeper"))
                 .andExpect(status().isOk())
@@ -161,7 +164,7 @@ class OrderControllerTest {
                 "tx-123", LocalDateTime.now(), null, null, null, "CODE456"
         );
 
-        when(orderService.getMyCurrentOrder()).thenReturn(response);
+        when(orderService.getMyCurrentOrder()).thenReturn(Optional.of(response));
 
         mockMvc.perform(get("/api/orders/my-current"))
                 .andExpect(status().isOk())
@@ -170,12 +173,11 @@ class OrderControllerTest {
     }
 
     @Test
-    void getMyCurrentOrder_shouldReturn404WhenNoPaidOrder() throws Exception {
-        when(orderService.getMyCurrentOrder())
-                .thenThrow(new ResourceNotFoundException("No paid order found"));
+    void getMyCurrentOrder_shouldReturn204WhenNoPaidOrder() throws Exception {
+        when(orderService.getMyCurrentOrder()).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/orders/my-current"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNoContent());
     }
 
     @Test
@@ -211,5 +213,79 @@ class OrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(orderId.toString()))
                 .andExpect(jsonPath("$[0].status").value("AWAITING_PAYMENT"));
+    }
+
+    @Test
+    void findById_shouldReturn200() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        OrderResponseDTO response = new OrderResponseDTO(
+                orderId, 1, "Product", 2, "Shop", 1,
+                BigDecimal.TEN, BigDecimal.TEN, OrderStatus.PAID,
+                "tx-123", LocalDateTime.now(), null, null, null, "CODE789"
+        );
+
+        when(orderService.findById(orderId)).thenReturn(response);
+
+        mockMvc.perform(get("/api/orders/" + orderId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(orderId.toString()))
+                .andExpect(jsonPath("$.status").value("PAID"))
+                .andExpect(jsonPath("$.pickupCode").value("CODE789"));
+    }
+
+    @Test
+    void findById_shouldReturn404WhenNotFound() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        when(orderService.findById(orderId)).thenThrow(new ResourceNotFoundException("Order not found"));
+
+        mockMvc.perform(get("/api/orders/" + orderId))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getPurchasedProducts_shouldReturn200() throws Exception {
+        var unredeemedItem = new com.passaaqui.backend.modules.order.dto.PurchasedProductItemDTO(
+                1,
+                "#A3F92",
+                "Tapioca Clássica",
+                "http://images/tapioca.jpg",
+                com.passaaqui.backend.modules.order.model.enums.RedemptionStatus.UNREDEEMED,
+                java.time.LocalDate.of(2026, 4, 20),
+                null
+        );
+
+        var redeemedItem = new com.passaaqui.backend.modules.order.dto.PurchasedProductItemDTO(
+                2,
+                "#B7C21",
+                "Vaso de Cerâmica",
+                "http://images/vaso.jpg",
+                com.passaaqui.backend.modules.order.model.enums.RedemptionStatus.REDEEMED,
+                null,
+                java.time.LocalDate.of(2026, 4, 25)
+        );
+
+        var response = new com.passaaqui.backend.modules.order.dto.PurchasedProductsResponseDTO(
+                List.of(unredeemedItem),
+                List.of(redeemedItem)
+        );
+
+        when(orderService.getPurchasedProducts()).thenReturn(response);
+
+        mockMvc.perform(get("/api/orders/purchased-products"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.unredeemed").isArray())
+                .andExpect(jsonPath("$.unredeemed[0].product_id").value(1))
+                .andExpect(jsonPath("$.unredeemed[0].order_id").value("#A3F92"))
+                .andExpect(jsonPath("$.unredeemed[0].product_name").value("Tapioca Clássica"))
+                .andExpect(jsonPath("$.unredeemed[0].image_url").value("http://images/tapioca.jpg"))
+                .andExpect(jsonPath("$.unredeemed[0].status").value("UNREDEEMED"))
+                .andExpect(jsonPath("$.unredeemed[0].expiration_date").value("2026-04-20"))
+                .andExpect(jsonPath("$.redeemed").isArray())
+                .andExpect(jsonPath("$.redeemed[0].product_id").value(2))
+                .andExpect(jsonPath("$.redeemed[0].order_id").value("#B7C21"))
+                .andExpect(jsonPath("$.redeemed[0].product_name").value("Vaso de Cerâmica"))
+                .andExpect(jsonPath("$.redeemed[0].image_url").value("http://images/vaso.jpg"))
+                .andExpect(jsonPath("$.redeemed[0].status").value("REDEEMED"))
+                .andExpect(jsonPath("$.redeemed[0].redemption_date").value("2026-04-25"));
     }
 }

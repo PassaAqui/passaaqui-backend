@@ -44,9 +44,16 @@ public class OrderModel {
     @Column(nullable = false)
     private BigDecimal totalAmount;
 
+    @Builder.Default
+    @Column(nullable = false, columnDefinition = "numeric(38,2) default 0.00")
+    private BigDecimal cashDiscount = BigDecimal.ZERO;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status;
+
+    @Column(length = 10)
+    private String code;
 
     @Column(length = 6)
     private String redemptionCode;
@@ -64,6 +71,10 @@ public class OrderModel {
     private String pix;
 
     private LocalDateTime pixExpiresAt;
+
+    private LocalDateTime expiresAt;
+
+    private LocalDateTime redeemedAt;
 
     @CreationTimestamp
     @Column(updatable = false)

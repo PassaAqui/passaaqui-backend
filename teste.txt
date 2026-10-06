@@ -1,0 +1,29 @@
+Respostas:
+
+O sistema atende ao objetivo principal do projeto? Sim, a API REST está funcional e operacional.
+
+As funcionalidades principais estão completas? Sim, cadastro/login de turistas e lojistas, CRUD de POIs, checkout e pedidos funcionam.
+
+O usuário consegue utilizar o sistema sem dificuldades graves? Sim.
+
+O fluxo principal do sistema funciona do início ao fim? Sim, validado via teste E2E (UserJourneyAcceptanceTest) e teste de rotas (test_routes.ps1).
+
+O sistema está aceitável para apresentação? Sim.
+
+| ID | Requisito avaliado | Critério de aceitação | Resultado obtido | Status |
+|---|---|---|---|---|
+| TA-001 | Cadastro de Turista | O sistema deve permitir cadastrar um turista com nome, e-mail, senha e documento | Usuário salvo no banco relacional e token gerado | APROVADO |
+| TA-002 | Cadastro de Lojista | O sistema deve permitir cadastrar lojista com dados da empresa e foto via multipart | Lojista criado com sucesso e associado a uma categoria | APROVADO |
+| TA-003 | Login e Autenticação JWT | O sistema deve autenticar o usuário e retornar access_token e refresh_token | Token JWT gerado e endpoints protegidos respondem 401 sem ele | APROVADO |
+| TA-004 | Checkout e Geração de Pedido | O sistema deve gerar pedido com PIX via gateway AbacatePay | Pedido criado com status AWAITING_PAYMENT e QR Code PIX gerado | APROVADO |
+| TA-005 | Listagem Pública de POIs | O sistema deve listar POIs sem necessidade de autenticação | GET /api/pois retorna 200 com lista de POIs | APROVADO |
+
+Testes Unitários:
+
+| ID | Unidade testada | Entrada | Resultado esperado | Resultado obtido | Status |
+|---|---|---|---|---|---|
+| TU-001 | DocumentValidator.isValid | CPF inválido "12345678900" (dígitos verificadores incorretos) | A função deve retornar false, rejeitando CPF com dígitos inválidos | Retornou false com sucesso | APROVADO |
+| TU-002 | PasswordValidator.isValid | Senha sem número "Abcdefgh" (não atende regex) | A função deve retornar false, pois a senha precisa conter ao menos um dígito | Retornou false com sucesso | APROVADO |
+| TU-003 | OrderService.checkout | productId = 999 (produto inexistente) | Deve lançar ResourceNotFoundException | ResourceNotFoundException lançada | APROVADO |
+| TU-004 | OrderRepository.findByTransactionId | transactionId = "tx_test_123" | Deve retornar o pedido correspondente | Pedido encontrado pelo transactionId | APROVADO |
+| TU-005 | RouteService.start | StartRouteDTO(-23.5505, -46.6333, null) | Deve criar sessão com status ACTIVE e lastLocation preenchido | Sessão criada com status ACTIVE | APROVADO |

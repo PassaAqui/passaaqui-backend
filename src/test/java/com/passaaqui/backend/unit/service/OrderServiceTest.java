@@ -1,6 +1,7 @@
 package com.passaaqui.backend.unit.service;
 
 import com.passaaqui.backend.infra.exception.ConflictException;
+import com.passaaqui.backend.infra.exception.ForbiddenException;
 import com.passaaqui.backend.infra.exception.InvalidRequestException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.infra.integration.abacatepay.AbacateClient;
@@ -28,6 +29,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,6 +57,9 @@ class OrderServiceTest {
 
     @Mock
     private AbacateClient abacateClient;
+
+    @Mock
+    private com.passaaqui.backend.infra.integration.storage.StorageService storageService;
 
     @InjectMocks
     private OrderService orderService;
@@ -258,8 +264,8 @@ class OrderServiceTest {
 
         var result = orderService.getMyCurrentOrder();
 
-        assertNotNull(result);
-        assertEquals(order.getId(), result.id());
+        assertTrue(result.isPresent());
+        assertEquals(order.getId(), result.get().id());
     }
 
     @Test
@@ -308,11 +314,133 @@ class OrderServiceTest {
     }
 
     @Test
-    void getMyCurrentOrder_shouldThrow_whenNoPaidOrder() {
+    void getMyCurrentOrder_shouldReturnEmpty_whenNoPaidOrder() {
         when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
         when(orderRepository.findTopByTourist_IdAndStatusOrderByCreatedAtDesc(1, OrderStatus.PAID))
                 .thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> orderService.getMyCurrentOrder());
+        var result = orderService.getMyCurrentOrder();
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void findById_shouldReturnOrder() {
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        var result = orderService.findById(order.getId());
+
+        assertNotNull(result);
+        assertEquals(order.getId(), result.id());
+    }
+
+    @Test
+    void findById_shouldThrow_whenOrderNotFound() {
+        UUID randomId = UUID.randomUUID();
+        when(orderRepository.findById(randomId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> orderService.findById(randomId));
+    }
+
+    @Test
+    void findById_shouldThrow_whenUserNotParticipant() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        when(auth.getPrincipal()).thenReturn("999");
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThrows(ForbiddenException.class, () -> orderService.findById(order.getId()));
+    }
+
+    @Test
+    void getPurchasedProducts_shouldReturnGroupedProducts() {
+        product.setImages(List.of("tapioca.jpg"));
+        when(storageService.getFileUrl("tapioca.jpg")).thenReturn("http://images/tapioca.jpg");
+
+        OrderModel unredeemedOrder = OrderModel.builder()
+                .id(UUID.randomUUID())
+                .tourist(tourist)
+                .shopkeeper(shopkeeper)
+                .product(product)
+                .code("#A3F92")
+                .quantity(1)
+                .totalAmount(BigDecimal.valueOf(15.0))
+                .status(OrderStatus.PAID)
+                .createdAt(LocalDateTime.of(2026, 4, 1, 10, 0))
+                .expiresAt(LocalDateTime.of(2026, 4, 20, 23, 59))
+                .build();
+
+        OrderModel redeemedOrder = OrderModel.builder()
+                .id(UUID.randomUUID())
+                .tourist(tourist)
+                .shopkeeper(shopkeeper)
+                .product(product)
+                .code("#B7C21")
+                .quantity(1)
+                .totalAmount(BigDecimal.valueOf(25.0))
+                .status(OrderStatus.COMPLETED)
+                .createdAt(LocalDateTime.of(2026, 3, 15, 10, 0))
+                .redeemedAt(LocalDateTime.of(2026, 4, 25, 15, 30))
+                .build();
+
+        when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
+        when(orderRepository.findByTourist_IdAndStatusInOrderByCreatedAtDesc(eq(1), anyList()))
+                .thenReturn(List.of(unredeemedOrder, redeemedOrder));
+
+        var response = orderService.getPurchasedProducts();
+
+        assertNotNull(response);
+        assertEquals(1, response.unredeemed().size());
+        assertEquals(1, response.redeemed().size());
+
+        var unredeemedItem = response.unredeemed().get(0);
+        assertEquals(1, unredeemedItem.productId());
+        assertEquals("#A3F92", unredeemedItem.orderId());
+        assertEquals("Test Product", unredeemedItem.productName());
+        assertEquals("http://images/tapioca.jpg", unredeemedItem.imageUrl());
+        assertEquals(com.passaaqui.backend.modules.order.model.enums.RedemptionStatus.UNREDEEMED, unredeemedItem.status());
+        assertEquals(java.time.LocalDate.of(2026, 4, 20), unredeemedItem.expirationDate());
+        assertNull(unredeemedItem.redemptionDate());
+
+        var redeemedItem = response.redeemed().get(0);
+        assertEquals(1, redeemedItem.productId());
+        assertEquals("#B7C21", redeemedItem.orderId());
+        assertEquals("Test Product", redeemedItem.productName());
+        assertEquals(com.passaaqui.backend.modules.order.model.enums.RedemptionStatus.REDEEMED, redeemedItem.status());
+        assertNull(redeemedItem.expirationDate());
+        assertEquals(java.time.LocalDate.of(2026, 4, 25), redeemedItem.redemptionDate());
+    }
+
+    @Test
+    void getPurchasedProducts_shouldDefaultExpirationDateWhenExpiresAtNull() {
+        OrderModel orderWithoutExpiresAt = OrderModel.builder()
+                .id(UUID.randomUUID())
+                .tourist(tourist)
+                .shopkeeper(shopkeeper)
+                .product(product)
+                .code("#C1D2E")
+                .quantity(1)
+                .totalAmount(BigDecimal.valueOf(15.0))
+                .status(OrderStatus.PAID)
+                .createdAt(LocalDateTime.of(2026, 4, 1, 10, 0))
+                .expiresAt(null)
+                .build();
+
+        when(touristRepository.findById(1)).thenReturn(Optional.of(tourist));
+        when(orderRepository.findByTourist_IdAndStatusInOrderByCreatedAtDesc(eq(1), anyList()))
+                .thenReturn(List.of(orderWithoutExpiresAt));
+
+        var response = orderService.getPurchasedProducts();
+
+        assertNotNull(response);
+        assertEquals(1, response.unredeemed().size());
+        assertEquals(java.time.LocalDate.of(2026, 5, 1), response.unredeemed().get(0).expirationDate());
+    }
+
+    @Test
+    void getPurchasedProducts_shouldThrowWhenTouristNotFound() {
+        when(touristRepository.findById(1)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> orderService.getPurchasedProducts());
     }
 }

@@ -196,4 +196,21 @@ class OrderRepositoryIntegrationTest {
 
         assertTrue(found.isEmpty());
     }
+
+    @Test
+    void shouldFindByTouristIdAndStatusInOrderByCreatedAtDesc() {
+        var paidOrder = createOrder(OrderStatus.PAID);
+        var completedOrder = createOrder(OrderStatus.COMPLETED);
+        var canceledOrder = createOrder(OrderStatus.CANCELED);
+
+        var results = orderRepository.findByTourist_IdAndStatusInOrderByCreatedAtDesc(
+                tourist.getId(),
+                List.of(OrderStatus.PAID, OrderStatus.COMPLETED)
+        );
+
+        assertEquals(2, results.size());
+        assertTrue(results.stream().anyMatch(o -> o.getId().equals(paidOrder.getId())));
+        assertTrue(results.stream().anyMatch(o -> o.getId().equals(completedOrder.getId())));
+        assertFalse(results.stream().anyMatch(o -> o.getId().equals(canceledOrder.getId())));
+    }
 }

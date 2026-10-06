@@ -19,9 +19,21 @@ public interface OrderRepository extends JpaRepository<OrderModel, UUID> {
 
     List<OrderModel> findByShopkeeper_IdOrderByCreatedAtDesc(Integer shopkeeperId);
 
+    List<OrderModel> findByShopkeeper_IdAndStatusOrderByCreatedAtDesc(Integer shopkeeperId, OrderStatus status);
+
+    List<OrderModel> findTop5ByShopkeeper_IdOrderByCreatedAtDesc(Integer shopkeeperId);
+
     List<OrderModel> findByTourist_IdOrderByCreatedAtDesc(Integer touristId);
+
+    List<OrderModel> findByTourist_IdAndStatusInOrderByCreatedAtDesc(Integer touristId, List<OrderStatus> statuses);
 
     Optional<OrderModel> findTopByTourist_IdAndStatusOrderByCreatedAtDesc(Integer touristId, OrderStatus status);
 
     boolean existsByTourist_IdAndStatusNotIn(Integer touristId, List<OrderStatus> statuses);
+
+    long countByShopkeeper_IdAndStatusAndCreatedAtBetween(Integer shopkeeperId, OrderStatus status, LocalDateTime start, LocalDateTime end);
+
+    long countByShopkeeper_IdAndCreatedAtBetween(Integer shopkeeperId, LocalDateTime start, LocalDateTime end);
+
+    boolean existsByTourist_IdAndProduct_Id(Integer touristId, Integer productId);
 }
