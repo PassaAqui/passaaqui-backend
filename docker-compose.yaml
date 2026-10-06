@@ -38,7 +38,7 @@ services:
       retries: 10
 
   minio:
-    image: minio/minio:latest
+    image: cgr.dev/chainguard/minio:latest
     container_name: passaaqui_minio
     restart: always
     ports:
