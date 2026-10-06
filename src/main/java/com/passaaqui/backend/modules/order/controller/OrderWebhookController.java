@@ -6,6 +6,7 @@ import com.passaaqui.backend.modules.order.dto.OrderStatusDTO;
 import com.passaaqui.backend.modules.order.model.OrderModel;
 import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
 import com.passaaqui.backend.modules.order.repository.OrderRepository;
+import com.passaaqui.backend.modules.product.model.ProductModel;
 import com.passaaqui.backend.modules.product.repository.ProductRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class OrderWebhookController {
     @Value("${abacatepay.webhook.secret:}")
     private String webhookSecret;
 
+    @Transactional
     @PostMapping("/webhook/abacatepay")
     public ResponseEntity<Void> handleWebhook(
             @RequestHeader("X-Webhook-Signature") String signature,
@@ -60,22 +62,32 @@ public class OrderWebhookController {
                 return ResponseEntity.ok().build();
             }
 
-            orderRepository.findById(UUID.fromString(externalId)).ifPresent(order -> {
+            orderRepository.findByIdForUpdate(UUID.fromString(externalId)).ifPresent(order -> {
+                OrderStatus currentStatus = order.getStatus();
                 switch (payload.event()) {
                     case "transparent.completed" -> {
-                        order.setStatus(OrderStatus.PAID);
-                        order.setPickupCode(generatePickupCode());
+                        if (currentStatus == OrderStatus.AWAITING_PAYMENT || currentStatus == OrderStatus.PENDING) {
+                            order.setStatus(OrderStatus.PAID);
+                            order.setPickupCode(generatePickupCode());
+                            orderRepository.save(order);
+                            messagingTemplate.convertAndSend(
+                                    "/topic/orders/" + order.getId(),
+                                    new OrderStatusDTO(order.getId(), order.getStatus(), order.getPickupCode())
+                            );
+                        }
                     }
                     case "transparent.canceled", "transparent.failed", "transparent.refunded" -> {
-                        order.setStatus(OrderStatus.CANCELED);
-                        restoreStock(order);
+                        if (currentStatus != OrderStatus.CANCELED && currentStatus != OrderStatus.PAID && currentStatus != OrderStatus.COMPLETED) {
+                            order.setStatus(OrderStatus.CANCELED);
+                            restoreStock(order);
+                            orderRepository.save(order);
+                            messagingTemplate.convertAndSend(
+                                    "/topic/orders/" + order.getId(),
+                                    new OrderStatusDTO(order.getId(), order.getStatus(), order.getPickupCode())
+                            );
+                        }
                     }
                 }
-                orderRepository.save(order);
-                messagingTemplate.convertAndSend(
-                        "/topic/orders/" + order.getId(),
-                        new OrderStatusDTO(order.getId(), order.getStatus(), order.getPickupCode())
-                );
             });
 
         } catch (Exception e) {
@@ -91,7 +103,11 @@ public class OrderWebhookController {
         LocalDateTime limitTime = LocalDateTime.now().minusMinutes(5);
         List<OrderModel> orders = orderRepository.findByStatusAndCreatedAtBefore(OrderStatus.AWAITING_PAYMENT, limitTime);
 
-        for (OrderModel order : orders) {
+        for (OrderModel o : orders) {
+            OrderModel order = orderRepository.findByIdForUpdate(o.getId()).orElse(null);
+            if (order == null || order.getStatus() != OrderStatus.AWAITING_PAYMENT) {
+                continue;
+            }
             order.setStatus(OrderStatus.CANCELED);
             restoreStock(order);
             orderRepository.save(order);
@@ -102,13 +118,18 @@ public class OrderWebhookController {
         }
     }
 
+    @Transactional
     @Scheduled(cron = "30 * * * * *")
     public void reconcileOrdersJob() {
         LocalDateTime limitTime = LocalDateTime.now().minusMinutes(5);
         List<OrderModel> orders = orderRepository.findByStatusAndCreatedAtBefore(OrderStatus.AWAITING_PAYMENT, limitTime);
 
-        for (OrderModel order : orders) {
+        for (OrderModel o : orders) {
             try {
+                OrderModel order = orderRepository.findByIdForUpdate(o.getId()).orElse(null);
+                if (order == null || order.getStatus() != OrderStatus.AWAITING_PAYMENT) {
+                    continue;
+                }
                 String gatewayStatus = abacateClient.checkPaymentStatus(order.getTransactionId());
                 if ("PAID".equals(gatewayStatus)) {
                     order.setStatus(OrderStatus.PAID);
@@ -149,8 +170,12 @@ public class OrderWebhookController {
     }
 
     private void restoreStock(OrderModel order) {
-        var product = order.getProduct();
-        product.setStock(product.getStock() + order.getQuantity());
+        if (order.getProduct() == null || order.getProduct().getId() == null) {
+            return;
+        }
+        ProductModel product = productRepository.findByIdForUpdate(order.getProduct().getId())
+                .orElse(order.getProduct());
+        product.setStock(product.getStock() + (order.getQuantity() != null ? order.getQuantity() : 1));
         productRepository.save(product);
     }
 

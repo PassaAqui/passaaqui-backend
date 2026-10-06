@@ -93,7 +93,7 @@ public class ProductRatingService {
 
     @Transactional
     public ProductRatingModel rate(Integer productId, Integer userId, CreateProductRatingDTO dto) {
-        ProductModel product = productRepository.findById(productId)
+        ProductModel product = productRepository.findByIdForUpdate(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         UserModel user = touristRepository.findById(userId)
