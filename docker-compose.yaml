@@ -1,24 +1,18 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16
     container_name: passaaqui_postgres
-    restart: always
-
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: passaaqui
-
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-passaaqui}
     ports:
-      - "5432:5432"
-
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -26,9 +20,9 @@ services:
   redis:
     image: redis:7-alpine
     container_name: passaaqui_redis
-    restart: always
+    restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -40,49 +34,48 @@ services:
   minio:
     image: cgr.dev/chainguard/minio:latest
     container_name: passaaqui_minio
-    restart: always
+    restart: unless-stopped
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     environment:
-      MINIO_ROOT_USER: root
-      MINIO_ROOT_PASSWORD: root@123
-      MINIO_SERVER_URL: http://localhost:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-root}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-root@123}
+      MINIO_SERVER_URL: ${MINIO_URL_EXTERNAL:-http://localhost:9000}
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
 
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: passaaqui_backend
-    restart: always
-
+    restart: unless-stopped
     ports:
-      - "8080:8080"
-
+      - "${BACKEND_PORT:-8080}:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/passaaqui
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-passaaqui}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
 
-      JWT_SECRET: WIT7xsOCEKXtRi3mQA1ZMsOc5wMODgTXimEvVbbNBNm
+      JWT_SECRET: ${JWT_SECRET}
 
-      MINIO_URL: http://minio:9000
-      MINIO_URL_EXTERNAL: http://localhost:9000
-      MINIO_ACCESS_KEY: root
-      MINIO_SECRET_KEY: root@123
-      MINIO_BUCKET_NAME: passaaqui-bucket
+      MINIO_URL: ${MINIO_URL:-http://minio:9000}
+      MINIO_URL_EXTERNAL: ${MINIO_URL_EXTERNAL:-http://localhost:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-root}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-root@123}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-passaaqui-bucket}
 
-      ABACATEPAY_API_KEY: abc_dev_qKYZEFLXu4PEcKPAFtH4Tkt2
-      ABACATEPAY_WEBHOOK_SECRET: testes
+      ABACATEPAY_API_KEY: ${ABACATEPAY_API_KEY:-}
+      ABACATEPAY_WEBHOOK_SECRET: ${ABACATEPAY_WEBHOOK_SECRET:-}
 
-      OPENROUTESERVICE_API_KEY: eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImZlNjc1ZDlmZTFmZDRmMjA5NWEyZmY2YTFhNGE2ZGE4IiwiaCI6Im11cm11cjY0In0=
+      OPENROUTESERVICE_API_KEY: ${OPENROUTESERVICE_API_KEY:-}
 
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
 
       JAVA_TOOL_OPTIONS: "-Djava.net.preferIPv4Stack=true -Dio.netty.noNative=true -Dio.netty.transport.noNative=true"
-
     depends_on:
       postgres:
         condition: service_healthy
