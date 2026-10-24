@@ -84,6 +84,7 @@ http://localhost:8080/api
 - [`GET /api/users/{identifier}`](#get-apiusersidentifier)
 - [`PUT /api/users/{id}`](#put-apiusersid)
 - [`PATCH /api/users/theme`](#patch-apiuserstheme)
+- [`PATCH /api/users/map-view`](#patch-apiusersmap-view)
 
 ### 🛡️ Administradores
 - [`POST /api/admin`](#post-apiadmin)
@@ -1102,6 +1103,72 @@ Retorna o objeto do usuário com o tema atualizado.
 | Status | Motivo |
 |---|---|
 | 400 | Campo `theme` ausente ou inválido |
+| 401 | Token ausente ou inválido |
+| 404 | Usuário não encontrado |
+
+---
+
+### PATCH /api/users/map-view
+
+#### Descrição
+
+Atualiza a preferência de exibição do mapa (`2D` ou `3D`) do usuário autenticado (turista, lojista ou admin).
+
+#### Controller
+
+`UserController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Qualquer usuário autenticado (`TOURIST`, `SHOPKEEPER`, `ADMIN_USER`, `ADMIN_ROOT`)
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `application/json` |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação / Valores aceitos |
+|---|---|---|---|
+| `mapView` | String (enum) | Sim | `2D` ou `3D` |
+
+**Exemplo:**
+
+```json
+{
+  "mapView": "3D"
+}
+```
+
+#### Response 200 (OK)
+
+Retorna o objeto do usuário com a preferência de mapa atualizada.
+
+```json
+{
+  "id": 1,
+  "email": "turista@email.com",
+  "name": "João Turista",
+  "role": "TOURIST",
+  "theme": "LIGHT",
+  "mapView": "3D",
+  "createdAt": "2026-05-24T10:00:00",
+  "updatedAt": "2026-05-24T12:00:00"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Campo `mapView` ausente ou inválido |
 | 401 | Token ausente ou inválido |
 | 404 | Usuário não encontrado |
 

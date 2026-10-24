@@ -206,4 +206,27 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.theme").value("DARK"));
     }
+
+    @Test
+    void updateMapView_shouldReturn200() throws Exception {
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("1", null, null));
+
+        com.passaaqui.backend.modules.user.dto.UpdateMapViewDTO dto =
+                new com.passaaqui.backend.modules.user.dto.UpdateMapViewDTO(com.passaaqui.backend.modules.user.model.enums.MapViewPreference.MAP_3D);
+
+        UserModel user = new UserModel() {};
+        user.setId(1);
+        user.setName("User");
+        user.setEmail("user@test.com");
+        user.setMapView(com.passaaqui.backend.modules.user.model.enums.MapViewPreference.MAP_3D);
+
+        when(service.updateMapView(1, com.passaaqui.backend.modules.user.model.enums.MapViewPreference.MAP_3D)).thenReturn(user);
+
+        mockMvc.perform(patch("/api/users/map-view")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mapView").value("3D"));
+    }
 }

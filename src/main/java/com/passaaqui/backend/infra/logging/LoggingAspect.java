@@ -118,7 +118,7 @@ public class LoggingAspect {
                     + ", companyName=" + dto.companyName() + ", poiName=" + dto.poiName() + ", cityId=" + dto.cityId() + "]";
         }
         if (obj instanceof com.passaaqui.backend.modules.tourist.dto.UpdateTouristDTO dto) {
-            return "UpdateTouristDTO[name=" + dto.name() + ", password=[PROTECTED], documentId=" + dto.documentId() + ", theme=" + dto.theme() + "]";
+            return "UpdateTouristDTO[name=" + dto.name() + ", password=[PROTECTED], documentId=" + dto.documentId() + ", theme=" + dto.theme() + ", mapView=" + dto.mapView() + "]";
         }
         if (obj instanceof com.passaaqui.backend.modules.shopkeeper.dto.UpdateShopkeeperDTO dto) {
             return "UpdateShopkeeperDTO[name=" + dto.name() + ", password=[PROTECTED], companyName=" + dto.companyName() + "]";

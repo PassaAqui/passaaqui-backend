@@ -221,6 +221,10 @@ public class ShopkeeperService {
         if (dto.theme() != null) {
             shopkeeper.setTheme(dto.theme());
         }
+
+        if (dto.mapView() != null) {
+            shopkeeper.setMapView(dto.mapView());
+        }
     }
 
     @Transactional

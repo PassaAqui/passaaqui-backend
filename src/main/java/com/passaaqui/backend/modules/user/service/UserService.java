@@ -66,4 +66,12 @@ public class UserService {
         user.setTheme(theme);
         return userRepository.save(user);
     }
+
+    @Transactional
+    public UserModel updateMapView(Integer id, com.passaaqui.backend.modules.user.model.enums.MapViewPreference mapView) {
+        UserModel user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        user.setMapView(mapView);
+        return userRepository.save(user);
+    }
 }

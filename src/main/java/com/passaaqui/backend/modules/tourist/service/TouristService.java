@@ -125,6 +125,7 @@ public class TouristService {
         if (dto.password() != null && !dto.password().isBlank()) tourist.setPassword(passwordEncoder.encode(dto.password()));
         if (dto.documentId() != null && !dto.documentId().isBlank()) tourist.setDocumentId(dto.documentId());
         if (dto.theme() != null) tourist.setTheme(dto.theme());
+        if (dto.mapView() != null) tourist.setMapView(dto.mapView());
     }
 
     @Transactional

@@ -65,4 +65,15 @@ public class UserController {
         }
         return ResponseEntity.ok(user);
     }
+
+    @PatchMapping("/map-view")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UserModel> updateMapView(@RequestBody @jakarta.validation.Valid com.passaaqui.backend.modules.user.dto.UpdateMapViewDTO dto) {
+        Integer userId = Integer.parseInt(org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString());
+        UserModel user = service.updateMapView(userId, dto.mapView());
+        if (user.getImage() != null) {
+            user.setImageUrl(storageService.getFileUrl(user.getImage()));
+        }
+        return ResponseEntity.ok(user);
+    }
 }
