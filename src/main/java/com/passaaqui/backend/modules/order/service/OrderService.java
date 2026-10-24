@@ -8,6 +8,7 @@ import com.passaaqui.backend.infra.exception.ConflictException;
 import com.passaaqui.backend.infra.exception.ResourceNotFoundException;
 import com.passaaqui.backend.modules.order.dto.CheckoutRequestDTO;
 import com.passaaqui.backend.modules.order.dto.OrderResponseDTO;
+import com.passaaqui.backend.modules.order.dto.OrderSummaryDTO;
 import com.passaaqui.backend.modules.order.dto.PurchasedProductItemDTO;
 import com.passaaqui.backend.modules.order.dto.PurchasedProductsResponseDTO;
 import com.passaaqui.backend.modules.order.dto.ShopkeeperOrderDTO;
@@ -86,6 +87,7 @@ public class OrderService {
         BigDecimal unitPrice = BigDecimal.valueOf(product.getPrice());
         BigDecimal totalAmount = unitPrice;
         BigDecimal cashDiscount = BigDecimal.ZERO;
+        Integer xpUsed = null;
 
         if (request.xpToUse() != null && request.xpToUse() > 0) {
             if (request.xpToUse() > tourist.getCurrentXP()) {
@@ -96,6 +98,7 @@ public class OrderService {
                 throw new InvalidRequestException("Este produto permite no máximo " + product.getMaxXp() + " XP de desconto.");
             }
 
+            xpUsed = request.xpToUse();
             cashDiscount = calculateDiscount(request.xpToUse(), unitPrice, product.getMaxXp());
 
             totalAmount = unitPrice.subtract(cashDiscount).max(BigDecimal.ZERO);
@@ -111,6 +114,7 @@ public class OrderService {
                 .quantity(1)
                 .totalAmount(totalAmount)
                 .cashDiscount(cashDiscount)
+                .xpUsed(xpUsed)
                 .status(OrderStatus.PENDING)
                 .code(generateOrderCode())
                 .build();
@@ -148,7 +152,51 @@ public class OrderService {
                 order.getPix(),
                 order.getQrCodeUrl(),
                 order.getPixExpiresAt(),
-                null
+                null,
+                order.getXpUsed(),
+                order.getCashDiscount()
+        );
+    }
+
+    public OrderSummaryDTO getOrderSummary(Integer productId, Integer xpToUse) {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+        TouristModel tourist = touristRepository.findById(Integer.parseInt(userId))
+                .orElseThrow(() -> new ResourceNotFoundException("Tourist not found"));
+
+        ProductModel product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + productId));
+
+        BigDecimal unitPrice = BigDecimal.valueOf(product.getPrice());
+        int maxXp = product.getMaxXp() != null ? product.getMaxXp() : 0;
+        int availableXp = tourist.getCurrentXP() != null ? tourist.getCurrentXP() : 0;
+
+        int effectiveXpToUse;
+        if (xpToUse == null) {
+            effectiveXpToUse = Math.min(availableXp, maxXp);
+        } else {
+            if (xpToUse < 0) {
+                throw new InvalidRequestException("XP to use cannot be negative.");
+            }
+            if (xpToUse > availableXp) {
+                throw new InvalidRequestException("Saldo de XP insuficiente. Você possui " + availableXp + " XP.");
+            }
+            if (xpToUse > maxXp) {
+                throw new InvalidRequestException("Este produto permite no máximo " + maxXp + " XP de desconto.");
+            }
+            effectiveXpToUse = xpToUse;
+        }
+
+        BigDecimal xpDiscount = calculateDiscount(effectiveXpToUse, unitPrice, maxXp);
+        BigDecimal totalAmount = unitPrice.subtract(xpDiscount).max(BigDecimal.ZERO);
+
+        return new OrderSummaryDTO(
+                productId,
+                unitPrice,
+                maxXp,
+                availableXp,
+                effectiveXpToUse,
+                xpDiscount,
+                totalAmount
         );
     }
 
@@ -193,7 +241,9 @@ public class OrderService {
                         order.getPix(),
                         order.getQrCodeUrl(),
                         order.getPixExpiresAt(),
-                        order.getPickupCode()
+                        order.getPickupCode(),
+                        order.getXpUsed(),
+                        order.getCashDiscount()
                 ))
                 .toList();
     }
@@ -220,7 +270,9 @@ public class OrderService {
                         order.getPix(),
                         order.getQrCodeUrl(),
                         order.getPixExpiresAt(),
-                        order.getPickupCode()
+                        order.getPickupCode(),
+                        order.getXpUsed(),
+                        order.getCashDiscount()
                 ))
                 .toList();
     }
@@ -247,7 +299,9 @@ public class OrderService {
                         order.getPix(),
                         order.getQrCodeUrl(),
                         order.getPixExpiresAt(),
-                        order.getPickupCode()
+                        order.getPickupCode(),
+                        order.getXpUsed(),
+                        order.getCashDiscount()
                 ))
                 .toList();
     }
@@ -451,7 +505,9 @@ public class OrderService {
                 order.getPix(),
                 order.getQrCodeUrl(),
                 order.getPixExpiresAt(),
-                order.getPickupCode()
+                order.getPickupCode(),
+                order.getXpUsed(),
+                order.getCashDiscount()
         );
     }
 
@@ -476,7 +532,9 @@ public class OrderService {
                         order.getPix(),
                         order.getQrCodeUrl(),
                         order.getPixExpiresAt(),
-                        order.getPickupCode()
+                        order.getPickupCode(),
+                        order.getXpUsed(),
+                        order.getCashDiscount()
                 ));
     }
 }

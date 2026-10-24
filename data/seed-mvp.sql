@@ -168,19 +168,20 @@ VALUES
 (256, 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518');
 
 -- 6. Conquistas do Sistema (tb_achievements)
-INSERT INTO tb_achievements (id, name, description, image_name, xp_reward, category_id, poi_id, location_name, created_at, updated_at)
+INSERT INTO tb_achievements (id, name, description, image_name, xp_reward, category_id, achievement_category, poi_id, location_name, created_at, updated_at)
 VALUES 
-(1, 'Primeiro Passo', 'Realizou seu primeiro check-in em um ponto turístico oficial do Passa Aqui.', 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119', 100, 10, 51, 'Recife - Marco Zero', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(2, 'Explorador do Recife', 'Descobriu e explorou os monumentos históricos do Recife Antigo.', 'https://images.unsplash.com/photo-1533105079780-92b9be482077', 250, 10, 51, 'Recife Antigo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(3, 'Mestre das Ladeiras', 'Subiu o Alto da Sé e contemplou a inesquecível paisagem de Olinda.', 'https://images.unsplash.com/photo-1596701062351-8c2c14d1fdd0', 200, 10, 104, 'Olinda - Alto da Sé', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(4, 'Paladar Pernambucano', 'Experimentou o legítimo bolo de rolo ou tapioca pernambucana.', 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5', 150, 1, 1, 'Recife & Olinda', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(5, 'Colecionador de Aventuras', 'Alcançou mais de 1000 pontos de XP em sua jornada turística.', 'https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83', 300, 10, NULL, 'Pernambuco', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+(1, 'Primeiro Passo', 'Realizou seu primeiro check-in em um ponto turístico oficial do Passa Aqui.', 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119', 100, 10, 'DESBRAVADOR', 51, 'Recife - Marco Zero', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(2, 'Explorador do Recife', 'Descobriu e explorou os monumentos históricos do Recife Antigo.', 'https://images.unsplash.com/photo-1533105079780-92b9be482077', 250, 10, 'RAIZES_DO_BRASIL', 51, 'Recife Antigo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(3, 'Mestre das Ladeiras', 'Subiu o Alto da Sé e contemplou a inesquecível paisagem de Olinda.', 'https://images.unsplash.com/photo-1596701062351-8c2c14d1fdd0', 200, 10, 'DESBRAVADOR', 104, 'Olinda - Alto da Sé', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(4, 'Paladar Pernambucano', 'Experimentou o legítimo bolo de rolo ou tapioca pernambucana.', 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5', 150, 1, 'SABORES_DA_MATA', 1, 'Recife & Olinda', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(5, 'Colecionador de Aventuras', 'Alcançou mais de 1000 pontos de XP em sua jornada turística.', 'https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83', 300, 10, 'TUDO', NULL, 'Pernambuco', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT (id) DO UPDATE SET 
     name = EXCLUDED.name,
     description = EXCLUDED.description,
     image_name = EXCLUDED.image_name,
     xp_reward = EXCLUDED.xp_reward,
     category_id = EXCLUDED.category_id,
+    achievement_category = EXCLUDED.achievement_category,
     poi_id = EXCLUDED.poi_id,
     location_name = EXCLUDED.location_name,
     updated_at = CURRENT_TIMESTAMP;

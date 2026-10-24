@@ -84,6 +84,7 @@ http://localhost:8080/api
 - [`GET /api/users/{identifier}`](#get-apiusersidentifier)
 - [`PUT /api/users/{id}`](#put-apiusersid)
 - [`PATCH /api/users/theme`](#patch-apiuserstheme)
+- [`PATCH /api/users/map-view`](#patch-apiusersmap-view)
 
 ### 🛡️ Administradores
 - [`POST /api/admin`](#post-apiadmin)
@@ -180,6 +181,7 @@ http://localhost:8080/api
 
 ### 🛒 Pedidos (Orders)
 - [`POST /api/orders/checkout`](#post-apiorderscheckout)
+- [`GET /api/orders/summary`](#get-apiorderssummary) `🔒 TOURIST`
 - [`GET /api/orders/shopkeeper?status=`](#get-apiordersshopkeeper)
 - [`PUT /api/orders/{id}/status`](#put-apiordersidstatus)
 - [`GET /api/orders/shopkeeper/history`](#get-apiordersshopkeeperhistory)
@@ -1101,6 +1103,72 @@ Retorna o objeto do usuário com o tema atualizado.
 | Status | Motivo |
 |---|---|
 | 400 | Campo `theme` ausente ou inválido |
+| 401 | Token ausente ou inválido |
+| 404 | Usuário não encontrado |
+
+---
+
+### PATCH /api/users/map-view
+
+#### Descrição
+
+Atualiza a preferência de exibição do mapa (`2D` ou `3D`) do usuário autenticado (turista, lojista ou admin).
+
+#### Controller
+
+`UserController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Qualquer usuário autenticado (`TOURIST`, `SHOPKEEPER`, `ADMIN_USER`, `ADMIN_ROOT`)
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+| Content-Type | Sim | `application/json` |
+
+#### Request Body
+
+| Campo | Tipo | Obrigatório | Validação / Valores aceitos |
+|---|---|---|---|
+| `mapView` | String (enum) | Sim | `2D` ou `3D` |
+
+**Exemplo:**
+
+```json
+{
+  "mapView": "3D"
+}
+```
+
+#### Response 200 (OK)
+
+Retorna o objeto do usuário com a preferência de mapa atualizada.
+
+```json
+{
+  "id": 1,
+  "email": "turista@email.com",
+  "name": "João Turista",
+  "role": "TOURIST",
+  "theme": "LIGHT",
+  "mapView": "3D",
+  "createdAt": "2026-05-24T10:00:00",
+  "updatedAt": "2026-05-24T12:00:00"
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Campo `mapView` ausente ou inválido |
 | 401 | Token ausente ou inválido |
 | 404 | Usuário não encontrado |
 
@@ -3058,7 +3126,7 @@ Lista POIs com dois modos de operação:
 
 #### Response 200 (OK) — Busca por proximidade
 
-Retorna um **array** de POIs próximos ordenados por distância, cada um com o campo `distance_km`.
+Retorna um **array** de POIs próximos ordenados por distância, cada um com o campo `distance_km` e o XP estimado dinâmico em `estimated_xp` (calculado com base na distância e nas visitas recentes ao POI, ou no `xp_reward` fixo caso cadastrado).
 
 ```json
 [
@@ -3073,20 +3141,22 @@ Retorna um **array** de POIs próximos ordenados por distância, cada um com o c
     "average_rating": 4.5,
     "ratings_count": 10,
     "image": null,
-    "distance_km": 0.0
+    "distance_km": 0.0,
+    "estimated_xp": 50
   },
   {
     "id": 2,
     "name": "MASP",
     "description": "Museu de arte",
-    "xp_reward": 30,
+    "xp_reward": null,
     "type": "TOURIST_POINT",
     "latitude": -23.5614,
     "longitude": -46.6559,
     "average_rating": 4.2,
     "ratings_count": 8,
     "image": null,
-    "distance_km": 2.9
+    "distance_km": 2.9,
+    "estimated_xp": 725
   }
 ]
 ```
@@ -3174,7 +3244,8 @@ Retorna um POI específico por ID, incluindo avaliação média e lista de produ
   "average_rating": 4.5,
   "ratings_count": 10,
   "image": null,
-  "products": []
+  "products": [],
+  "estimated_xp": 50
 }
 ```
 
@@ -3203,7 +3274,8 @@ Retorna um POI específico por ID, incluindo avaliação média e lista de produ
       "shopkeeper_id": 1,
       "category_id": 1
     }
-  ]
+  ],
+  "estimated_xp": null
 }
 ```
 
@@ -4843,12 +4915,14 @@ Apenas `TOURIST`
 | Campo | Tipo | Obrigatório | Validação |
 |---|---|---|---|
 | productId | Integer | Sim | ID de produto existente |
+| xpToUse | Integer | Não | Quantidade de XP a ser utilizada como desconto |
 
 **Exemplo:**
 
 ```json
 {
-  "productId": 1
+  "productId": 1,
+  "xpToUse": 30
 }
 ```
 
@@ -4863,14 +4937,16 @@ Apenas `TOURIST`
   "shopkeeperName": "Maria's Comércio",
   "quantity": 1,
   "unitPrice": 49.90,
-  "totalAmount": 49.90,
+  "totalAmount": 49.60,
   "status": "AWAITING_PAYMENT",
   "transactionId": "abc123",
   "createdAt": "2026-06-22T10:00:00",
   "pix": "00020126580014BR.GOV.BCB.PIX0136...",
   "qrCodeBase64": "iVBORw0KGgo...",
   "pixExpiresAt": "2026-06-22T10:15:00",
-  "pickupCode": null
+  "pickupCode": null,
+  "xpUsed": 30,
+  "cashDiscount": 0.30
 }
 ```
 
@@ -4882,6 +4958,67 @@ Apenas `TOURIST`
 |---|---|
 | 400 | Dados inválidos |
 | 400 | Produto sem estoque disponível |
+| 400 | Saldo de XP insuficiente ou excede o maxXp do produto |
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+| 404 | Produto ou turista não encontrado |
+| 409 | Turista já possui um pedido ativo |
+
+---
+
+### GET /api/orders/summary
+
+#### Descrição
+
+Retorna a prévia/resumo de cálculo de um pedido antes de efetuar o checkout. Não cria pedido no banco, apenas calcula os valores com base no preço unitário, limites de XP do produto e saldo de XP do turista.
+
+#### Controller
+
+`OrderController`
+
+#### Autenticação
+
+✅ Obrigatória
+
+#### Permissões
+
+Apenas `TOURIST`
+
+#### Headers
+
+| Nome | Obrigatório | Descrição |
+|---|---|---|
+| Authorization | Sim | `Bearer <access_token>` |
+
+#### Query Params
+
+| Parâmetro | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `productId` | Integer | Sim | ID do produto |
+| `xpToUse` | Integer | Não | Quantidade de XP a simular de desconto (padrão: `min(availableXp, maxXp)`) |
+
+#### Response 200 (OK)
+
+```json
+{
+  "productId": 1,
+  "unitPrice": 19.90,
+  "maxXp": 30,
+  "availableXp": 120,
+  "xpToUse": 30,
+  "xpDiscount": 0.30,
+  "totalAmount": 19.60
+}
+```
+
+#### Possíveis Erros
+
+| Status | Motivo |
+|---|---|
+| 400 | Parâmetro inválido ou XP informado maior que saldo/maxXp |
+| 401 | Token ausente ou inválido |
+| 403 | Role não é TOURIST |
+| 404 | Produto ou turista não encontrado |
 | 401 | Token ausente ou inválido |
 | 403 | Role não é TOURIST |
 | 404 | Produto ou turista não encontrado |

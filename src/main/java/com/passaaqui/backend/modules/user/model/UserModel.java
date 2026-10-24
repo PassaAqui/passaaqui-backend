@@ -57,6 +57,10 @@ public abstract class UserModel {
     @Column(nullable = false, length = 10)
     private com.passaaqui.backend.modules.user.model.enums.ThemePreference theme = com.passaaqui.backend.modules.user.model.enums.ThemePreference.LIGHT;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private com.passaaqui.backend.modules.user.model.enums.MapViewPreference mapView = com.passaaqui.backend.modules.user.model.enums.MapViewPreference.MAP_2D;
+
     private String image;
 
     @Transient

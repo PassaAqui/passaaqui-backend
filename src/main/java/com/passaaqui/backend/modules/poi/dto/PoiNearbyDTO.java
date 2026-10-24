@@ -15,15 +15,21 @@ public record PoiNearbyDTO(
     @JsonProperty("average_rating") Double averageRating,
     @JsonProperty("ratings_count") Integer ratingsCount,
     String image,
-    @JsonProperty("distance_km") Double distanceKm
+    @JsonProperty("distance_km") Double distanceKm,
+    @JsonProperty("estimated_xp") Integer estimatedXp
 ) {
     public static PoiNearbyDTO from(PoiModel poi, Double distanceKm, String imageUrl) {
+        return from(poi, distanceKm, imageUrl, null);
+    }
+
+    public static PoiNearbyDTO from(PoiModel poi, Double distanceKm, String imageUrl, Integer estimatedXp) {
         return new PoiNearbyDTO(
             poi.getId(), poi.getName(), poi.getDescription(),
             poi.getXpReward(), poi.getType(),
             poi.getLatitude(), poi.getLongitude(),
             poi.getAverageRating(), poi.getRatingsCount(),
-            imageUrl, distanceKm
+            imageUrl, distanceKm, estimatedXp
         );
     }
 }
+

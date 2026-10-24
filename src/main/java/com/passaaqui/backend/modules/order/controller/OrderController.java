@@ -2,6 +2,7 @@ package com.passaaqui.backend.modules.order.controller;
 
 import com.passaaqui.backend.modules.order.dto.CheckoutRequestDTO;
 import com.passaaqui.backend.modules.order.dto.OrderResponseDTO;
+import com.passaaqui.backend.modules.order.dto.OrderSummaryDTO;
 import com.passaaqui.backend.modules.order.dto.PurchasedProductsResponseDTO;
 import com.passaaqui.backend.modules.order.dto.ShopkeeperOrderDTO;
 import com.passaaqui.backend.modules.order.dto.UpdateOrderStatusDTO;
@@ -29,6 +30,14 @@ public class OrderController {
     @PreAuthorize("hasRole('TOURIST')")
     public ResponseEntity<OrderResponseDTO> checkout(@RequestBody @Valid CheckoutRequestDTO request) {
         return ResponseEntity.ok(orderService.checkout(request));
+    }
+
+    @GetMapping("/summary")
+    @PreAuthorize("hasRole('TOURIST')")
+    public ResponseEntity<OrderSummaryDTO> getSummary(
+            @RequestParam Integer productId,
+            @RequestParam(required = false) Integer xpToUse) {
+        return ResponseEntity.ok(orderService.getOrderSummary(productId, xpToUse));
     }
 
     @GetMapping("/shopkeeper")
