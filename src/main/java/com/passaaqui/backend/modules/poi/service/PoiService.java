@@ -11,17 +11,21 @@ import com.passaaqui.backend.modules.poi.dto.UpdatePoiDTO;
 import com.passaaqui.backend.modules.poi.model.PoiModel;
 import com.passaaqui.backend.modules.poi.model.enums.PoiType;
 import com.passaaqui.backend.modules.poi.repository.PoiRepository;
+import com.passaaqui.backend.modules.poi.repository.PoiVisitRepository;
 import com.passaaqui.backend.modules.product.dto.ProductDTO;
 import com.passaaqui.backend.modules.product.repository.ProductRepository;
 import com.passaaqui.backend.modules.shopkeeper.model.ShopkeeperModel;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -33,6 +37,7 @@ public class PoiService {
 
     private static final double EARTH_RADIUS_KM = 6371.0;
     private static final double DEFAULT_RADIUS_KM = 1.0;
+    private static final int VISIBILITY_WINDOW_DAYS = 30;
 
     private static final Map<String, Double> RADIUS_BY_MODE = Map.of(
         "foot-walking", 1.0,
@@ -50,6 +55,8 @@ public class PoiService {
     private final CityRepository cityRepository;
     private final StorageService storageService;
     private final ProductRepository productRepository;
+    private final PoiVisitRepository poiVisitRepository;
+    private final XpCalculationService xpCalculationService;
 
     @Transactional
     public PoiModel create(CreatePoiDTO dto, MultipartFile image) {
@@ -91,15 +98,38 @@ public class PoiService {
             longitude - lonDelta, longitude + lonDelta
         );
 
+        Integer currentUserId = getCurrentUserId();
+        LocalDateTime since = LocalDateTime.now().minusDays(VISIBILITY_WINDOW_DAYS);
+
         return candidates.stream()
             .map(poi -> {
                 double distance = GeoUtils.haversineKm(latitude, longitude, poi.getLatitude(), poi.getLongitude());
                 String imageUrl = poi.getImage() != null ? storageService.getFileUrl(poi.getImage()) : null;
-                return PoiNearbyDTO.from(poi, distance, imageUrl);
+
+                Integer estimatedXp = null;
+                if (poi.getType() == PoiType.TOURIST_POINT) {
+                    long recentVisits = currentUserId != null
+                            ? poiVisitRepository.countByPoiIdAndVisitedAtAfterAndUserIdNot(poi.getId(), since, currentUserId)
+                            : poiVisitRepository.countByPoiIdAndVisitedAtAfter(poi.getId(), since);
+                    estimatedXp = xpCalculationService.estimate(distance, (int) recentVisits, poi.getXpReward());
+                }
+
+                return PoiNearbyDTO.from(poi, distance, imageUrl, estimatedXp);
             })
             .filter(dto -> dto.distanceKm() <= radius)
             .sorted(Comparator.comparingDouble(PoiNearbyDTO::distanceKm))
             .toList();
+    }
+
+    private Integer getCurrentUserId() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && auth.getPrincipal() != null && !"anonymousUser".equals(auth.getPrincipal())) {
+                return Integer.parseInt(auth.getPrincipal().toString());
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     public PoiModel findById(Integer id) {
@@ -123,7 +153,17 @@ public class PoiService {
                 .toList();
         }
 
-        return PoiDetailDTO.from(poi, imageUrl, products);
+        Integer estimatedXp = null;
+        if (poi.getType() == PoiType.TOURIST_POINT) {
+            Integer currentUserId = getCurrentUserId();
+            LocalDateTime since = LocalDateTime.now().minusDays(VISIBILITY_WINDOW_DAYS);
+            long recentVisits = currentUserId != null
+                    ? poiVisitRepository.countByPoiIdAndVisitedAtAfterAndUserIdNot(poi.getId(), since, currentUserId)
+                    : poiVisitRepository.countByPoiIdAndVisitedAtAfter(poi.getId(), since);
+            estimatedXp = xpCalculationService.estimate(null, (int) recentVisits, poi.getXpReward());
+        }
+
+        return PoiDetailDTO.from(poi, imageUrl, products, estimatedXp);
     }
 
     @Transactional

@@ -18,15 +18,36 @@ public record PoiDetailDTO(
     @JsonProperty("average_rating") Double averageRating,
     @JsonProperty("ratings_count") Integer ratingsCount,
     String image,
-    List<ProductDTO> products
+    List<ProductDTO> products,
+    @JsonProperty("estimated_xp") Integer estimatedXp
 ) {
+    public PoiDetailDTO(
+        Integer id,
+        String name,
+        String description,
+        Integer xpReward,
+        PoiType type,
+        Double latitude,
+        Double longitude,
+        Double averageRating,
+        Integer ratingsCount,
+        String image,
+        List<ProductDTO> products
+    ) {
+        this(id, name, description, xpReward, type, latitude, longitude, averageRating, ratingsCount, image, products, null);
+    }
+
     public static PoiDetailDTO from(PoiModel poi, String imageUrl, List<ProductDTO> products) {
+        return from(poi, imageUrl, products, null);
+    }
+
+    public static PoiDetailDTO from(PoiModel poi, String imageUrl, List<ProductDTO> products, Integer estimatedXp) {
         return new PoiDetailDTO(
             poi.getId(), poi.getName(), poi.getDescription(),
             poi.getXpReward(), poi.getType(),
             poi.getLatitude(), poi.getLongitude(),
             poi.getAverageRating(), poi.getRatingsCount(),
-            imageUrl, products
+            imageUrl, products, estimatedXp
         );
     }
 }

@@ -8,6 +8,7 @@ import com.passaaqui.backend.modules.order.controller.OrderController;
 import com.passaaqui.backend.modules.order.dto.CheckoutRequestDTO;
 import com.passaaqui.backend.modules.order.dto.OrderItemDTO;
 import com.passaaqui.backend.modules.order.dto.OrderResponseDTO;
+import com.passaaqui.backend.modules.order.dto.OrderSummaryDTO;
 import com.passaaqui.backend.modules.order.dto.ShopkeeperOrderDTO;
 import com.passaaqui.backend.modules.order.model.enums.OrderStatus;
 import com.passaaqui.backend.modules.order.service.OrderService;
@@ -92,6 +93,40 @@ class OrderControllerTest {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalAmount").value(48.00));
+    }
+
+    @Test
+    void getSummary_shouldReturn200() throws Exception {
+        OrderSummaryDTO summary = new OrderSummaryDTO(
+                1, BigDecimal.valueOf(19.90), 30, 120, 30, BigDecimal.valueOf(0.30), BigDecimal.valueOf(19.60)
+        );
+        when(orderService.getOrderSummary(1, 30)).thenReturn(summary);
+
+        mockMvc.perform(get("/api/orders/summary")
+                        .param("productId", "1")
+                        .param("xpToUse", "30"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(1))
+                .andExpect(jsonPath("$.unitPrice").value(19.90))
+                .andExpect(jsonPath("$.maxXp").value(30))
+                .andExpect(jsonPath("$.availableXp").value(120))
+                .andExpect(jsonPath("$.xpToUse").value(30))
+                .andExpect(jsonPath("$.xpDiscount").value(0.30))
+                .andExpect(jsonPath("$.totalAmount").value(19.60));
+    }
+
+    @Test
+    void getSummary_shouldReturn200WhenXpToUseNull() throws Exception {
+        OrderSummaryDTO summary = new OrderSummaryDTO(
+                1, BigDecimal.valueOf(19.90), 30, 120, 30, BigDecimal.valueOf(0.30), BigDecimal.valueOf(19.60)
+        );
+        when(orderService.getOrderSummary(1, null)).thenReturn(summary);
+
+        mockMvc.perform(get("/api/orders/summary")
+                        .param("productId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(1))
+                .andExpect(jsonPath("$.xpToUse").value(30));
     }
 
     @Test

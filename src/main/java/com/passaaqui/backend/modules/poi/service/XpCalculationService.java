@@ -16,6 +16,18 @@ public class XpCalculationService {
     private static final int INVISIBILITY_BASE = 100;
     private static final int COOLDOWN_DAYS = 30;
 
+    public int estimate(Double distanceKm, int recentVisits, Integer fixedXpReward) {
+        if (fixedXpReward != null) {
+            return fixedXpReward;
+        }
+        double effectiveDistance = (distanceKm != null && distanceKm > 0) ? distanceKm : 0.1;
+        double displacementFactor = effectiveDistance * DISPLACEMENT_FACTOR;
+        double invisibilityFactor = (double) INVISIBILITY_BASE / (recentVisits + 1);
+        double rawXp = displacementFactor * invisibilityFactor;
+        int finalXp = (int) Math.round(rawXp);
+        return finalXp <= 0 ? 1 : finalXp;
+    }
+
     public CheckinResponseDTO calculate(
             Integer userId,
             Integer poiId,
