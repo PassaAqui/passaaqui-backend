@@ -5,6 +5,9 @@
 -- Hash BCrypt: $2a$10$M4XQr5O3YOzE8qJkTMPvFOJu59KxKT3D5H9vvzdQsMlHXQQNgJ8si
 -- ==============================================================================
 
+-- 0. Sincronização e Criação de Tabelas/Colunas caso necessário
+ALTER TABLE user_model ADD COLUMN IF NOT EXISTS map_view VARCHAR(10) DEFAULT 'MAP_2D' NOT NULL;
+
 -- 1. Cidades (CityModel)
 INSERT INTO city_model (id, name, description, state, state_name, region, region_code, ibge_code, min_latitude, max_latitude, min_longitude, max_longitude, image, created_at, updated_at)
 VALUES 
@@ -179,6 +182,30 @@ ON CONFLICT (id) DO UPDATE SET
     average_rating = EXCLUDED.average_rating,
     ratings_count = EXCLUDED.ratings_count,
     updated_at = CURRENT_TIMESTAMP;
+
+-- 5.0.1 Sincroniza tb_products com product_model caso a tabela exista
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'tb_products') THEN
+        INSERT INTO tb_products (id, name, description, price, max_xp, stock, active, highlight, version, category_id, shopkeeper_id, poi_id, average_rating, ratings_count, created_at, updated_at)
+        SELECT id, name, description, price, max_xp, stock, active, highlight, version, category_id, shopkeeper_id, poi_id, average_rating, ratings_count, created_at, updated_at
+        FROM product_model
+        ON CONFLICT (id) DO UPDATE SET
+            name = EXCLUDED.name,
+            description = EXCLUDED.description,
+            price = EXCLUDED.price,
+            max_xp = EXCLUDED.max_xp,
+            stock = EXCLUDED.stock,
+            active = EXCLUDED.active,
+            highlight = EXCLUDED.highlight,
+            category_id = EXCLUDED.category_id,
+            shopkeeper_id = EXCLUDED.shopkeeper_id,
+            poi_id = EXCLUDED.poi_id,
+            average_rating = EXCLUDED.average_rating,
+            ratings_count = EXCLUDED.ratings_count,
+            updated_at = CURRENT_TIMESTAMP;
+    END IF;
+END $$;
 
 -- 5.1 Imagens dos Produtos (product_images)
 DELETE FROM product_images WHERE product_id IN (251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264);
